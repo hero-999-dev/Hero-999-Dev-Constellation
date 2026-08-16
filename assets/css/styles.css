@@ -1,0 +1,551 @@
+/* ============================================================
+   Hero Dev — Constellation
+   Palette taken from warsaw-cat-sitting, values unchanged: cream,
+   sand, amber, orange, terracotta, brown. Dark theme under
+   [data-theme="dark"].
+   ============================================================ */
+
+:root{
+  --bar-h: 58px;
+  color-scheme: light;
+
+  /* surfaces */
+  --cream:      #FFFBF4;
+  --cream-2:    #FDF4E6;
+  --sand:       #F8E8D0;
+  --sand-deep:  #F0D7B4;
+
+  /* warm light */
+  --amber:      #F6A03D;
+  --amber-soft: #FFC978;
+  --orange:     #E8813C;
+  --terra:      #AE5228;
+
+  /* brown */
+  --brown:      #43301F;
+  --brown-mid:  #6E523A;
+  --brown-soft: #9C8368;
+
+  --radius:     26px;
+  --radius-sm:  16px;
+  --radius-pill:999px;
+
+  --shadow-sm:  0 2px 10px rgba(122, 84, 48, .07);
+  --shadow:     0 14px 34px -14px rgba(122, 84, 48, .28);
+  --shadow-lg:  0 30px 60px -24px rgba(122, 84, 48, .36);
+
+  --ease:       cubic-bezier(.22,.9,.28,1);
+
+  /* One face for the whole page. Palatino is the softer of the serifs every
+     system already has - rounder and lighter on the page than Georgia, which
+     read heavy at these sizes. Georgia stays as the fallback. No font files
+     ship with the constellation. */
+  --font-head:  "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --font-body:  var(--font-head);
+
+  --line:        rgba(201,102,58,.13);
+  --line-strong: rgba(201,102,58,.26);
+  --line-accent: rgba(246,160,61,.38);
+  --grad-warm:   #FFF7E9;
+  --glass:       rgba(255,255,255,.6);
+  --header-bg:   rgba(255,251,244,.78);
+  --blob-1:      #FFD9A0;
+  --blob-2:      #FFC6A0;
+  --blob-3:      #F7E2B8;
+  --blob-opacity: .5;
+
+  /* Ink: one solid colour for every stroke, and the fade lives on the group that
+     holds them - see .ink. Translucent strokes double up where they cross. */
+  --ink-thin:   #C9663A;
+  --ink-alpha:  .32;
+}
+
+:root[data-theme="dark"]{
+  color-scheme: dark;
+
+  --cream:      #1A1411;
+  --cream-2:    #241C17;
+  --sand:       #32261F;
+  --sand-deep:  #453428;
+
+  --amber:      #F6A03D;
+  --amber-soft: #FFC978;
+  --orange:     #E8813C;
+  --terra:      #F2A468;
+
+  --brown:      #F4E9DC;
+  --brown-mid:  #C6B3A0;
+  --brown-soft: #9B8873;
+
+  --shadow-sm:  0 2px 10px rgba(0,0,0,.32);
+  --shadow:     0 14px 34px -14px rgba(0,0,0,.6);
+  --shadow-lg:  0 30px 60px -24px rgba(0,0,0,.72);
+
+  --line:        rgba(246,160,61,.17);
+  --line-strong: rgba(246,160,61,.3);
+  --line-accent: rgba(246,160,61,.42);
+  --grad-warm:   #33271F;
+  --glass:       rgba(255,255,255,.055);
+  --header-bg:   rgba(26,20,17,.84);
+  --blob-1:      #7A4A1E;
+  --blob-2:      #6B3A22;
+  --blob-3:      #5C4622;
+  --blob-opacity: .38;
+
+  --ink-thin:   #F6A03D;
+  --ink-alpha:  .34;
+}
+
+*,*::before,*::after{ box-sizing:border-box; }
+
+body{
+  margin:0;
+  /* The page is a fixed frame: header, a strip of text, then the map takes the
+     rest. Nothing scrolls the document itself - see .stage. dvh rather than vh
+     so a phone's collapsing address bar does not push the map out of view. */
+  height:100dvh;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  font-family:var(--font-body);
+  font-size:17px;
+  line-height:1.6;
+  color:var(--brown);
+  background:
+    radial-gradient(60rem 40rem at 12% -10%, var(--blob-1) 0, transparent 60%),
+    radial-gradient(50rem 34rem at 92% 8%, var(--blob-2) 0, transparent 58%),
+    radial-gradient(46rem 30rem at 60% 108%, var(--blob-3) 0, transparent 60%),
+    var(--cream);
+  background-attachment: fixed;
+  -webkit-font-smoothing:antialiased;
+}
+body::before{
+  content:"";
+  position:fixed; inset:0; pointer-events:none;
+  background:var(--cream);
+  opacity:calc(1 - var(--blob-opacity));
+  z-index:-1;
+}
+
+h1,h2,h3{ font-family:var(--font-head); font-weight:500; line-height:1.2; margin:0; letter-spacing:0; }
+p{ margin:0 0 1em; }
+a{ color:inherit; text-decoration:none; }
+
+.sr-only{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+}
+
+:focus-visible{ outline:3px solid var(--amber); outline-offset:3px; border-radius:6px; }
+
+/* ------------------------------------------------------------ gate */
+
+.gate{
+  position:fixed; inset:0; z-index:50;
+  display:grid; place-items:center; padding:1.5rem;
+  background:var(--cream);
+}
+/* The card is centred by the grid; the switch is parked in the corner without
+   pushing it off centre. */
+.gate-controls{ position:fixed; top:1.1rem; right:1.1rem; display:flex; align-items:center; gap:.5rem; }
+.gate-card{
+  width:min(420px, 100%);
+  padding:2.6rem 2.2rem 2.2rem;
+  text-align:center;
+  background:var(--cream-2);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-lg);
+}
+.gate-mark{
+  width:60px; height:60px; margin:0 auto 1.1rem;
+  display:grid; place-items:center;
+  font-family:var(--font-head); font-size:1.9rem;
+  background:#43301F;
+  border-radius:20px;
+  box-shadow:var(--shadow-sm);
+}
+/* Inside out: the tile takes the ink the letter used to be drawn in, and the
+   letter takes the warm gradient the tile used to be. The letter needs its own
+   element for that - a gradient can only be clipped to text it is painted on. */
+.gate-mark span{
+  background:linear-gradient(140deg, var(--amber-soft), var(--orange));
+  -webkit-background-clip:text; background-clip:text;
+  color:transparent;
+}
+.gate-card h1{ font-size:2rem; }
+.gate-sub{ color:var(--brown-mid); margin:.5rem 0 1.6rem; font-size:.98rem; }
+.gate-input{
+  width:100%; padding:.85rem 1.1rem; margin-bottom:.85rem;
+  font:inherit; color:var(--brown);
+  background:var(--cream);
+  border:1px solid var(--line-strong);
+  border-radius:var(--radius-pill);
+  text-align:center;
+}
+.gate-input::placeholder{ color:var(--brown-soft); }
+.gate-input:focus{ outline:none; border-color:var(--amber); box-shadow:0 0 0 4px var(--line-accent); }
+.btn{
+  width:100%; padding:.85rem 1.1rem;
+  font:inherit; font-weight:500; color:#43301F;
+  background:linear-gradient(140deg, var(--amber-soft), var(--orange));
+  border:0; border-radius:var(--radius-pill); cursor:pointer;
+  transition:transform .18s var(--ease), box-shadow .18s var(--ease);
+}
+.btn:hover{ transform:translateY(-2px); box-shadow:var(--shadow); }
+.gate-error{ margin:.9rem 0 0; color:var(--terra); font-size:.92rem; font-weight:500; }
+.gate-card.shake{ animation:shake .38s var(--ease); }
+@keyframes shake{
+  20%{ transform:translateX(-9px); } 45%{ transform:translateX(7px); }
+  70%{ transform:translateX(-4px); } 100%{ transform:translateX(0); }
+}
+
+/* ------------------------------------------------------------ chrome */
+
+.topbar{
+  position:fixed; top:0; left:0; right:0; z-index:20;
+  display:flex; align-items:center; justify-content:space-between; gap:1rem;
+  padding:.5rem clamp(1rem, 4vw, 2.4rem);
+  /* No band and no rule under it: both cut across the ring. The switch sits on
+     the page itself. */
+  background:none;
+  border:0;
+  pointer-events:none;
+}
+.topbar > *{ pointer-events:auto; position:relative; z-index:1; }
+.topbar-right{ display:flex; align-items:center; gap:.5rem; }
+
+/* The band and its rule live on a layer of their own so the mask below cannot
+   take the switch with them. layoutRings() writes --ring-mask: a hole the shape
+   of the outer ring, so the strip stops where the ring runs and stays put
+   everywhere else. */
+.topbar::before{
+  content:"";
+  position:absolute; inset:0;
+  background:var(--header-bg);
+  border-bottom:1px solid var(--line);
+  -webkit-mask-image:var(--ring-mask, none);
+  mask-image:var(--ring-mask, none);
+}
+.theme-btn{
+  display:flex; align-items:center; gap:.5rem;
+  padding:.5rem .95rem;
+  font:inherit; font-size:.92rem; color:var(--brown);
+  background:var(--glass);
+  border:1px solid var(--line-strong);
+  border-radius:var(--radius-pill); cursor:pointer;
+  transition:border-color .18s var(--ease);
+}
+.theme-btn:hover{ border-color:var(--amber); }
+/* Classic pair: a moon while the page is light (click to go dark), a sun while
+   it is dark. Only one is in the DOM flow at a time. */
+.theme-icon{ width:17px; height:17px; color:var(--amber); flex:none; }
+:root:not([data-theme="dark"]) .icon-sun{ display:none; }
+:root[data-theme="dark"] .icon-moon{ display:none; }
+
+
+
+.wrap{
+  flex:1; min-height:0;
+  width:min(2200px, 100% - 2.5rem); margin-inline:auto;
+  display:flex; flex-direction:column;
+  padding:0;
+  position:relative;
+}
+
+/* The heading rides in the strip itself, beside the switch. It used to sit in
+   the page underneath, where the strip's blur layer washed it out. */
+/* Nudged left of the bar's own padding - a small step, not a jump. */
+.intro{ display:flex; align-items:center; gap:.6rem; white-space:nowrap; margin-left:-.85rem; }
+
+/* Heading, Language and the theme switch are the same control in three guises:
+   one size, one padding, one shape, so the row reads as a set. */
+.intro h2, .pill, .topbar .theme-btn{
+  font-family:var(--font-head);
+  font-weight:500;
+  font-size:.92rem;
+  line-height:1.25;
+  padding:.46rem 1.05rem;
+  color:var(--brown);
+  background:var(--glass);
+  border:1px solid var(--line-strong);
+  border-radius:var(--radius-pill);
+}
+.intro h2, .pill{ display:inline-block; letter-spacing:0; }
+
+.pill{
+  cursor:pointer;
+  transition:border-color .18s var(--ease), background .18s var(--ease);
+}
+.pill:hover{ border-color:var(--amber); }
+.pill.on{
+  background:linear-gradient(140deg, var(--amber-soft), var(--orange));
+  border-color:transparent; color:#43301F;
+}
+
+/* Whatever is left after the text. The map sizes itself to fit inside it, so
+   the ring ends up close to the top and bottom edges of the screen. */
+/* Rails either side, so the language panel and the device column always have
+   room and the ring never has to share their space. fitMap() sizes the map from
+   stage.clientWidth, which excludes this padding, so the map simply draws itself
+   smaller. Below the map's own breakpoint there are no rails - the list takes
+   the whole width. */
+.stage{
+  flex:1; min-height:0;
+  display:flex; align-items:center; justify-content:center;
+}
+/* No rails by default - the map takes the window and the ring runs over the bar.
+   Opening Hardware sets --rail-right, which pushes the map left to make room. */
+.stage{ padding-left:0; padding-right:var(--rail-right, 0); }
+
+/* ------------------------------------------------------------ map */
+
+/* Height comes from the stage, width follows the aspect ratio; max-width pulls
+   both back in when the window is wider than it is tall. Either way the whole
+   map is on screen without a scrollbar. */
+/* Cards are sized in cqw - a share of the map, not a fixed pixel size. The ring
+   geometry was solved in grid units against a 195px card on a 1240px map; with
+   cqw that ratio holds at every screen size, so the same numbers stay true when
+   the map shrinks to fit a short window. Fixed px here was the bug: on a 480px
+   map the cards were 40% of its width and the rings burst out of the canvas. */
+.map{
+  z-index:30;
+  pointer-events:none;
+  position:relative;
+  /* Starting size only - fitMap() in app.js sets the real one, because CSS
+     drops the ratio instead of the height when max-width binds. */
+  height:100%;
+  aspect-ratio: 1200 / 840;
+  max-width:100%;
+  container-type: size;
+}
+/* An <svg> clips to its viewBox by default. Drag a card past the edge of the map
+   and its connector runs to a point outside 0..1200 / 0..840, so the tail was cut
+   off and the line looked half drawn while the card kept going. */
+.map-lines{ position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
+.ink{ opacity:var(--ink-alpha); }
+/* One colour for rings and connectors alike - only the stroke weight separates
+   a trunk from the rest. */
+.map-lines path{ fill:none; stroke:var(--ink-thin); stroke-width:2.2; }
+.map-lines path.trunk{ stroke:var(--ink-thin); stroke-width:3; }
+.map-nodes{ position:absolute; inset:0; pointer-events:none; }
+
+/* Grouping rings. Drawn first, so the connectors and the cards sit on top. */
+.ring{ fill:var(--glass); stroke:var(--ink-thin); stroke-width:2; }
+.outer-ring{ fill:none; stroke:var(--ink-thin); stroke-width:2.4; }
+/* fill-opacity 1 here because the group already fades everything inside it */
+.group-ring{ fill:var(--sand); fill-opacity:1; stroke:var(--ink-thin); stroke-width:2.4; }
+.ring-label{
+  fill:var(--brown-mid);
+  font-family:var(--font-head);
+  font-size:22px;
+  text-anchor:middle;
+  letter-spacing:.02em;
+}
+
+/* Nodes are placed by percentage on the same 1200x840 grid the lines use,
+   so the two stay locked together at any width. */
+.node{
+  --w: 15.73cqw;          /* 195 of the 1240 the layout was solved at */
+  /* Height is pinned too, not left to the text. Line wrapping does not scale
+     perfectly linearly - at a small map a description that fitted one line at
+     full size can take two, and a taller card grows the ring until it bursts
+     the canvas (measured: ry 411 -> 435). Fixed proportions, content centred. */
+  height:8.23cqw;
+  display:flex; flex-direction:column; justify-content:center;
+  overflow:hidden;
+  position:absolute;
+  transform:translate(-50%, -50%);
+  pointer-events:auto;
+  cursor:grab;
+  touch-action:none;      /* let a finger drag the card instead of the page */
+  user-select:none;
+  -webkit-user-drag:none;
+  width:var(--w);
+  padding:.97cqw 1.23cqw;
+  text-align:center;
+  background:var(--cream-2);
+  border:1px solid var(--line-strong);
+  border-radius:1.29cqw;
+  box-shadow:var(--shadow-sm);
+  transition:transform .2s var(--ease), box-shadow .2s var(--ease), border-color .2s var(--ease);
+}
+a.node:hover{ transform:translate(-50%, -50%) scale(1.05); box-shadow:var(--shadow); border-color:var(--amber); }
+
+/* While a card is held, and on the way home. The inline transform the drag
+   writes beats the :hover rule above, so the card does not also grow. */
+.node.dragging{
+  cursor:grabbing;
+  z-index:5;
+  box-shadow:var(--shadow-lg);
+  border-color:var(--amber);
+}
+/* Slight overshoot on the way back - that is the whole "fluid" of it. */
+.node.returning{ transition:transform .62s cubic-bezier(.34, 1.42, .5, 1); }
+/* Repo names have no spaces to break at, so a long one either widens its card
+   past the width set for it or gets snapped mid-word. Slightly tighter type
+   fits the longest name here (`pixel_pomo_art_kit`) on one line; the break rule
+   stays as the backstop for anything longer. */
+.node-title{
+  font-family:var(--font-head); font-weight:500;
+  font-size:1.21cqw; letter-spacing:-.01em;
+  overflow-wrap:anywhere;
+}
+.node-desc{ display:block; margin-top:.32cqw; font-size:.98cqw; line-height:1.35; color:var(--brown-mid); }
+.node-meta{ display:flex; justify-content:center; gap:.4cqw; margin-top:.5cqw; flex-wrap:wrap; }
+.tag{
+  /* Georgia sets wider than the sans this used to be, and three badges stopped
+     fitting one row on pixel-pomo-web - which the pinned card height then
+     clipped. A notch smaller and they fit again. */
+  font-size:.7cqw; letter-spacing:.02em; text-transform:uppercase;
+  padding:.18cqw .48cqw; border-radius:var(--radius-pill);
+  background:var(--sand); color:var(--brown-mid);
+}
+.tag.lock{ background:var(--sand-deep); }
+.tag.live{ background:linear-gradient(140deg, var(--amber-soft), var(--orange)); color:#43301F; }
+
+.node.me{
+  --w: 17.74cqw;
+  height:8.55cqw;
+  padding:1.81cqw 1.29cqw;
+  background:linear-gradient(140deg, var(--amber-soft), var(--orange));
+  border-color:transparent;
+  box-shadow:var(--shadow-lg);
+  color:#43301F;
+}
+.node.me .node-title{ font-size:2cqw; }
+.node.me .node-desc{ color:#5C4020; }
+
+
+/* ------------------------------------------------------------ list (narrow) */
+
+.list{ display:none; }
+/* On narrow screens the list is what scrolls, not the document. */
+@media (max-width: 860px){
+  /* One column down the left, and it does not scroll - the type shrinks to fit
+     instead. On a very short window this is the limit of what will go in. */
+  .list{ width:100%; max-width:22rem; margin-right:auto; }
+  .list .node-title{ font-size:.86rem; }
+  .list .node-desc{ font-size:.74rem; }
+  .list .tag{ font-size:.6rem; padding:.1rem .45rem; }
+  .leaf{ padding:.4rem .6rem; margin-top:.3rem; }
+  .branch{ padding:.5rem .6rem; margin-bottom:.5rem; }
+  .devices, #devBtn{ display:none; }
+}
+
+/* ------------------------------------------------------------- hardware */
+
+.devices{
+  /* One frame under the button that opens it, running to the bottom of the page
+     so there is no dead air below the last box. */
+  position:absolute; right:0; top:var(--bar-h); bottom:1.1rem; z-index:6;
+  transition:transform .56s var(--ease), opacity .38s var(--ease);
+  width:252px;
+  display:flex; flex-direction:column;
+  padding:.6rem .5rem .5rem;
+  background:var(--cream-2);
+  border:1px solid var(--line-strong);
+  border-radius:30px;
+  box-shadow:var(--shadow);
+}
+/* An author `display` beats the UA's `[hidden]{display:none}`. */
+.devices[hidden], .pill[hidden]{ display:none; }
+/* Where it comes in from, and where it goes back to. */
+.devices:not(.in){ transform:translateX(calc(100% + 1.4rem)); opacity:0; }
+
+/* The map is sized in pixels by fitMap(), so it can be transitioned like any
+   other length - but only while the panel is moving. Left on permanently it
+   would put half a second of lag behind every window resize. */
+.gliding .stage{ transition:padding-right .56s var(--ease); }
+.gliding .map{ transition:width .56s var(--ease), height .56s var(--ease); }
+
+.dev-head{
+  font-size:.74rem; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--brown-soft); text-align:center; margin-bottom:.3rem;
+}
+
+/* The little map: three boxes the connector engine can drag and spring back. */
+.dev-stage{ position:relative; flex:1; min-height:0; }
+.dev-lines{ position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
+.dev-lines path{ fill:none; stroke:var(--ink-thin); stroke-width:.7; }
+/* `.dev-lines path` above is the more specific selector, so the head has to be
+   reached through the same parent or it is painted with no fill - a shape that
+   is there in the DOM and invisible on the screen. */
+.dev-lines .trunk-head{ fill:var(--ink-thin); stroke:none; }
+/* Same frame as the boxes, so a link reads as part of the same set. */
+.dev-label{
+  position:absolute;
+  transform:translate(-50%, -50%);
+  padding:.14rem .42rem;
+  font-size:.62rem; line-height:1.25; text-align:center; white-space:nowrap;
+  color:var(--brown-mid);
+  background:var(--cream);
+  border:1px solid var(--line-strong);
+  border-radius:var(--radius-pill);
+  pointer-events:none;
+}
+.dev-nodes{ position:absolute; inset:0; }
+
+.dev-card{
+  position:absolute;
+  transform:translate(-50%, -50%);
+  width:96%;
+  display:flex; flex-direction:column;
+  padding:.34rem .5rem;
+  background:var(--cream);
+  border:1px solid var(--line-strong);
+  border-radius:18px;
+  box-shadow:var(--shadow-sm);
+  pointer-events:auto;
+  cursor:grab; touch-action:none; user-select:none;
+}
+.dev-card.dragging{ cursor:grabbing; z-index:5; box-shadow:var(--shadow); border-color:var(--amber); }
+.dev-card.returning{ transition:transform .62s cubic-bezier(.34, 1.42, .5, 1); }
+.dev-name{ font-size:.8rem; line-height:1.2; }
+.dev-sub{ font-size:.66rem; color:var(--brown-soft); margin-bottom:.16rem; }
+/* Tight leading, not a smaller face: the specs have to give the link labels
+   room to sit between the boxes without losing legible type. */
+.dev-spec{ font-size:.7rem; line-height:1.15; color:var(--brown-mid); }
+
+/* ------------------------------------------------------- language picker */
+
+/* Not a <select>: that one hands its drop-down to the platform, and no amount of
+   `color-scheme` makes the list belong to this page. Button plus list, so the
+   menu is ours to paint. */
+.lang-pick{ position:relative; }
+.lang-btn{ display:flex; align-items:center; gap:.45rem; }
+.lang-caret{
+  width:9px; height:6px; flex:none;
+  fill:none; stroke:currentColor; stroke-width:1.4;
+  stroke-linecap:round; stroke-linejoin:round;
+  opacity:.75;
+  transition:transform .18s var(--ease);
+}
+.lang-btn[aria-expanded="true"] .lang-caret{ transform:rotate(180deg); }
+
+.lang-menu{
+  position:absolute; top:calc(100% + .4rem); right:0; z-index:30;
+  min-width:100%;
+  margin:0; padding:.28rem;
+  list-style:none;
+  background:var(--cream-2);
+  border:1px solid var(--line-strong);
+  border-radius:18px;
+  box-shadow:var(--shadow);
+  /* Hinged on the corner under the button it belongs to. */
+  transform-origin:top right;
+  transition:transform .24s var(--ease), opacity .18s var(--ease);
+}
+.lang-menu[hidden]{ display:none; }
+.lang-menu:not(.in){ transform:translateY(-.4rem) scale(.95); opacity:0; }
+.lang-menu li{
+  padding:.34rem .8rem;
+  border-radius:var(--radius-pill);
+  font-size:.88rem; white-space:nowrap; cursor:pointer;
+  color:var(--brown);
+}
+.lang-menu li:hover{ background:var(--sand); }
+.lang-menu li[aria-selected="true"]{
+  background:linear-gradient(140deg, var(--amber-soft), var(--orange));
+  color:#43301F;
+}

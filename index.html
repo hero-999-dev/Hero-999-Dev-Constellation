@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hero Dev — Constellation</title>
+<meta name="description" content="A map of everything Hero Dev is building.">
+<meta name="theme-color" content="#FFFBF4">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%2343301F'/><path d='M10 9v14M22 9v14M10 16h12' stroke='%23F6A03D' stroke-width='3.4' stroke-linecap='round'/></svg>">
+<link rel="stylesheet" href="assets/css/styles.css?v=202608170109">
+</head>
+<body>
+
+<!-- Password gate. Removed from the DOM once it is answered. -->
+<div class="gate" id="gate" hidden>
+  <form class="gate-card" id="gateForm" autocomplete="off">
+    <div class="gate-mark" aria-hidden="true"><span>H</span></div>
+    <h1>Hero Dev</h1>
+    <p class="gate-sub" data-i18n="gateSub"></p>
+    <label class="sr-only" for="gateInput" data-i18n="password"></label>
+    <input class="gate-input" id="gateInput" type="password" placeholder="Password" required
+           autocapitalize="off" autocorrect="off" spellcheck="false">
+    <button class="btn" type="submit" data-i18n="open"></button>
+    <p class="gate-error" id="gateError" role="alert" hidden data-i18n="wrong"></p>
+  </form>
+  <div class="gate-controls">
+    <div class="lang-pick" data-site-lang>
+      <button class="pill lang-btn" type="button" aria-haspopup="listbox" aria-expanded="false">
+        <span class="lang-now"></span>
+        <svg class="lang-caret" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1.2 5 4.8 9 1.2"/></svg>
+      </button>
+      <ul class="lang-menu" role="listbox" hidden>
+        <li role="option" data-lang="en" tabindex="-1">English</li>
+        <li role="option" data-lang="tr" tabindex="-1">T&uuml;rk&ccedil;e</li>
+        <li role="option" data-lang="pl" tabindex="-1">Polski</li>
+        <li role="option" data-lang="de" tabindex="-1">Deutsch</li>
+      </ul>
+    </div>
+    <button class="theme-btn" type="button" data-theme-toggle
+          aria-label="Switch between light and dark">
+    <svg class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path class="icon-moon" d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/><g class="icon-sun"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.2v2.1M12 19.7v2.1M4.1 4.1l1.5 1.5M18.4 18.4l1.5 1.5M2.2 12h2.1M19.7 12h2.1M4.1 19.9l1.5-1.5M18.4 5.6l1.5-1.5"/></g></svg>
+    <span class="theme-label"></span>
+    </button>
+  </div>
+</div>
+
+<header class="topbar">
+  <section class="intro">
+    <h2 data-i18n="heading"></h2>
+  </section>
+  <div class="topbar-right">
+    <button class="pill" id="devBtn" type="button" aria-expanded="false" aria-controls="devices"
+            data-i18n="hardware"></button>
+    <div class="lang-pick" data-site-lang>
+      <button class="pill lang-btn" type="button" aria-haspopup="listbox" aria-expanded="false">
+        <span class="lang-now"></span>
+        <svg class="lang-caret" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1.2 5 4.8 9 1.2"/></svg>
+      </button>
+      <ul class="lang-menu" role="listbox" hidden>
+        <li role="option" data-lang="en" tabindex="-1">English</li>
+        <li role="option" data-lang="tr" tabindex="-1">T&uuml;rk&ccedil;e</li>
+        <li role="option" data-lang="pl" tabindex="-1">Polski</li>
+        <li role="option" data-lang="de" tabindex="-1">Deutsch</li>
+      </ul>
+    </div>
+    <button class="theme-btn" type="button" data-theme-toggle aria-label="Switch between light and dark">
+    <svg class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path class="icon-moon" d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/><g class="icon-sun"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.2v2.1M12 19.7v2.1M4.1 4.1l1.5 1.5M18.4 18.4l1.5 1.5M2.2 12h2.1M19.7 12h2.1M4.1 19.9l1.5-1.5M18.4 5.6l1.5-1.5"/></g></svg>
+      <span class="theme-label"></span>
+    </button>
+  </div>
+</header>
+
+<main class="wrap" id="constellation" hidden>
+  <!-- The stage takes whatever height is left over, and the map fits itself into
+       it - that is what keeps the page off the scrollbar on any screen. Both the
+       map and the list below are built from the same data in app.js, so there is
+       one place to add a repository. -->
+  <div class="stage">
+    <div class="map" id="map">
+      <svg class="map-lines" id="mapLines" viewBox="0 0 1200 840" preserveAspectRatio="none" aria-hidden="true"></svg>
+      <div class="map-nodes" id="mapNodes"></div>
+    </div>
+
+    <!-- Narrow screens: the same tree, stacked. Scrolls inside the stage rather
+         than taking the whole page with it. -->
+    <div class="list" id="list"></div>
+
+    <!-- The machines and how they reach each other, right-hand column. -->
+    <aside class="devices" id="devices" hidden aria-label="Hardware"></aside>
+  </div>
+
+</main>
+
+<script src="assets/js/app.js?v=202608170109"></script>
+</body>
+</html>
