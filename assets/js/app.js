@@ -1208,7 +1208,7 @@ function spinSaturn(pre) {
 function fillStars(el) {
   if (!el) return;
   const frag = document.createDocumentFragment();
-  for (let i = 0; i < 96; i++) {
+  for (let i = 0; i < 160; i++) {
     const s = document.createElement('span');
     s.className = 'gate-star';
     s.textContent = '*';
