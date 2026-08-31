@@ -271,28 +271,29 @@ build and the fix looks like it did not work. Bump the stamp when you deploy.
 
 ## The gate
 
-The password screen is the airlock, laid out on one full-viewport grid: the name
-**Constellation** banners the top in wide-tracked caps, **Hero Dev** and its handle sit
-top-left, the password card is in the middle, and the two ASCII references that inspired the
-screen are credited bottom-left in a small monospace log. Below 860px the three columns fold
-into one — name, password, planet, identity — and the panel scrolls inside itself rather than
-the page.
+The password screen is the airlock. The name **Constellation** banners the top in
+wide-tracked caps; the whole identity column — **Hero Dev** and its handle at the top, the
+password card left-aligned in the middle, the two ASCII references credited bottom-left in a
+small monospace log — is pinned down the left; and the Saturn is turned up huge behind it,
+anchored to the right and reaching back across the middle. Below 720px the column centres and
+the planet drops behind it at low opacity so the text stays legible; the column scrolls inside
+the panel rather than the page.
 
 ### The Saturn
 
 The signature is a **Saturn drawn the way the spinning-donut demo draws a torus** (both are
 credited on the screen). `spinSaturn()` in `app.js` samples two surfaces — a banded globe and
-a flat ring with a Cassini gap — rotates and projects each point to a character cell, keeps
-the nearest at each cell with a z-buffer, and picks a glyph from `.,-~:;=!*#$@` by how much
-the point faces a fixed light. One buffer for both surfaces is what lets the ring pass
+a flat ring with a Cassini gap — rotates the whole body, projects each point to a character
+cell, keeps the nearest at each cell with a z-buffer, and picks a glyph from `.,-~:;=!*#$@` by
+how much the point faces a fixed light. One buffer for both surfaces is what lets the ring pass
 correctly in front of the globe's underside and behind its top.
 
-It turns on a fixed, tilted axis, and only the globe's surface markings move — which is what a
-planet turning on its axis actually looks like (the ring is rotationally symmetric, so it
-holds still while the globe rotates inside it). It is deliberately slow, about 15 fps, runs
-only while the gate is on screen, and stops on its own the moment the gate is removed (the
-loop checks `isConnected`). Reduced-motion holds a single frame. Its `<pre>` is
-`aria-hidden` — it is decoration, not content.
+The body is pitched a fixed amount and then turned continuously about the vertical, so — like
+the donut — the **whole thing rotates**: the ring sweeps open and shut and the globe's bands
+wheel round with it, past a fixed light so a bright surface oval carries the eye. It runs at
+about 14 fps only while the gate is on screen, and stops the moment the gate is removed (the
+loop checks `isConnected`). Reduced-motion holds a single frame. Its `<pre>` is `aria-hidden`
+— it is decoration, not content.
 
 ## The password
 

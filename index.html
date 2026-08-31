@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#FFFBF4">
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%2343301F'/><path d='M10 9v14M22 9v14M10 16h12' stroke='%23F6A03D' stroke-width='3.4' stroke-linecap='round'/></svg>">
-<link rel="stylesheet" href="assets/css/styles.css?v=202608311800">
+<link rel="stylesheet" href="assets/css/styles.css?v=202608311830">
 </head>
 <body>
 
@@ -24,21 +24,22 @@
         <p class="gate-id-sub">hero-999-dev</p>
       </div>
     </div>
+
+    <form class="gate-card" id="gateForm" autocomplete="off">
+      <p class="gate-sub" data-i18n="gateSub"></p>
+      <label class="sr-only" for="gateInput" data-i18n="password"></label>
+      <input class="gate-input" id="gateInput" type="password" placeholder="Password" required
+             autocapitalize="off" autocorrect="off" spellcheck="false">
+      <button class="btn" type="submit" data-i18n="open"></button>
+      <p class="gate-error" id="gateError" role="alert" hidden data-i18n="wrong"></p>
+    </form>
+
     <div class="gate-insp">
       <span class="gate-insp-label" data-i18n="inspiration"></span>
       <a href="https://www.asciiart.eu/art/3d2c57ac05fc41f1" target="_blank" rel="noopener">Saturn &middot; asciiart.eu</a>
       <a href="https://www.asciiart.eu/animations/ascii-spinning-donut" target="_blank" rel="noopener">Spinning donut &middot; asciiart.eu</a>
     </div>
   </div>
-
-  <form class="gate-card" id="gateForm" autocomplete="off">
-    <p class="gate-sub" data-i18n="gateSub"></p>
-    <label class="sr-only" for="gateInput" data-i18n="password"></label>
-    <input class="gate-input" id="gateInput" type="password" placeholder="Password" required
-           autocapitalize="off" autocorrect="off" spellcheck="false">
-    <button class="btn" type="submit" data-i18n="open"></button>
-    <p class="gate-error" id="gateError" role="alert" hidden data-i18n="wrong"></p>
-  </form>
 
   <pre class="gate-saturn" id="saturn" aria-hidden="true"></pre>
   <div class="gate-controls">
@@ -109,6 +110,6 @@
 
 </main>
 
-<script src="assets/js/app.js?v=202608311800"></script>
+<script src="assets/js/app.js?v=202608311830"></script>
 </body>
 </html>
