@@ -1112,16 +1112,18 @@ function openConstellation() {
    shut and the globe's bands wheel round with it. Reduced-motion holds one frame. */
 function spinSaturn(pre) {
   if (!pre) return;
-  const CW = 88, CH = 30;
+  const CW = 98, CH = 30;
   const LUM = '.,-~:;=!*#$@';                 // dark to light
   let lx = -0.5, ly = 0.5, lz = -0.7;         // light in screen space, normalised below
   const ll = Math.hypot(lx, ly, lz); lx /= ll; ly /= ll; lz /= ll;
-  const Rs = 1.28;                            // globe radius
-  const Rr1 = 2.0, Rr2 = 2.42;               // ring inner / outer (a thin band, sticks out sideways)
-  const G0 = 2.16, G1 = 2.22;                 // Cassini gap
-  const TILT = 0.28, K2 = 6.2, K1 = 48;       // low tilt: the ring runs through the globe's middle
+  const Rs = 1.4;                             // globe radius
+  const Rr1 = 2.05, Rr2 = 2.68;              // ring inner / outer (a wide band, well past the globe)
+  const G0 = 2.34, G1 = 2.44;                 // Cassini gap
+  const TILT = 0.28, K2 = 6.2, K1 = 44;       // low tilt: the ring runs through the globe's middle
   const ROLL = 0.262;                         // ~15 deg roll about the view axis, so the rings slant
-  const cosT = Math.cos(TILT), sinT = Math.sin(TILT);
+  // sinT negated: we look at the ring from a touch above, so its far side runs
+  // behind the globe's top and its near side crosses in front of the bottom.
+  const cosT = Math.cos(TILT), sinT = -Math.sin(TILT);
   const cosR = Math.cos(ROLL), sinR = Math.sin(ROLL);
   // the ring's fixed normal, tilted then rolled, against the light
   const ringL = Math.abs((-cosT * sinR) * lx + (cosT * cosR) * ly + sinT * lz);
@@ -1157,7 +1159,9 @@ function spinSaturn(pre) {
         const dl = Math.atan2(Math.sin(mlon - 0.9), Math.cos(mlon - 0.9));
         const storm = 0.42 * Math.exp(-((lat - 0.16) * (lat - 0.16) / 0.06 + dl * dl / 0.32));
         const albedo = Math.max(0.22, Math.min(1.3, belts + mottle + storm));
-        put(xr * Rs, yr * Rs, zt * Rs, (0.1 + 0.9 * Math.max(0, L)) * albedo);
+        // Enough ambient that the shadowed half still reads, so the whole sphere
+        // shows as a round disk rather than just its lit cap.
+        put(xr * Rs, yr * Rs, zt * Rs, (0.3 + 0.7 * Math.max(0, L)) * albedo);
       }
     }
     // ring: a thin bright band in the equatorial plane, opened by the same tilt,
@@ -1172,7 +1176,7 @@ function spinSaturn(pre) {
         const z = r * sa, px = r * ca;
         const yt = -z * sinT, zt = z * cosT;                        // y is 0 in the ring plane
         const xr = px * cosR - yt * sinR, yr = px * sinR + yt * cosR; // same roll as the globe
-        const ripple = 0.72 + 0.28 * Math.abs(Math.sin((r - Rr1) * 26));
+        const ripple = 0.84 + 0.16 * Math.abs(Math.sin((r - Rr1) * 9)); // a couple of soft bands, not noise
         put(xr, yr, zt, (0.4 + 0.5 * ringL) * ripple * spokes);
       }
     }
