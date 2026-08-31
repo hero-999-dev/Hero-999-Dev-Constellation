@@ -141,35 +141,43 @@ a{ color:inherit; text-decoration:none; }
 
 /* ------------------------------------------------------------ gate */
 
-/* Airlock layout: the name banners the top, the whole identity column - who,
-   the password, the credits - is pinned down the left, and the planet is turned
-   up huge behind it, filling the right and bleeding back across the middle. */
+/* Airlock layout: one header line holds the identity (left), the name (centred)
+   and the theme/language switch (right) on the same baseline; the password and
+   the credits sit down the left below it; the planet is turned up huge behind,
+   filling the middle. */
 .gate{
   position:fixed; inset:0; z-index:50; overflow:hidden;
-  display:grid; grid-template-rows:auto 1fr; row-gap:.8rem;
-  padding:1.5rem clamp(1.2rem, 4vw, 3rem) 1.8rem;
+  display:grid; grid-template-rows:auto 1fr; row-gap:1.2rem;
+  padding:0.9rem clamp(1.2rem, 4vw, 3rem) 1.8rem;
   background:var(--cream);
 }
-/* The name, tracked wide like the label on an astronomical plate. The trailing
-   letter-space is padded back so the word stays optically centred. */
-.gate-top{
+/* The top line. Identity flows on the left; the name is absolutely centred over
+   the whole width so it lines up with the switch parked at the right, and the
+   row's own height matches the switch so the three read as one line. */
+.gate-header{
   grid-row:1; position:relative; z-index:3;
+  display:flex; align-items:center; min-height:42px;
+}
+.gate-id{ display:flex; align-items:center; gap:.7rem; }
+/* The name, tracked wide like the label on an astronomical plate, centred over
+   the whole width and on the header's own line. The trailing letter-space is
+   padded back so the word stays optically centred. */
+.gate-top{
+  position:absolute; left:50%; top:50%; transform:translate(-50%, -50%);
   font-family:var(--font-head); font-weight:500;
-  font-size:clamp(1.05rem, 2.5vw, 1.75rem);
+  font-size:clamp(1rem, 2.4vw, 1.6rem);
   letter-spacing:.44em; padding-left:.44em;
-  text-transform:uppercase; text-align:center;
+  text-transform:uppercase; white-space:nowrap;
   color:var(--brown);
 }
-/* Who, the password, the credits - top, middle, bottom of the left column, held
-   above the planet. */
+/* The password sits right under the identity, the credits hold the bottom. */
 .gate-left{
   grid-row:2; position:relative; z-index:2;
   width:min(400px, 92%); height:100%;
   display:flex; flex-direction:column; justify-content:space-between; gap:1.3rem;
   min-width:0;
 }
-.gate-id{ display:flex; align-items:center; gap:.8rem; }
-.gate-id h1{ font-size:1.7rem; line-height:1.05; }
+.gate-id h1{ font-size:1.45rem; line-height:1.05; }
 .gate-id-sub{
   margin:.15rem 0 0; font-family:var(--font-mono);
   font-size:.78rem; letter-spacing:.02em; color:var(--brown-soft);
@@ -191,9 +199,9 @@ a{ color:inherit; text-decoration:none; }
    column - big enough to run off the right edge and reach back past the middle. */
 .gate-saturn{
   position:absolute; z-index:0; pointer-events:none; margin:0;
-  top:50%; right:-1.5%; transform:translateY(-50%);
+  top:50%; left:52%; transform:translate(-50%, -50%);
   font-family:var(--font-mono);
-  font-size:clamp(7px, 1.6vw, 17px); line-height:1;
+  font-size:clamp(7px, 1.55vw, 16px); line-height:1;
   white-space:pre; color:var(--orange);
   text-shadow:0 0 16px rgba(232,129,60,.3);
   user-select:none;
@@ -204,11 +212,15 @@ a{ color:inherit; text-decoration:none; }
    it stays legible; the column scrolls inside the panel rather than the page. */
 @media (max-width: 720px){
   .gate{ row-gap:1rem; padding-top:3.4rem; }
+  /* The header stacks so the name clears the identity instead of centring over
+     it; both sit centred, clear of the switch above. */
+  .gate-header{ flex-direction:column; align-items:center; gap:.5rem; min-height:0; }
+  .gate-top{ position:static; transform:none; }
   .gate-left{
     width:min(400px, 100%); margin-inline:auto;
     justify-content:start; gap:1.6rem; overflow-y:auto;
   }
-  .gate-saturn{ right:50%; transform:translate(50%, -50%); opacity:.32; font-size:clamp(7px, 3.4vw, 13px); }
+  .gate-saturn{ left:50%; transform:translate(-50%, -50%); opacity:.3; font-size:clamp(7px, 3.4vw, 13px); }
 }
 .gate-card{
   width:100%;
@@ -220,11 +232,11 @@ a{ color:inherit; text-decoration:none; }
   box-shadow:var(--shadow-lg);
 }
 .gate-mark{
-  width:52px; height:52px; flex:none;
+  width:42px; height:42px; flex:none;
   display:grid; place-items:center;
-  font-family:var(--font-head); font-size:1.55rem;
+  font-family:var(--font-head); font-size:1.3rem;
   background:#43301F;
-  border-radius:16px;
+  border-radius:13px;
   box-shadow:var(--shadow-sm);
 }
 /* Inside out: the tile takes the ink the letter used to be drawn in, and the

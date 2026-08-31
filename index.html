@@ -8,15 +8,13 @@
 <meta name="theme-color" content="#FFFBF4">
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%2343301F'/><path d='M10 9v14M22 9v14M10 16h12' stroke='%23F6A03D' stroke-width='3.4' stroke-linecap='round'/></svg>">
-<link rel="stylesheet" href="assets/css/styles.css?v=202608311830">
+<link rel="stylesheet" href="assets/css/styles.css?v=202608311900">
 </head>
 <body>
 
 <!-- Password gate. Removed from the DOM once it is answered. -->
 <div class="gate" id="gate" hidden>
-  <div class="gate-top">Constellation</div>
-
-  <div class="gate-left">
+  <div class="gate-header">
     <div class="gate-id">
       <div class="gate-mark" aria-hidden="true"><span>H</span></div>
       <div class="gate-id-text">
@@ -24,7 +22,10 @@
         <p class="gate-id-sub">hero-999-dev</p>
       </div>
     </div>
+    <div class="gate-top">Constellation</div>
+  </div>
 
+  <div class="gate-left">
     <form class="gate-card" id="gateForm" autocomplete="off">
       <p class="gate-sub" data-i18n="gateSub"></p>
       <label class="sr-only" for="gateInput" data-i18n="password"></label>
@@ -110,6 +111,6 @@
 
 </main>
 
-<script src="assets/js/app.js?v=202608311830"></script>
+<script src="assets/js/app.js?v=202608311900"></script>
 </body>
 </html>

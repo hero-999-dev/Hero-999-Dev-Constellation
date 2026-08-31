@@ -856,7 +856,7 @@ const DEVICES = [
             '16 GB LPDDR5X-7500', '512 GB NVMe', '8.8" 2560×1600', 'Windows 11'],
   },
   {
-    key: 'phone', at: { x: 76, y: 50 }, w: '42%', nudge: 18,
+    key: 'phone', at: { x: 76, y: 50 }, w: '42%',
     name: 'Motorola g23',
     sub: 'Phone · 2023',
     specs: ['MediaTek Helio G85', '8 GB RAM · 128 GB', '6.5" 1600×720 90 Hz', 'Android 14'],
@@ -1112,65 +1112,61 @@ function openConstellation() {
    shut and the globe's bands wheel round with it. Reduced-motion holds one frame. */
 function spinSaturn(pre) {
   if (!pre) return;
-  const CW = 84, CH = 30;
+  const CW = 88, CH = 30;
   const LUM = '.,-~:;=!*#$@';                 // dark to light
-  let lx = -0.45, ly = 0.62, lz = -0.64;      // light in screen space, normalised below
+  let lx = -0.5, ly = 0.5, lz = -0.7;         // light in screen space, normalised below
   const ll = Math.hypot(lx, ly, lz); lx /= ll; ly /= ll; lz /= ll;
-  const Rs = 1.2;                             // globe radius
-  const Rr1 = 1.92, Rr2 = 2.62;              // ring inner / outer
-  const G0 = 2.2, G1 = 2.32;                  // Cassini gap
-  const PITCH = 0.46, K2 = 6.2, K1 = 39;      // fixed view tilt, viewer distance, scale
-  const cp = Math.cos(PITCH), sp = Math.sin(PITCH);
-  const glyph = (shade) => LUM[Math.max(0, Math.min(LUM.length - 1, Math.floor(shade * LUM.length)))];
+  const Rs = 1.28;                            // globe radius
+  const Rr1 = 2.0, Rr2 = 2.42;               // ring inner / outer (a thin band, sticks out sideways)
+  const G0 = 2.16, G1 = 2.22;                 // Cassini gap
+  const TILT = 0.46, K2 = 6.2, K1 = 42;       // fixed 3/4 tilt, viewer distance, scale
+  const cosT = Math.cos(TILT), sinT = Math.sin(TILT);
+  const ringN_y = cosT, ringN_z = sinT;       // the ring's fixed normal, tilted
+  const ringL = Math.abs(ringN_y * ly + ringN_z * lz);
+  const glyph = (s) => LUM[Math.max(0, Math.min(LUM.length - 1, Math.floor(s * LUM.length)))];
 
-  function render(yaw) {
-    const cy = Math.cos(yaw), sy = Math.sin(yaw);
+  function render(spin) {
     const out = new Array(CW * CH).fill(' ');
     const zb = new Float32Array(CW * CH);      // 0 = nothing yet (any real depth beats it)
-    // Rotate a body point + its normal by yaw about the vertical, then the fixed
-    // pitch about screen x. Returns [x, y, z, nx, ny, nz] in screen space.
-    const rot = (x, y, z, nx, ny, nz) => {
-      const x1 = x * cy + z * sy, z1 = -x * sy + z * cy;            // yaw about y
-      const X = x1, Y = y * cp - z1 * sp, Z = y * sp + z1 * cp;     // pitch about x
-      const nx1 = nx * cy + nz * sy, nz1 = -nx * sy + nz * cy;
-      const NX = nx1, NY = ny * cp - nz1 * sp, NZ = ny * sp + nz1 * cp;
-      return [X, Y, Z, NX, NY, NZ];
-    };
-    const put = (X, Y, Z, shade) => {
-      const ooz = 1 / (K2 + Z);
-      const xp = Math.round(CW / 2 + K1 * ooz * X * 2);   // x doubled: char cells are ~half as wide as tall
-      const yp = Math.round(CH / 2 - K1 * ooz * Y);
+    const put = (px, py, pz, shade) => {
+      const ooz = 1 / (K2 + pz);
+      const xp = Math.round(CW / 2 + K1 * ooz * px * 2);   // x doubled: char cells are ~half as wide as tall
+      const yp = Math.round(CH / 2 - K1 * ooz * py);
       if (xp < 0 || xp >= CW || yp < 0 || yp >= CH) return;
       const i = xp + yp * CW;
       if (ooz <= zb[i]) return;
       zb[i] = ooz; out[i] = glyph(shade);
     };
 
-    // globe
-    for (let lat = -1.55; lat < 1.55; lat += 0.033) {
+    /* The globe is fixed on a tilted axis; it spins about that axis, so the ring
+       (symmetric) holds still while the surface wheels past a fixed light. The
+       markings are bold and vary in longitude - belts, a mottle and one bright
+       storm, all fixed to the surface - so the turn is unmistakable. */
+    for (let lat = -1.55; lat < 1.55; lat += 0.03) {
       const cl = Math.cos(lat), sl = Math.sin(lat);
-      for (let lon = 0; lon < 6.283; lon += 0.022) {
+      for (let lon = 0; lon < 6.283; lon += 0.02) {
         const x = cl * Math.cos(lon), y = sl, z = cl * Math.sin(lon);
-        const [X, Y, Z, NX, NY, NZ] = rot(x, y, z, x, y, z);       // unit sphere: normal = point
-        const L = NX * lx + NY * ly + NZ * lz;                     // fixed light, so features wheel past it
-        const band = 0.8 + 0.2 * Math.sin(lat * 7.4);              // latitude banding
-        const dl = Math.atan2(Math.sin(lon - 2.1), Math.cos(lon - 2.1));   // one bright oval, surface-fixed
-        const spot = 0.34 * Math.exp(-((lat - 0.18) * (lat - 0.18) / 0.09 + dl * dl / 0.5));
-        const albedo = Math.max(0.3, Math.min(1.15, band + spot));
-        put(X * Rs, Y * Rs, Z * Rs, (0.12 + 0.88 * Math.max(0, L)) * albedo);
+        const yt = y * cosT - z * sinT, zt = y * sinT + z * cosT;   // tilt about screen x
+        const L = x * lx + yt * ly + zt * lz;                       // normal = point (unit sphere)
+        const mlon = lon - spin;                                    // longitude fixed to the surface
+        const belts = 0.74 + 0.26 * Math.sin(lat * 5.6);            // Saturn's banding
+        const mottle = 0.2 * Math.sin(mlon * 3 + lat * 1.5) + 0.12 * Math.sin(mlon * 2 - lat * 2);
+        const dl = Math.atan2(Math.sin(mlon - 0.9), Math.cos(mlon - 0.9));
+        const storm = 0.42 * Math.exp(-((lat - 0.16) * (lat - 0.16) / 0.06 + dl * dl / 0.32));
+        const albedo = Math.max(0.22, Math.min(1.3, belts + mottle + storm));
+        put(x * Rs, yt * Rs, zt * Rs, (0.1 + 0.9 * Math.max(0, L)) * albedo);
       }
     }
-    // ring: flat annulus in the body's equatorial plane; its normal is the pole,
-    // so it brightens as its face turns toward the light and thins to a line as
-    // the body turns it edge-on - the sweep that reads as rotation.
-    for (let a = 0; a < 6.283; a += 0.014) {
+    // ring: a thin bright band in the equatorial plane, opened by the same tilt,
+    // with a Cassini gap; it runs out well past the globe to the left and right.
+    for (let a = 0; a < 6.283; a += 0.013) {
       const ca = Math.cos(a), sa = Math.sin(a);
-      for (let r = Rr1; r <= Rr2; r += 0.035) {
+      for (let r = Rr1; r <= Rr2; r += 0.03) {
         if (r > G0 && r < G1) continue;
-        const [X, Y, Z, NX, NY, NZ] = rot(r * ca, 0, r * sa, 0, 1, 0);
-        const face = Math.abs(NX * lx + NY * ly + NZ * lz);         // ring face vs light
-        const ripple = 0.62 + 0.38 * Math.abs(Math.sin((r - Rr1) * 11));
-        put(X, Y, Z, (0.34 + 0.62 * face) * ripple);
+        const z = r * sa;
+        const yt = -z * sinT, zt = z * cosT;                        // y is 0 in the ring plane
+        const ripple = 0.7 + 0.3 * Math.abs(Math.sin((r - Rr1) * 26));
+        put(r * ca, yt, zt, (0.5 + 0.45 * ringL) * ripple);
       }
     }
 
@@ -1179,13 +1175,13 @@ function spinSaturn(pre) {
     pre.textContent = s;
   }
 
-  let yaw = 0.5;
-  render(yaw);
+  let spin = 0.6;
+  render(spin);
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   let last = 0;
   const step = (now) => {
     if (!pre.isConnected) return;              // gate removed on unlock - stop
-    if (now - last >= 72) { last = now; render(yaw); yaw += 0.026; }   // ~14 fps, a slow full turn
+    if (now - last >= 70) { last = now; render(spin); spin += 0.032; }   // ~14 fps, a visible turn
     requestAnimationFrame(step);
   };
   requestAnimationFrame(step);
