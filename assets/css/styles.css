@@ -422,13 +422,26 @@ a.node:hover{ transform:translate(-50%, -50%) scale(1.05); box-shadow:var(--shad
 .list{ display:none; }
 /* On narrow screens the list is what scrolls, not the document. */
 @media (max-width: 860px){
-  /* One column down the left, and it does not scroll - the type shrinks to fit
-     instead. On a very short window this is the limit of what will go in. */
-  .list{ width:100%; max-width:22rem; margin-right:auto; }
+  /* One column down the left. The swap has to be stated both ways round: the
+     map is never hidden by anything else, and `.list` carries `display:none` as
+     its resting state, so setting the width alone left the map on screen and the
+     list off it at every width. */
+  .map{ display:none; }
+  /* Stretched to the stage rather than centred in it, so the column that scrolls
+     is this one and not the document - the page itself never scrolls. The bar is
+     `position: fixed` and the stage starts at y 0 underneath it, which the map
+     wants (the ring runs over the bar, which is masked) and the list does not -
+     without the pad the first row sits behind it. */
+  .list{ display:block; align-self:stretch; overflow-y:auto;
+         width:100%; max-width:22rem; margin-right:auto;
+         padding-top:var(--bar-h); }
   .list .node-title{ font-size:.86rem; }
   .list .node-desc{ font-size:.74rem; }
   .list .tag{ font-size:.6rem; padding:.1rem .45rem; }
-  .leaf{ padding:.4rem .6rem; margin-top:.3rem; }
+  /* A repo card is an <a>, so a leaf is inline until told otherwise - the first
+     one in a group flowed onto the end of the group's heading, and margin-top
+     did nothing. */
+  .leaf{ display:block; padding:.4rem .6rem; margin-top:.3rem; }
   .branch{ padding:.5rem .6rem; margin-bottom:.5rem; }
   .devices, #devBtn{ display:none; }
 }

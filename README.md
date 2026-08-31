@@ -218,7 +218,7 @@ repeated switches cannot stack them.
 map, then `openConstellation()` drew it again on top — two complete sets of cards, one hiding exactly
 under the other until a drag pulled the top one away and revealed its twin. It clears its own
 containers and its own edges now, so it is safe to call from anywhere. Counted after the fix:
-8 cards, 7 connectors, 2 rings, no duplicate titles.
+9 cards, 8 connectors, 2 rings, no duplicate titles.
 
 ### Rails
 

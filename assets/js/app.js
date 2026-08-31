@@ -67,13 +67,25 @@ const BRANCHES = [
     title: 'Warsaw Cat Sitting',
     desc: 'dCat',
     repo: 'warsaw-cat-sitting', lang: 'HTML', private: true,
-    x: 950, y: 333,
+    x: 935, y: 285,
+  },
+  /* The right-hand arc carries five cards now. Its widest point sits at x 960,
+     which is the same 360 from the centre that the Pixel Pomo column reaches on
+     the left - so the outer ring is fitted to exactly the numbers it was before
+     and none of the four measured ratios move. Spreading the other two out to
+     y 285 / 555 is what makes room: the cards are 99 grid units tall, and 135
+     between centres clears them. */
+  {
+    title: 'Project Lea',
+    desc: 'dLea',
+    repo: 'Project-Lea', lang: 'PowerShell', private: true,
+    x: 960, y: 420,
   },
   {
     title: 'SplitExec',
     desc: 'dSplit',
     repo: 'SplitExec-Video-Splitter-For-Discord-And-Other-Platforms', lang: 'Desktop', private: true,
-    x: 950, y: 508,
+    x: 935, y: 555,
   },
   {
     title: 'ClaWus',
@@ -99,7 +111,7 @@ const I18N = {
     dPomo: 'Pixel-art Pomodoro timer.', dWeb: 'Runs in the browser.',
     dKit: 'Editor for its sprites.', dCube: 'Fifteen tools for YouTube.',
     dCat: 'Cat sitting in Warsaw.', dSplit: 'Splits video for Discord.',
-    dClaw: 'When to use Claude.',
+    dClaw: 'When to use Claude.', dLea: 'A hook for Claude Code.',
   },
   tr: {
     gateSub: 'Açmak için parolayı gir.', password: 'Parola', open: 'Aç',
@@ -111,7 +123,7 @@ const I18N = {
     dPomo: 'Piksel Pomodoro sayacı.', dWeb: 'Tarayıcıda çalışır.',
     dKit: "Sprite'ları için editör.", dCube: 'YouTube için on beş araç.',
     dCat: "Varşova'da kedi bakımı.", dSplit: 'Videoyu Discord için böler.',
-    dClaw: 'Claude ne zaman uygun.',
+    dClaw: 'Claude ne zaman uygun.', dLea: 'Claude Code için hook.',
   },
   pl: {
     gateSub: 'Wpisz hasło, aby otworzyć.', password: 'Hasło', open: 'Otwórz',
@@ -123,7 +135,7 @@ const I18N = {
     dPomo: 'Pikselowe Pomodoro.', dWeb: 'Działa w przeglądarce.',
     dKit: "Edytor jego sprite'ów.", dCube: '15 narzędzi do YouTube.',
     dCat: 'Opieka nad kotami.', dSplit: 'Dzieli wideo pod Discorda.',
-    dClaw: 'Kiedy używać Claude.',
+    dClaw: 'Kiedy używać Claude.', dLea: 'Hook do Claude Code.',
   },
   de: {
     gateSub: 'Passwort eingeben, um zu öffnen.', password: 'Passwort', open: 'Öffnen',
@@ -135,7 +147,7 @@ const I18N = {
     dPomo: 'Pixel-Art-Pomodoro-Timer.', dWeb: 'Läuft im Browser.',
     dKit: 'Editor für seine Sprites.', dCube: '15 Werkzeuge für YouTube.',
     dCat: 'Katzenbetreuung, Warschau.', dSplit: 'Teilt Videos für Discord.',
-    dClaw: 'Wann man Claude nutzt.',
+    dClaw: 'Wann man Claude nutzt.', dLea: 'Ein Hook für Claude Code.',
   },
 };
 
