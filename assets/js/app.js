@@ -856,7 +856,7 @@ const DEVICES = [
             '16 GB LPDDR5X-7500', '512 GB NVMe', '8.8" 2560×1600', 'Windows 11'],
   },
   {
-    key: 'phone', at: { x: 76, y: 50 }, w: '42%',
+    key: 'phone', at: { x: 76, y: 50 }, w: '42%', nudge: 18,
     name: 'Motorola g23',
     sub: 'Phone · 2023',
     specs: ['MediaTek Helio G85', '8 GB RAM · 128 GB', '6.5" 1600×720 90 Hz', 'Android 14'],
@@ -996,6 +996,9 @@ function renderDevices() {
     // phone narrower (its specs are short and left a gap). The triangle and the
     // elbows measure the real rect, so they follow whatever these come out to.
     if (item.w) card.style.width = item.w;
+    // spaceCards centres the three by height; a box can ask to ride a few px off
+    // that (the phone reads better a touch below the go/acer midline).
+    if (item.nudge) card.dataset.nudge = item.nudge;
     const name = document.createElement('span');
     name.className = 'dev-name';
     name.textContent = item.name;
@@ -1071,7 +1074,10 @@ function spaceCards() {
   const gap = free / (cards.length - 1);
   let y = edge;
   cards.forEach((card, i) => {
-    card.style.top = ((y + tall[i] / 2) / height) * 100 + '%';
+    // The nudge shifts only where this card is drawn, not the running cursor, so
+    // the boxes below it keep their places and its own gaps trade instead.
+    const nudge = parseFloat(card.dataset.nudge) || 0;
+    card.style.top = ((y + tall[i] / 2 + nudge) / height) * 100 + '%';
     y += tall[i] + gap;
   });
 }
