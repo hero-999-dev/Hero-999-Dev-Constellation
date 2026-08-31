@@ -342,15 +342,6 @@ a{ color:inherit; text-decoration:none; }
   text-anchor:middle;
   letter-spacing:.02em;
 }
-/* The outer ring's line, set beside it in the gutter - smaller than the name,
-   right-aligned so it ends where the ring begins. */
-.ring-note{
-  fill:var(--brown-mid);
-  font-family:var(--font-head);
-  font-size:15px;
-  text-anchor:end;
-  letter-spacing:.02em;
-}
 /* The map is pointer-events: none so the header strip stays clickable through
    it; a ring that names a repository has to opt back in, as the cards do. */
 .ring-link{ pointer-events:auto; cursor:pointer; }

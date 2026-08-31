@@ -96,11 +96,9 @@ const BRANCHES = [
 ];
 
 /* The page's own repository. It is not a card - it is the name of the outer
-   ring, and its one line sits in the gutter to the left of that ring. There is
-   nowhere inside to put it: at the ring's own height the Pixel Pomo ring comes
-   within about 60 grid units of it, which is narrower than any of these four
-   translations. The card list on narrow screens carries it as a row instead,
-   because the whole map goes away down there and the ring with it. */
+   ring, the circle that holds everything being the repository that draws it.
+   `desc` is not shown on the map (the ring carries only its name); the card list
+   on narrow screens, where there is no ring, carries it as a row and uses it. */
 const SELF = {
   title: 'Constellation',
   desc: 'dSelf',
@@ -552,25 +550,6 @@ function layoutRings() {
       ring.label.setAttribute('x', cx);
       ring.label.setAttribute('y', cy - ry * Math.sqrt(1 - ratio * ratio) + size * 0.96);
     }
-    if (ring.note) {
-      // The ring's own line, in the gutter to its left. The connector layer is
-      // overflow: visible, so this draws outside the map box on purpose - which
-      // means the room it needs is the page's, not the map's. Measure the text
-      // and stand the line down when the gutter cannot hold it, the same bargain
-      // the device column makes: nothing here scrolls, so it must never spill.
-      // getComputedTextLength() answers in the viewBox's own units, not in
-      // pixels - the whole subtraction has to happen in grid units and be scaled
-      // once at the end. Mixing the two hid the line on windows that had room
-      // for it, because 186 units read as 186px against a 179px gutter.
-      const x = cx - rx - 16;
-      ring.note.setAttribute('x', x);
-      ring.note.setAttribute('y', cy + 6);
-      // Shown first, then measured: a hidden <text> can measure 0, and a check
-      // that reads 0 puts it back on screen for the next pass to take off again.
-      ring.note.style.visibility = 'visible';
-      const left = box.left + (x - ring.note.getComputedTextLength()) * (box.width / W);
-      if (left < 8) ring.note.style.visibility = 'hidden';
-    }
   }
 }
 
@@ -662,10 +641,6 @@ function renderMap() {
   }
 
   addRing(all, 'ring outer-ring', 48, SELF.title, { x: W / 2, y: H / 2 }, GH(SELF.repo));
-  const note = svg('text', 'ring-note');
-  note.textContent = t(SELF.desc);
-  linesEl.appendChild(note);
-  RINGS[RINGS.length - 1].note = note;   // layoutRings puts it beside the ring
 
   settle();
 }
@@ -684,11 +659,8 @@ addEventListener('load', settle);
 function rebuildMap() {
   if (!document.getElementById('mapNodes')) return;
   renderMap();
-
-  const list = document.getElementById('list');
-  if (list) { list.textContent = ''; renderList(); }
+  renderList();     // clears itself now
   renderDevices();
-
 }
 
 /* ------------------------------------------------------------------ drag */
@@ -786,6 +758,12 @@ function makeDraggable(el) {
 
 function renderList() {
   const list = document.getElementById('list');
+  // Same guard renderMap has: initLang()'s rebuild runs one set, then
+  // openConstellation() calls this again on top. renderMap clears its own
+  // containers; this did not, so the list came out doubled - invisible while it
+  // was display:none, plain once it showed on narrow screens. Clear here so it
+  // is safe to call from anywhere.
+  list.textContent = '';
   const leafOf = (item) => {
     const leaf = makeNode(item);
     leaf.classList.remove('node');

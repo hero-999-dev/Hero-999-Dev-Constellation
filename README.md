@@ -50,29 +50,11 @@ the cards is the grouping, and its name is the ring's label. Pixel Pomo is the o
 ### The page's own repository
 
 It is neither a card nor a group. `SELF` names the **outer** ring — the circle that holds
-everything is the repository that draws it — and its one line sits in the gutter to the left
-of that ring. The name is a link like any card, which needs `.ring-link` to switch
-`pointer-events` back on, because the map layer has them off so the header strip stays
-clickable through it.
-
-Nothing else can go on the ring's left. At that height the Pixel Pomo ring comes within
-about 60 grid units of the outer one, which is narrower than any of the four translations,
-so the line is drawn outside the map box instead — the connector layer is `overflow:
-visible`, so that works, but the room it needs is the page's and not the map's. Two things
-that cost an hour between them:
-
-- `getComputedTextLength()` answers in the viewBox's own units, not in pixels. The room test
-  has to do the whole subtraction in grid units and scale once at the end; mixing them read
-  186 units as 186px and took the line off windows that had 59px to spare.
-- A `visibility: hidden` `<text>` can measure 0, and a test that reads 0 finds room, puts it
-  back, and takes it off again on the next pass. It is shown first, then measured.
-
-Where the gutter cannot hold it the line stands down and the ring keeps its name. There is
-no single width for that: the map is fitted to the window's *height*, so a short window
-leaves a wide gutter and a tall one leaves none, and the four translations are not the same
-length. Measured at 577px tall: at 1181 wide all four fit, at 1101 only Polish — the longest
-— stands down, at 901 all four do. Below 861px the map goes away entirely and the stacked
-list carries the repository as its first row.
+everything is the repository that draws it. The name is a link like any card, which needs
+`.ring-link` to switch `pointer-events` back on, because the map layer has them off so the
+header strip stays clickable through it. Its `desc` is not drawn on the map — the ring
+carries only its name — but the stacked list has no ring, so below 861px the repository is
+the list's first row and shows the description there.
 
 ### Where the coordinates come from
 
