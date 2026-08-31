@@ -503,7 +503,7 @@ function maskHeader(ring, box) {
 /* Panel width, and the rail it reserves on the map's right. One place, so the
    CSS `.devices` width, the rail the map slides off, and the room test below all
    agree - keep the CSS width equal to DEV_W. */
-const DEV_W = 300;
+const DEV_W = 360;
 const DEV_RAIL = DEV_W + 20;
 
 /* The language panel is not allowed past the leftmost point of the outer ring.
@@ -819,20 +819,20 @@ function renderList() {
    which is why the phone sits between the two laptops. */
 const DEVICES = [
   {
-    key: 'go', at: { x: 38, y: 12 },
+    key: 'go', at: { x: 30, y: 12 },
     name: 'Lenovo Legion Go',
     sub: 'Handheld · 2023',
     specs: ['AMD Ryzen Z1 Extreme · 8C/16T', 'Radeon RDNA 3 (integrated)',
             '16 GB LPDDR5X-7500', '512 GB NVMe', '8.8" 2560×1600', 'Windows 11'],
   },
   {
-    key: 'phone', at: { x: 64, y: 50 },
+    key: 'phone', at: { x: 70, y: 50 },
     name: 'moto g23',
     sub: 'Phone · 2023',
     specs: ['MediaTek Helio G85', '8 GB RAM · 128 GB', '6.5" 1600×720 90 Hz', 'Android 14'],
   },
   {
-    key: 'acer', at: { x: 38, y: 88 },
+    key: 'acer', at: { x: 30, y: 88 },
     name: 'Acer Swift 3',
     sub: 'SF314-511 · 2021',
     specs: ['Intel Core i5-1135G7 · 4C/8T', 'Iris Xe (integrated)',
@@ -840,17 +840,14 @@ const DEVICES = [
   },
 ];
 
-/* Every machine reaches every other over the tailnet, so each side is a
-   double-headed link (`both`) rather than a one-way hop. The label is the SSH
-   client used across that side; tailscale is the underlay on all three. */
+/* The two laptops reach each other both ways (`both`), so the left side is
+   double-headed. The phone only ever reaches OUT - you SSH from it, not into it
+   - so its two sides are one-way (`arrow`), the head on the laptop. All three
+   sides ride the same tailnet, so they carry the one label. */
 const LINKS = [
-  { from: 'go', to: 'phone', label: 'termius / tailscale', both: true },
-  { from: 'phone', to: 'acer', label: 'termius / tailscale', both: true },
-  // The left side is the narrowest: the two laptops sit there and the phone's
-  // left edge reaches into the gutter, so this label is the short form (the
-  // tailscale underlay is already named on the other two sides) and is pulled
-  // left with dx to clear the phone.
-  { from: 'go', to: 'acer', label: 'cursor-ssh', both: true, dx: -22 },
+  { from: 'phone', to: 'go', label: 'termius / tailscale', arrow: true },
+  { from: 'phone', to: 'acer', label: 'termius / tailscale', arrow: true },
+  { from: 'go', to: 'acer', label: 'termius / tailscale', both: true },
 ];
 
 /* Natural height of the panel, measured the first time it is drawn. Nothing on

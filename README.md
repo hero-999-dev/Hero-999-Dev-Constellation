@@ -153,28 +153,29 @@ Inside: the three machines and how each reaches the others.
 
 ```
    Lenovo Legion Go
-        ╱↕╲
-       ╱   ╲  termius / tailscale
-cursor ╱     ╲
- -ssh ╱     moto g23   (phone, pushed right)
-     ╱        ╱
-    ╱   ↕    ╱  termius / tailscale
+        ▲  ↕
+        │    ╲  termius / tailscale
+ termius│      ╲
+      / │     moto g23   (phone, pushed right)
+tailscale      ╱
+        │    ╱  termius / tailscale
+        ▼  ╱
    Acer Swift 3
-        (every side ↕ : each reaches both others over tailscale)
+   (laptops ↕ each other; phone → each laptop, one way)
 ```
 
-Every side is double-headed: over the tailnet each machine reaches both of the others, so
-there is no single hub. The three sit as a **triangle**, not a column — the two laptops down
-the left and the phone pushed out to the right, so the three links draw the three sides. Two
-sides are labelled `termius / tailscale`; the cramped left side (the two laptops plus the
-phone's overhang) carries the short form `cursor-ssh`, the tailscale underlay already named
-on the other two.
+The three sit as a **triangle**, not a column — the two laptops down the left and the phone
+pushed out to the right, so the three links draw the three sides. The two laptops reach each
+other both ways, so the left side is double-headed; the phone only ever reaches **out** — you
+SSH from it, not into it — so its two sides are one-way, the head on the laptop. All three
+sides are the same tailnet, so they carry the one label, `termius / tailscale`, each centred
+on its own line.
 
 Inside that frame it is a little map of its own: three boxes the same connector engine drags
 and springs back, joined by the same curves. `DEVICES` holds the boxes and their resting
 places on a 100 x 100 grid — `at.x` is the triangle (spaceCards shares out the y and leaves
-the x alone); `LINKS` holds who reaches whom, `both: true` puts an arrowhead on each end, and
-`dx` nudges a label off a box it would otherwise sit on.
+the x alone); `LINKS` holds who reaches whom, `both: true` puts a head on each end and
+`arrow: true` only on the `to` end.
 
 `redrawLines()` takes each edge's own host element and coordinate space, so the big map and
 this one share the code without sharing a grid, and draws a head at either end an edge asks
@@ -182,11 +183,14 @@ for — the line is pulled back to the box edge under each head so none hides un
 catch worth remembering: a closed panel measures 0x0, so its connectors cannot be drawn until
 it opens — the toggle redraws.
 
-Card width and the panel width pull against each other: at the old near-full width the phone
-could not clear the laptops, so the cards are `64%` and the panel is `DEV_W` (300px, one
-constant the CSS width, the map's rail and the room test all read). Measured open, all four
-locales: no card overlaps another, no label lands on a card or another label, nothing leaves
-the panel.
+Card width and panel width pull against each other twice over: the phone has to clear the
+laptops **and** leave the left side room for a centred label, but a card narrowed to buy that
+room wraps its specs onto more lines and grows tall enough to overflow. The way out is to
+widen the panel and drop the card share to match — cards `50%` of a `DEV_W` of 360px keeps the
+pixel width close to the old one, so the boxes stay short while the triangle spreads. `DEV_W`
+is the one constant the CSS width, the map's rail and the room test all read. Measured open:
+no card overlaps another, no label lands on a card or another label, nothing leaves the panel,
+and the boxes are the same height they were before the panel grew.
 
 The `DEVICES` array in `app.js` holds it. **Model names and part numbers only** — no serial
 numbers, no IMEI, no MAC addresses, no SKU strings, no phone numbers, no carriers. A model

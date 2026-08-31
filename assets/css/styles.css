@@ -457,7 +457,7 @@ a.node:hover{ transform:translate(-50%, -50%) scale(1.05); box-shadow:var(--shad
      so there is no dead air below the last box. */
   position:absolute; right:0; top:var(--bar-h); bottom:1.1rem; z-index:6;
   transition:transform .56s var(--ease), opacity .38s var(--ease);
-  width:300px;   /* = DEV_W in app.js; the rail and room test read from that */
+  width:360px;   /* = DEV_W in app.js; the rail and room test read from that */
   display:flex; flex-direction:column;
   padding:.6rem .5rem .5rem;
   background:var(--cream-2);
@@ -506,10 +506,12 @@ a.node:hover{ transform:translate(-50%, -50%) scale(1.05); box-shadow:var(--shad
 .dev-card{
   position:absolute;
   transform:translate(-50%, -50%);
-  /* Narrow enough that the phone can sit out to the right of the two laptops
-     without either running off the panel - the box is a triangle now, not a
-     stack. spaceCards() shares out the height; the widths just have to clear. */
-  width:64%;
+  /* Narrow enough (as a share of the wider panel) that the phone sits clear out
+     to the right and the left side has room for a centred label, while the pixel
+     width stays close to the old one so the boxes don't grow tall enough to
+     overflow. The box is a triangle now, not a stack; spaceCards shares out the
+     height. */
+  width:50%;
   display:flex; flex-direction:column;
   padding:.34rem .5rem;
   background:var(--cream);
