@@ -856,7 +856,7 @@ const DEVICES = [
             '16 GB LPDDR5X-7500', '512 GB NVMe', '8.8" 2560×1600', 'Windows 11'],
   },
   {
-    key: 'phone', at: { x: 70, y: 50 }, w: '42%',
+    key: 'phone', at: { x: 76, y: 50 }, w: '42%',
     name: 'Motorola g23',
     sub: 'Phone · 2023',
     specs: ['MediaTek Helio G85', '8 GB RAM · 128 GB', '6.5" 1600×720 90 Hz', 'Android 14'],
@@ -867,7 +867,7 @@ const DEVICES = [
     sub: 'SF314-511 · 2021',
     specs: ['Intel Core i5-1135G7 · 4C/8T', 'Iris Xe (integrated)',
             '16 GB LPDDR4X-4267', '14" 1920×1080',
-            'SATA SSD (not NVMe)', '400 GB Windows 11 · 75 GB Mint'],
+            'SATA SSD', '400 GB Windows 11 · 75 GB Mint'],
   },
 ];
 
