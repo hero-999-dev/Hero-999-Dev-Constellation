@@ -1159,14 +1159,17 @@ function spinSaturn(pre) {
     }
     // ring: a thin bright band in the equatorial plane, opened by the same tilt,
     // with a Cassini gap; it runs out well past the globe to the left and right.
+    // Radial spokes tied to `spin` sweep round it at the same rate the globe
+    // turns, so the ring reads as turning too, not sitting still.
     for (let a = 0; a < 6.283; a += 0.013) {
       const ca = Math.cos(a), sa = Math.sin(a);
+      const spokes = 0.4 + 0.6 * Math.abs(Math.cos((a - spin) * 2.5));
       for (let r = Rr1; r <= Rr2; r += 0.03) {
         if (r > G0 && r < G1) continue;
         const z = r * sa;
         const yt = -z * sinT, zt = z * cosT;                        // y is 0 in the ring plane
-        const ripple = 0.7 + 0.3 * Math.abs(Math.sin((r - Rr1) * 26));
-        put(r * ca, yt, zt, (0.5 + 0.45 * ringL) * ripple);
+        const ripple = 0.72 + 0.28 * Math.abs(Math.sin((r - Rr1) * 26));
+        put(r * ca, yt, zt, (0.4 + 0.5 * ringL) * ripple * spokes);
       }
     }
 
@@ -1191,6 +1194,25 @@ function spinSaturn(pre) {
   requestAnimationFrame(step);
 }
 
+/* Dozens of faint asterisks scattered behind the gate - the deep-space ground
+   the planet turns against. Each carries its own place, size and dimness. */
+function fillStars(el) {
+  if (!el) return;
+  const frag = document.createDocumentFragment();
+  for (let i = 0; i < 96; i++) {
+    const s = document.createElement('span');
+    s.className = 'gate-star';
+    s.textContent = '*';
+    s.style.left = (Math.random() * 100).toFixed(2) + '%';
+    s.style.top = (Math.random() * 100).toFixed(2) + '%';
+    s.style.fontSize = (6 + Math.random() * 8).toFixed(1) + 'px';
+    s.style.opacity = (0.12 + Math.random() * 0.4).toFixed(2);
+    frag.appendChild(s);
+  }
+  el.textContent = '';
+  el.appendChild(frag);
+}
+
 function initGate() {
   const gate = document.getElementById('gate');
   // Answered already this session - do not ask again on every reload.
@@ -1199,6 +1221,7 @@ function initGate() {
     return;
   }
   gate.hidden = false;
+  fillStars(document.getElementById('gateStars'));
   spinSaturn(document.getElementById('saturn'));
   const form = document.getElementById('gateForm');
   const input = document.getElementById('gateInput');

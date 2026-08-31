@@ -271,14 +271,15 @@ build and the fix looks like it did not work. Bump the stamp when you deploy.
 
 ## The gate
 
-The password screen is the airlock. One header line carries the identity — **Hero Dev** and
-its handle — on the left, the name **Constellation** centred over the whole width in
-wide-tracked caps, and the theme/language switch on the right, all on the same baseline. Below
-it the password card sits left-aligned right under the identity, and the two ASCII references
-are credited bottom-left in a small monospace log. The Saturn is turned up huge behind it all,
-filling the middle. Below 720px the header stacks, the column centres, and the planet drops
-behind it at low opacity so the text stays legible; the column scrolls inside the panel rather
-than the page.
+The password screen is the airlock. One header line carries the identity — **Hero Dev**, in
+the warm gradient the H tile is drawn in — on the left, the name **Constellation** centred on
+the page in wide-tracked caps, and the theme/language switch on the right, all on the same
+baseline. Under the identity the prompt breaks after "to" over a **frameless** field — no box,
+just a hairline the amber picks up on focus — and a slim Open pill; the four ASCII references
+are credited bottom-left in a small monospace log. Behind all of it a scatter of faint
+asterisks (`fillStars()`) is the deep-space ground the Saturn turns against. Below 720px the
+header stacks, the column centres, and the planet drops behind it at low opacity so the text
+stays legible.
 
 ### The Saturn
 
@@ -290,13 +291,14 @@ fixed light. One buffer for both surfaces is what lets the ring pass in front of
 underside and behind its top; the fixed tilt opens the ring into the sideways ellipse of the
 classic view.
 
-The globe turns on that fixed tilted axis while the ring holds still — a planet spinning
-inside its rings. What sells the turn is the surface: bold longitude markings — belts, a
-mottle and one bright storm, all fixed to the globe — wheel past the fixed light, so the
-rotation is unmistakable even though the silhouette never changes (the drawn-cell count holds
-dead steady while the glyphs inside it move). About 14 fps, only while the gate is up; it stops
-the moment the gate is removed (the loop checks `isConnected`), and reduced-motion holds a
-single frame. Its `<pre>` is `aria-hidden` — decoration, not content.
+Both surfaces turn at the one rate, off the same `spin`. The globe spins on the tilted axis —
+bold longitude markings (belts, a mottle, one bright storm) wheel past the fixed light — and
+the ring turns with it: radial spokes keyed to `a − spin` sweep round the band, so the ring
+reads as rotating too rather than sitting still. The globe's silhouette never changes, so the
+drawn-cell count holds steady while the glyphs inside it move. About 14 fps; a system
+reduce-motion setting only eases it to a gentler pace (the turn is the point and was asked for
+plainly) rather than freezing it. It runs only while the gate is up and stops the moment the
+gate is removed (the loop checks `isConnected`). Its `<pre>` is `aria-hidden` — decoration.
 
 ## The password
 

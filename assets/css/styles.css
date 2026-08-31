@@ -170,17 +170,20 @@ a{ color:inherit; text-decoration:none; }
   text-transform:uppercase; white-space:nowrap;
   color:var(--brown);
 }
-/* The password sits right under the identity, the credits hold the bottom. */
+/* The password sits right under the identity, the credits hold the bottom. The
+   column is narrow so the prompt breaks after "to". */
 .gate-left{
   grid-row:2; position:relative; z-index:2;
-  width:min(400px, 92%); height:100%;
+  width:15rem; max-width:92%; height:100%;
   display:flex; flex-direction:column; justify-content:space-between; gap:1.3rem;
   min-width:0;
 }
-.gate-id h1{ font-size:1.45rem; line-height:1.05; }
-.gate-id-sub{
-  margin:.15rem 0 0; font-family:var(--font-mono);
-  font-size:.78rem; letter-spacing:.02em; color:var(--brown-soft);
+/* The name wears the tile's own theme - the same warm gradient the H is drawn in,
+   clipped to the letters. */
+.gate-id h1{
+  font-size:1.45rem; line-height:1.05;
+  background:linear-gradient(140deg, var(--amber-soft), var(--orange));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
 }
 /* Credits in the machine's own voice - a monospace log, quiet until hovered. */
 .gate-insp{ display:flex; flex-direction:column; gap:.35rem; align-items:flex-start; }
@@ -198,13 +201,21 @@ a{ color:inherit; text-decoration:none; }
    the spinning-donut demo. Laid over the whole gate, anchored right, behind the
    column - big enough to run off the right edge and reach back past the middle. */
 .gate-saturn{
-  position:absolute; z-index:0; pointer-events:none; margin:0;
+  position:absolute; z-index:1; pointer-events:none; margin:0;
   top:50%; left:52%; transform:translate(-50%, -50%);
   font-family:var(--font-mono);
   font-size:clamp(7px, 1.55vw, 16px); line-height:1;
   white-space:pre; color:var(--orange);
   text-shadow:0 0 16px rgba(232,129,60,.3);
   user-select:none;
+}
+/* A scatter of faint asterisks behind everything - the deep-space ground the
+   planet turns against. Filled in app.js so the count and spread stay in one
+   place; each star sets its own position, size and dimness. */
+.gate-stars{ position:absolute; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+.gate-star{
+  position:absolute; font-family:var(--font-mono); line-height:1;
+  color:var(--amber); user-select:none; transform:translate(-50%, -50%);
 }
 /* The switch is parked in the corner. */
 .gate-controls{ position:fixed; top:1.1rem; right:1.1rem; display:flex; align-items:center; gap:.5rem; z-index:4; }
@@ -222,14 +233,10 @@ a{ color:inherit; text-decoration:none; }
   }
   .gate-saturn{ left:50%; transform:translate(-50%, -50%); opacity:.3; font-size:clamp(7px, 3.4vw, 13px); }
 }
+/* No frame - just the prompt and a hairline field over the starfield. */
 .gate-card{
-  width:100%;
-  padding:1.7rem 1.6rem 1.5rem;
-  text-align:left;
-  background:var(--cream-2);
-  border:1px solid var(--line);
-  border-radius:var(--radius);
-  box-shadow:var(--shadow-lg);
+  width:100%; padding:0; text-align:left;
+  background:none; border:0; box-shadow:none;
 }
 .gate-mark{
   width:42px; height:42px; flex:none;
@@ -247,20 +254,22 @@ a{ color:inherit; text-decoration:none; }
   -webkit-background-clip:text; background-clip:text;
   color:transparent;
 }
-.gate-sub{ color:var(--brown-mid); margin:0 0 1.2rem; font-size:.96rem; }
+/* Held narrow so the line breaks after "to" - the prompt reads as two short
+   lines above the field rather than one wide one. */
+.gate-sub{ color:var(--brown-mid); margin:0 0 1rem; font-size:.94rem; line-height:1.4; max-width:9.6rem; }
+/* A hairline field, not a box: a thin underline the amber picks up on focus. */
 .gate-input{
-  width:100%; padding:.8rem 1.1rem; margin-bottom:.8rem;
-  font:inherit; color:var(--brown);
-  background:var(--cream);
-  border:1px solid var(--line-strong);
-  border-radius:var(--radius-pill);
-  text-align:left;
+  width:100%; padding:.42rem .1rem; margin-bottom:1rem;
+  font:inherit; font-size:.94rem; color:var(--brown);
+  background:none; border:0; border-bottom:1px solid var(--line-strong);
+  border-radius:0; text-align:left;
 }
 .gate-input::placeholder{ color:var(--brown-soft); }
-.gate-input:focus{ outline:none; border-color:var(--amber); box-shadow:0 0 0 4px var(--line-accent); }
+.gate-input:focus{ outline:none; border-bottom-color:var(--amber); }
+/* A slim pill, sized to its word and set to the left - light, not a slab. */
 .btn{
-  width:100%; padding:.85rem 1.1rem;
-  font:inherit; font-weight:500; color:#43301F;
+  display:inline-block; width:auto; padding:.4rem 1.5rem;
+  font:inherit; font-size:.9rem; font-weight:500; color:#43301F;
   background:linear-gradient(140deg, var(--amber-soft), var(--orange));
   border:0; border-radius:var(--radius-pill); cursor:pointer;
   transition:transform .18s var(--ease), box-shadow .18s var(--ease);
