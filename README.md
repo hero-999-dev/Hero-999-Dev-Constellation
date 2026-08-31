@@ -184,11 +184,19 @@ it opens — the toggle redraws.
 Card width and panel width pull against each other twice over: the phone has to clear the
 laptops **and** leave the left side room for a centred label, but a card narrowed to buy that
 room wraps its specs onto more lines and grows tall enough to overflow. The way out is to
-widen the panel and drop the card share to match — cards `50%` of a `DEV_W` of 360px keeps the
-pixel width close to the old one, so the boxes stay short while the triangle spreads. `DEV_W`
-is the one constant the CSS width, the map's rail and the room test all read. Measured open:
-no card overlaps another, no label lands on a card or another label, nothing leaves the panel,
-and the boxes are the same height they were before the panel grew.
+widen the panel (`DEV_W` 360px, the one constant the CSS width, the map's rail and the room
+test all read) and set the card widths per box rather than one share for all: the two laptops
+run `56%` and the phone `42%` (its specs are short and left a gap), passed as `w` on the
+DEVICES entry and applied inline. The wider a laptop, the fewer lines its specs wrap onto, so
+they come out **shorter**, not taller — which is what leaves room for the taller Acer entry
+(it carries its display and its SATA split now). Measured open, all four locales: no card
+overlaps another, no label lands on a card or another label, nothing wraps past its box,
+nothing leaves the panel.
+
+One thing the per-box widths moved: a wider laptop reaches far enough right to touch the
+phone's vertical run, so the elbow label can no longer sit at the run's own midpoint — it is
+centred in the clear band between the phone and the laptop instead, where no card is whatever
+the two heights come out to.
 
 The `DEVICES` array in `app.js` holds it. **Model names and part numbers only** — no serial
 numbers, no IMEI, no MAC addresses, no SKU strings, no phone numbers, no carriers. A model

@@ -440,9 +440,14 @@ function redrawLines() {
       edge.path.setAttribute('d',
         `M ${start.x} ${start.y} L ${corner.x} ${corner.y} L ${base.x} ${base.y}`);
       if (edge.label) {
-        // On the vertical run beside the phone, where no card sits.
+        // On the vertical run, centred in the clear band between the phone and
+        // the laptop - not the run's own midpoint, which climbs into the laptop
+        // once the laptop is wide enough to reach the run.
+        const g0 = up ? rb.bottom : ra.bottom;
+        const g1 = up ? ra.top : rb.top;
+        const y = ((g0 + g1) / 2 - box.top) / box.height * h;
         edge.label.style.left = (ca.x + (edge.labelDx || 0)) / w * 100 + '%';
-        edge.label.style.top = ((start.y + cb.y) / 2 + (edge.labelDy || 0)) / h * 100 + '%';
+        edge.label.style.top = (y + (edge.labelDy || 0)) / h * 100 + '%';
       }
       continue;
     }
@@ -844,24 +849,25 @@ function renderList() {
    which is why the phone sits between the two laptops. */
 const DEVICES = [
   {
-    key: 'go', at: { x: 30, y: 12 },
+    key: 'go', at: { x: 30, y: 12 }, w: '56%',
     name: 'Lenovo Legion Go',
     sub: 'Handheld · 2023',
     specs: ['AMD Ryzen Z1 Extreme · 8C/16T', 'Radeon RDNA 3 (integrated)',
             '16 GB LPDDR5X-7500', '512 GB NVMe', '8.8" 2560×1600', 'Windows 11'],
   },
   {
-    key: 'phone', at: { x: 70, y: 50 },
-    name: 'moto g23',
+    key: 'phone', at: { x: 70, y: 50 }, w: '42%',
+    name: 'Motorola g23',
     sub: 'Phone · 2023',
     specs: ['MediaTek Helio G85', '8 GB RAM · 128 GB', '6.5" 1600×720 90 Hz', 'Android 14'],
   },
   {
-    key: 'acer', at: { x: 30, y: 88 },
+    key: 'acer', at: { x: 30, y: 88 }, w: '56%',
     name: 'Acer Swift 3',
     sub: 'SF314-511 · 2021',
     specs: ['Intel Core i5-1135G7 · 4C/8T', 'Iris Xe (integrated)',
-            '16 GB LPDDR4X-4267', 'Dual boot: Windows 11 + Linux Mint'],
+            '16 GB LPDDR4X-4267', '14" 1920×1080',
+            'SATA SSD (not NVMe)', '400 GB Windows 11 · 75 GB Mint'],
   },
 ];
 
@@ -986,6 +992,10 @@ function renderDevices() {
     card.className = 'dev-card';
     card.style.left = item.at.x + '%';
     card.style.top = item.at.y + '%';
+    // Per-box width overrides the CSS default: the laptops run a touch wider, the
+    // phone narrower (its specs are short and left a gap). The triangle and the
+    // elbows measure the real rect, so they follow whatever these come out to.
+    if (item.w) card.style.width = item.w;
     const name = document.createElement('span');
     name.className = 'dev-name';
     name.textContent = item.name;
