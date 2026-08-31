@@ -42,6 +42,7 @@
      ship with the constellation. */
   --font-head:  "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
   --font-body:  var(--font-head);
+  --font-mono:  ui-monospace, "SF Mono", "SFMono-Regular", "Cascadia Mono", Menlo, Consolas, monospace;
 
   --line:        rgba(201,102,58,.13);
   --line-strong: rgba(201,102,58,.26);
@@ -140,17 +141,85 @@ a{ color:inherit; text-decoration:none; }
 
 /* ------------------------------------------------------------ gate */
 
+/* Airlock layout: the name banners the top, the identity and its credits hold
+   the left, the password sits in the middle and the planet turns on the right.
+   Three columns, two rows; the left column stretches so its two blocks can pin
+   to top and bottom. */
 .gate{
   position:fixed; inset:0; z-index:50;
-  display:grid; place-items:center; padding:1.5rem;
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  grid-template-rows:auto 1fr;
+  grid-template-areas:
+    "top  top   top"
+    "left card  saturn";
+  align-items:center;
+  gap:1rem 2rem;
+  padding:1.6rem clamp(1.2rem, 4vw, 3rem) 2rem;
   background:var(--cream);
 }
-/* The card is centred by the grid; the switch is parked in the corner without
-   pushing it off centre. */
-.gate-controls{ position:fixed; top:1.1rem; right:1.1rem; display:flex; align-items:center; gap:.5rem; }
+/* The name, tracked wide like the label on an astronomical plate. The trailing
+   letter-space is padded back so the word stays optically centred. */
+.gate-top{
+  grid-area:top;
+  font-family:var(--font-head); font-weight:500;
+  font-size:clamp(1.05rem, 2.5vw, 1.75rem);
+  letter-spacing:.44em; padding-left:.44em;
+  text-transform:uppercase; text-align:center;
+  color:var(--brown);
+}
+.gate-left{
+  grid-area:left; align-self:stretch;
+  display:flex; flex-direction:column; justify-content:space-between; gap:1.5rem;
+  min-width:0;
+}
+.gate-id{ display:flex; align-items:center; gap:.8rem; }
+.gate-id h1{ font-size:1.7rem; line-height:1.05; }
+.gate-id-sub{
+  margin:.15rem 0 0; font-family:var(--font-mono);
+  font-size:.78rem; letter-spacing:.02em; color:var(--brown-soft);
+}
+/* Credits in the machine's own voice - a monospace log, quiet until hovered. */
+.gate-insp{ display:flex; flex-direction:column; gap:.35rem; align-items:flex-start; }
+.gate-insp-label{
+  font-family:var(--font-mono); font-size:.66rem; letter-spacing:.2em;
+  text-transform:uppercase; color:var(--brown-soft); margin-bottom:.1rem;
+}
+.gate-insp a{
+  font-family:var(--font-mono); font-size:.76rem; color:var(--brown-mid);
+  text-decoration:none; border-bottom:1px solid var(--line-strong); padding-bottom:1px;
+  transition:color .18s var(--ease), border-color .18s var(--ease);
+}
+.gate-insp a:hover{ color:var(--terra); border-color:var(--terra); }
+/* The signature: a 3D Saturn drawn character by character in app.js and turned
+   slowly on its axis. The glow lifts the amber off the cream. */
+.gate-saturn{
+  grid-area:saturn; justify-self:center; align-self:center; margin:0;
+  font-family:var(--font-mono);
+  font-size:clamp(6px, 1.05vw, 11px); line-height:1;
+  white-space:pre; color:var(--orange);
+  text-shadow:0 0 14px rgba(232,129,60,.28);
+  user-select:none;
+}
+/* The switch is parked in the corner, out of the grid flow. */
+.gate-controls{ position:fixed; top:1.1rem; right:1.1rem; display:flex; align-items:center; gap:.5rem; z-index:2; }
+/* One column when there is no room for three: name, password, planet, then the
+   identity and its credits. The panel scrolls inside itself rather than the page. */
+@media (max-width: 860px){
+  .gate{
+    grid-template-columns:1fr; grid-template-rows:none;
+    grid-template-areas:"top" "card" "saturn" "left";
+    align-content:start; justify-items:center; gap:1.3rem;
+    padding-top:3.4rem; overflow-y:auto;
+  }
+  .gate-left{ align-self:auto; flex-direction:column; align-items:center; text-align:center; gap:1.1rem; }
+  .gate-id{ justify-content:center; }
+  .gate-insp{ align-items:center; }
+}
 .gate-card{
-  width:min(420px, 100%);
-  padding:2.6rem 2.2rem 2.2rem;
+  grid-area:card; justify-self:center;
+  width:min(360px, 100%);
+  padding:2rem 1.9rem 1.8rem;
   text-align:center;
   background:var(--cream-2);
   border:1px solid var(--line);
@@ -158,11 +227,11 @@ a{ color:inherit; text-decoration:none; }
   box-shadow:var(--shadow-lg);
 }
 .gate-mark{
-  width:60px; height:60px; margin:0 auto 1.1rem;
+  width:52px; height:52px; flex:none;
   display:grid; place-items:center;
-  font-family:var(--font-head); font-size:1.9rem;
+  font-family:var(--font-head); font-size:1.55rem;
   background:#43301F;
-  border-radius:20px;
+  border-radius:16px;
   box-shadow:var(--shadow-sm);
 }
 /* Inside out: the tile takes the ink the letter used to be drawn in, and the
@@ -173,8 +242,7 @@ a{ color:inherit; text-decoration:none; }
   -webkit-background-clip:text; background-clip:text;
   color:transparent;
 }
-.gate-card h1{ font-size:2rem; }
-.gate-sub{ color:var(--brown-mid); margin:.5rem 0 1.6rem; font-size:.98rem; }
+.gate-sub{ color:var(--brown-mid); margin:0 0 1.4rem; font-size:.96rem; }
 .gate-input{
   width:100%; padding:.85rem 1.1rem; margin-bottom:.85rem;
   font:inherit; color:var(--brown);

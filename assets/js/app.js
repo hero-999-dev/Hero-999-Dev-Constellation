@@ -113,7 +113,7 @@ const SELF = {
 const I18N = {
   en: {
     gateSub: 'Enter the password to open the constellation.', password: 'Password', open: 'Open',
-    wrong: 'That is not it. Try again.',
+    wrong: 'That is not it. Try again.', inspiration: 'Inspiration',
     heading: 'Everything in one map',
     hardware: 'Hardware', dark: 'Dark', light: 'Light',
     private: 'Private', public: 'Public', live: 'Live',
@@ -126,7 +126,7 @@ const I18N = {
   },
   tr: {
     gateSub: 'Açmak için parolayı gir.', password: 'Parola', open: 'Aç',
-    wrong: 'Bu değil. Tekrar dene.',
+    wrong: 'Bu değil. Tekrar dene.', inspiration: 'İlham',
     heading: 'Her şey tek haritada',
     hardware: 'Donanım', dark: 'Koyu', light: 'Açık',
     private: 'Özel', public: 'Herkese açık', live: 'Canlı',   // not 'Açık' - that is the light theme
@@ -139,7 +139,7 @@ const I18N = {
   },
   pl: {
     gateSub: 'Wpisz hasło, aby otworzyć.', password: 'Hasło', open: 'Otwórz',
-    wrong: 'To nie to. Spróbuj ponownie.',
+    wrong: 'To nie to. Spróbuj ponownie.', inspiration: 'Inspiracje',
     heading: 'Wszystko na jednej mapie',
     hardware: 'Sprzęt', dark: 'Ciemny', light: 'Jasny',
     private: 'Prywatne', public: 'Publiczne', live: 'Na żywo',
@@ -152,7 +152,7 @@ const I18N = {
   },
   de: {
     gateSub: 'Passwort eingeben, um zu öffnen.', password: 'Passwort', open: 'Öffnen',
-    wrong: 'Das war es nicht. Noch einmal.',
+    wrong: 'Das war es nicht. Noch einmal.', inspiration: 'Inspiration',
     heading: 'Alles auf einer Karte',
     hardware: 'Hardware', dark: 'Dunkel', light: 'Hell',
     private: 'Privat', public: 'Öffentlich', live: 'Live',
@@ -1100,6 +1100,86 @@ function openConstellation() {
   initDevices();
 }
 
+/* ---------------------------------------------------------------- saturn */
+
+/* A Saturn drawn the way the spinning-donut demo draws a torus: sample the
+   surface, rotate it, project each point to a character cell, keep the nearest
+   at each cell with a z-buffer, and pick a glyph by how much it faces the light.
+   Two surfaces share one buffer - a banded globe and a flat ring with a gap in
+   it - so the ring passes correctly in front of the globe's underside and behind
+   its top. The globe turns on a fixed, tilted axis; only its surface markings
+   move, which is what a planet turning on its axis actually looks like. Slow on
+   purpose, and it holds a single frame when the viewer asked for less motion. */
+function spinSaturn(pre) {
+  if (!pre) return;
+  const CW = 50, CH = 20;
+  const LUM = '.,-~:;=!*#$@';                 // dark to light
+  let lx = -0.4, ly = 0.68, lz = -0.62;       // light, normalised below
+  const ll = Math.hypot(lx, ly, lz); lx /= ll; ly /= ll; lz /= ll;
+  const Rs = 1.2;                             // globe radius
+  const Rr1 = 1.92, Rr2 = 2.62;              // ring inner / outer (a thin band)
+  const G0 = 2.2, G1 = 2.32;                  // Cassini gap
+  const TILT = 0.58, K2 = 6, K1 = 24;         // axis tilt, viewer distance, scale
+  const cosT = Math.cos(TILT), sinT = Math.sin(TILT);
+  const glyph = (shade) => LUM[Math.max(0, Math.min(LUM.length - 1, Math.floor(shade * LUM.length)))];
+
+  function render(spin) {
+    const out = new Array(CW * CH).fill(' ');
+    const zb = new Float32Array(CW * CH);      // 0 = nothing yet (all depths beat it)
+    const put = (px, py, pz, shade) => {
+      const ooz = 1 / (K2 + pz);
+      const xp = Math.round(CW / 2 + K1 * ooz * px * 2);   // x doubled: char cells are ~half as wide as tall
+      const yp = Math.round(CH / 2 - K1 * ooz * py);
+      if (xp < 0 || xp >= CW || yp < 0 || yp >= CH) return;
+      const i = xp + yp * CW;
+      if (ooz <= zb[i]) return;
+      zb[i] = ooz; out[i] = glyph(shade);
+    };
+
+    // globe
+    for (let lat = -1.55; lat < 1.55; lat += 0.045) {
+      const cl = Math.cos(lat), sl = Math.sin(lat);
+      for (let lon = 0; lon < 6.283; lon += 0.028) {
+        const x = cl * Math.cos(lon), y = sl, z = cl * Math.sin(lon);
+        const yt = y * cosT - z * sinT, zt = y * sinT + z * cosT;   // tilt about screen x
+        const L = x * lx + yt * ly + zt * lz;                       // normal · light
+        const mlon = lon - spin;                                    // longitude fixed to the surface
+        const band = 0.8 + 0.2 * Math.sin(lat * 7.2);               // faint latitude banding
+        const mark = 0.16 * Math.sin(mlon * 2 + lat * 1.6) + 0.08 * Math.sin(mlon * 5); // turns with the globe
+        const albedo = Math.max(0.32, Math.min(1, band + mark));
+        put(x * Rs, yt * Rs, zt * Rs, (0.15 + 0.85 * Math.max(0, L)) * albedo);
+      }
+    }
+    // ring (flat, in the globe's equatorial plane, so the tilt alone opens it)
+    const ringL = Math.abs(cosT * ly + sinT * lz);                  // its face against the light
+    for (let a = 0; a < 6.283; a += 0.018) {
+      const ca = Math.cos(a), sa = Math.sin(a);
+      for (let r = Rr1; r <= Rr2; r += 0.04) {
+        if (r > G0 && r < G1) continue;
+        const z = r * sa;
+        const yt = -z * sinT, zt = z * cosT;                        // y is 0 in the ring plane
+        const ripple = 0.66 + 0.34 * Math.abs(Math.sin((r - Rr1) * 11));
+        put(r * ca, yt, zt, (0.5 + 0.42 * ringL) * ripple);
+      }
+    }
+
+    let s = '';
+    for (let y = 0; y < CH; y++) s += out.slice(y * CW, (y + 1) * CW).join('') + (y < CH - 1 ? '\n' : '');
+    pre.textContent = s;
+  }
+
+  let spin = 0.7;
+  render(spin);
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  let last = 0;
+  const step = (now) => {
+    if (!pre.isConnected) return;              // gate removed on unlock - stop
+    if (now - last >= 66) { last = now; render(spin); spin += 0.011; }   // ~15 fps, a slow turn
+    requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
 function initGate() {
   const gate = document.getElementById('gate');
   // Answered already this session - do not ask again on every reload.
@@ -1108,6 +1188,7 @@ function initGate() {
     return;
   }
   gate.hidden = false;
+  spinSaturn(document.getElementById('saturn'));
   const form = document.getElementById('gateForm');
   const input = document.getElementById('gateInput');
   const error = document.getElementById('gateError');
