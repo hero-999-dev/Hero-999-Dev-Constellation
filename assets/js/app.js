@@ -394,31 +394,37 @@ function redrawLines() {
     const box = host.getBoundingClientRect();
     if (!box.width || !box.height) continue;   // hidden on narrow screens
     const w = edge.w || W, h = edge.h || H;
-    const a = centreOf(edge.a, box, w, h);
-    const b = edge.head ? edgeOf(edge.b, box, w, h, a) : centreOf(edge.b, box, w, h);
+    const sx = box.width / w, sy = box.height / h;
+    const ca = centreOf(edge.a, box, w, h);
+    const cb = centreOf(edge.b, box, w, h);
+    // An end with a head stops at the box edge, not the centre - a head drawn on
+    // the centre hides under the card. An end without one runs to the centre.
+    const a = edge.head2 ? edgeOf(edge.a, box, w, h, cb) : ca;
+    const b = edge.head ? edgeOf(edge.b, box, w, h, ca) : cb;
 
-    if (edge.head) {
-      /* The arrowhead is a triangle of its own rather than an SVG marker. A
-         marker is laid out in the same space as the line, and this space is a
-         square stretched over a tall narrow panel - the head came out as a
-         spike. Built in screen pixels and converted back, it keeps its shape at
-         any panel size. It also lets the line stop at the base of the head
-         instead of running on through it. */
-      const sx = box.width / w, sy = box.height / h;
-      let dx = (b.x - a.x) * sx, dy = (b.y - a.y) * sy;
+    /* The arrowhead is a triangle of its own rather than an SVG marker. A marker
+       is laid out in the same space as the line, and this space is a square
+       stretched over a tall narrow panel - the head came out as a spike. Built
+       in screen pixels and converted back, it keeps its shape at any panel size.
+       It also lets the line stop at the base of the head, not run through it.
+       Returns that base, so a double-headed edge is pulled in at both ends. */
+    const drawHead = (headEl, tail, tip) => {
+      let dx = (tip.x - tail.x) * sx, dy = (tip.y - tail.y) * sy;
       const len = Math.hypot(dx, dy) || 1;
       dx /= len; dy /= len;
-      const tipX = b.x * sx, tipY = b.y * sy;
+      const tipX = tip.x * sx, tipY = tip.y * sy;
       const backX = tipX - dx * ARROW, backY = tipY - dy * ARROW;
       const wing = ARROW / 2;
       const u = (px, py) => `${px / sx} ${py / sy}`;
-      edge.head.setAttribute('d',
+      headEl.setAttribute('d',
         `M ${u(tipX, tipY)} L ${u(backX - dy * wing, backY + dx * wing)}` +
         ` L ${u(backX + dy * wing, backY - dx * wing)} Z`);
-      edge.path.setAttribute('d', curve(a, { x: backX / sx, y: backY / sy }));
-    } else {
-      edge.path.setAttribute('d', curve(a, b));
-    }
+      return { x: backX / sx, y: backY / sy };
+    };
+
+    const pa = edge.head2 ? drawHead(edge.head2, b, a) : a;
+    const pb = edge.head ? drawHead(edge.head, a, b) : b;
+    edge.path.setAttribute('d', curve(pa, pb));
     if (edge.label) {
       // Halfway along the line is halfway between the two CENTRES, which is not
       // the middle of the space between the boxes once they are different
@@ -494,6 +500,12 @@ function maskHeader(ring, box) {
     ' transparent 99.4%, #000 100%)');
 }
 
+/* Panel width, and the rail it reserves on the map's right. One place, so the
+   CSS `.devices` width, the rail the map slides off, and the room test below all
+   agree - keep the CSS width equal to DEV_W. */
+const DEV_W = 300;
+const DEV_RAIL = DEV_W + 20;
+
 /* The language panel is not allowed past the leftmost point of the outer ring.
    That point moves with the window - the map is centred in the page and its
    size follows the shorter side - so the width is measured rather than guessed
@@ -506,7 +518,7 @@ function capSidePanels(ring, box) {
   // the column stands down rather than spilling.
   const rigs = document.getElementById('devices');
   if (rigs) {
-    const room = wrapBox.width - 272;
+    const room = wrapBox.width - DEV_RAIL;
     // `hidden` is the toggle's business now, so room is judged on the button:
     // too narrow a rail or too short a window and the panel is not offered at
     // all - it must never spill, because nothing here scrolls.
@@ -800,33 +812,45 @@ function renderList() {
  * carriers. A model number says "this kind of machine"; a serial says "this
  * machine", and the second one does not belong on a public page.
  */
+/* A triangle, not a column: two boxes down the left and the phone pushed out to
+   the right, so the three links draw the three sides. `at.x` is a card centre;
+   spaceCards() shares out the y and leaves the x alone, so these x values are
+   what bends the straight line into a triangle. Array order is top-to-bottom,
+   which is why the phone sits between the two laptops. */
 const DEVICES = [
   {
-    key: 'go', at: { x: 50, y: 11 },
+    key: 'go', at: { x: 38, y: 12 },
     name: 'Lenovo Legion Go',
     sub: 'Handheld · 2023',
     specs: ['AMD Ryzen Z1 Extreme · 8C/16T', 'Radeon RDNA 3 (integrated)',
             '16 GB LPDDR5X-7500', '512 GB NVMe', '8.8" 2560×1600', 'Windows 11'],
   },
   {
-    key: 'acer', at: { x: 50, y: 50 },
+    key: 'phone', at: { x: 64, y: 50 },
+    name: 'moto g23',
+    sub: 'Phone · 2023',
+    specs: ['MediaTek Helio G85', '8 GB RAM · 128 GB', '6.5" 1600×720 90 Hz', 'Android 14'],
+  },
+  {
+    key: 'acer', at: { x: 38, y: 88 },
     name: 'Acer Swift 3',
     sub: 'SF314-511 · 2021',
     specs: ['Intel Core i5-1135G7 · 4C/8T', 'Iris Xe (integrated)',
             '16 GB LPDDR4X-4267', 'Dual boot: Windows 11 + Linux Mint'],
   },
-  {
-    key: 'phone', at: { x: 50, y: 89 },
-    name: 'moto g23',
-    sub: 'Phone · 2023',
-    specs: ['MediaTek Helio G85', '8 GB RAM · 128 GB', '6.5" 1600×720 90 Hz', 'Android 14'],
-  },
 ];
 
-/* Who reaches whom. Both hops end at the laptop, so both carry an arrowhead. */
+/* Every machine reaches every other over the tailnet, so each side is a
+   double-headed link (`both`) rather than a one-way hop. The label is the SSH
+   client used across that side; tailscale is the underlay on all three. */
 const LINKS = [
-  { from: 'go', to: 'acer', label: 'tailscale / cursor-ssh', arrow: true },
-  { from: 'phone', to: 'acer', label: 'termius / tailscale', arrow: true },
+  { from: 'go', to: 'phone', label: 'termius / tailscale', both: true },
+  { from: 'phone', to: 'acer', label: 'termius / tailscale', both: true },
+  // The left side is the narrowest: the two laptops sit there and the phone's
+  // left edge reaches into the gutter, so this label is the short form (the
+  // tailscale underlay is already named on the other two sides) and is pulled
+  // left with dx to clear the phone.
+  { from: 'go', to: 'acer', label: 'cursor-ssh', both: true, dx: -22 },
 ];
 
 /* Natural height of the panel, measured the first time it is drawn. Nothing on
@@ -880,7 +904,7 @@ function initDevices() {
     glide(() => {
       // Opening reserves a rail on the right and the map slides off it; closing
       // gives the space back and the ring grows over the bar again.
-      document.documentElement.style.setProperty('--rail-right', open ? '272px' : '0px');
+      document.documentElement.style.setProperty('--rail-right', open ? DEV_RAIL + 'px' : '0px');
       panel.classList.toggle('in', open);
       settle();
     });
@@ -962,15 +986,18 @@ function renderDevices() {
     const path = svgEl('path', 'trunk');
     ink.appendChild(path);
     // A shape of its own rather than a marker - see redrawLines for why.
-    const head = link.arrow ? svgEl('path', 'trunk-head') : null;
+    // `both` puts a head on each end; `arrow` only on the `to` end.
+    const head = (link.arrow || link.both) ? svgEl('path', 'trunk-head') : null;
     if (head) ink.appendChild(head);
+    const head2 = link.both ? svgEl('path', 'trunk-head') : null;
+    if (head2) ink.appendChild(head2);
     // The label is HTML, not SVG text, so it can wear the same frame the boxes
     // do. redrawLines() moves it with the line.
     const label = document.createElement('span');
     label.className = 'dev-label';
     label.textContent = link.label;
     nodes.appendChild(label);
-    EDGES.push({ a: made[link.from], b: made[link.to], path, head, label,
+    EDGES.push({ a: made[link.from], b: made[link.to], path, head, head2, label,
                  host: stage, w: DW, h: DH,
                  labelDx: link.dx || 0, labelDy: link.dy || 0 });
   }

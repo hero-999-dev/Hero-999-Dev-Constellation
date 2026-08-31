@@ -152,23 +152,41 @@ under it, pressing it again puts it away — the same behaviour as Used Coding L
 Inside: the three machines and how each reaches the others.
 
 ```
-Lenovo Legion Go
-   |  tailscale / cursor-ssh
-   v
-Acer Swift 3          <-- separate user / termius (to itself)
-   ^
-   |  termius / tailscale
-moto g23
+   Lenovo Legion Go
+        ╱↕╲
+       ╱   ╲  termius / tailscale
+cursor ╱     ╲
+ -ssh ╱     moto g23   (phone, pushed right)
+     ╱        ╱
+    ╱   ↕    ╱  termius / tailscale
+   Acer Swift 3
+        (every side ↕ : each reaches both others over tailscale)
 ```
+
+Every side is double-headed: over the tailnet each machine reaches both of the others, so
+there is no single hub. The three sit as a **triangle**, not a column — the two laptops down
+the left and the phone pushed out to the right, so the three links draw the three sides. Two
+sides are labelled `termius / tailscale`; the cramped left side (the two laptops plus the
+phone's overhang) carries the short form `cursor-ssh`, the tailscale underlay already named
+on the other two.
 
 Inside that frame it is a little map of its own: three boxes the same connector engine drags
 and springs back, joined by the same curves. `DEVICES` holds the boxes and their resting
-places on a 100 x 100 grid; `LINKS` holds who reaches whom, and `from === to` draws the loop
-that curls out of a box and back into it.
+places on a 100 x 100 grid — `at.x` is the triangle (spaceCards shares out the y and leaves
+the x alone); `LINKS` holds who reaches whom, `both: true` puts an arrowhead on each end, and
+`dx` nudges a label off a box it would otherwise sit on.
 
-`redrawLines()` now takes each edge's own host element and coordinate space, so the big map
-and this one share the code without sharing a grid. One catch worth remembering: a closed
-panel measures 0x0, so its connectors cannot be drawn until it opens — the toggle redraws.
+`redrawLines()` takes each edge's own host element and coordinate space, so the big map and
+this one share the code without sharing a grid, and draws a head at either end an edge asks
+for — the line is pulled back to the box edge under each head so none hides under a card. One
+catch worth remembering: a closed panel measures 0x0, so its connectors cannot be drawn until
+it opens — the toggle redraws.
+
+Card width and the panel width pull against each other: at the old near-full width the phone
+could not clear the laptops, so the cards are `64%` and the panel is `DEV_W` (300px, one
+constant the CSS width, the map's rail and the room test all read). Measured open, all four
+locales: no card overlaps another, no label lands on a card or another label, nothing leaves
+the panel.
 
 The `DEVICES` array in `app.js` holds it. **Model names and part numbers only** — no serial
 numbers, no IMEI, no MAC addresses, no SKU strings, no phone numbers, no carriers. A model
