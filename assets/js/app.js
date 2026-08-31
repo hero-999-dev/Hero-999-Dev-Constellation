@@ -1120,9 +1120,11 @@ function spinSaturn(pre) {
   const Rr1 = 2.0, Rr2 = 2.42;               // ring inner / outer (a thin band, sticks out sideways)
   const G0 = 2.16, G1 = 2.22;                 // Cassini gap
   const TILT = 0.46, K2 = 6.2, K1 = 42;       // fixed 3/4 tilt, viewer distance, scale
+  const ROLL = 0.175;                         // ~10 deg roll about the view axis, so the rings slant
   const cosT = Math.cos(TILT), sinT = Math.sin(TILT);
-  const ringN_y = cosT, ringN_z = sinT;       // the ring's fixed normal, tilted
-  const ringL = Math.abs(ringN_y * ly + ringN_z * lz);
+  const cosR = Math.cos(ROLL), sinR = Math.sin(ROLL);
+  // the ring's fixed normal, tilted then rolled, against the light
+  const ringL = Math.abs((-cosT * sinR) * lx + (cosT * cosR) * ly + sinT * lz);
   const glyph = (s) => LUM[Math.max(0, Math.min(LUM.length - 1, Math.floor(s * LUM.length)))];
 
   function render(spin) {
@@ -1147,14 +1149,15 @@ function spinSaturn(pre) {
       for (let lon = 0; lon < 6.283; lon += 0.02) {
         const x = cl * Math.cos(lon), y = sl, z = cl * Math.sin(lon);
         const yt = y * cosT - z * sinT, zt = y * sinT + z * cosT;   // tilt about screen x
-        const L = x * lx + yt * ly + zt * lz;                       // normal = point (unit sphere)
+        const xr = x * cosR - yt * sinR, yr = x * sinR + yt * cosR; // roll about the view axis
+        const L = xr * lx + yr * ly + zt * lz;                      // normal = point (unit sphere)
         const mlon = lon - spin;                                    // longitude fixed to the surface
         const belts = 0.74 + 0.26 * Math.sin(lat * 5.6);            // Saturn's banding
         const mottle = 0.2 * Math.sin(mlon * 3 + lat * 1.5) + 0.12 * Math.sin(mlon * 2 - lat * 2);
         const dl = Math.atan2(Math.sin(mlon - 0.9), Math.cos(mlon - 0.9));
         const storm = 0.42 * Math.exp(-((lat - 0.16) * (lat - 0.16) / 0.06 + dl * dl / 0.32));
         const albedo = Math.max(0.22, Math.min(1.3, belts + mottle + storm));
-        put(x * Rs, yt * Rs, zt * Rs, (0.1 + 0.9 * Math.max(0, L)) * albedo);
+        put(xr * Rs, yr * Rs, zt * Rs, (0.1 + 0.9 * Math.max(0, L)) * albedo);
       }
     }
     // ring: a thin bright band in the equatorial plane, opened by the same tilt,
@@ -1166,10 +1169,11 @@ function spinSaturn(pre) {
       const spokes = 0.4 + 0.6 * Math.abs(Math.cos((a - spin) * 2.5));
       for (let r = Rr1; r <= Rr2; r += 0.03) {
         if (r > G0 && r < G1) continue;
-        const z = r * sa;
+        const z = r * sa, px = r * ca;
         const yt = -z * sinT, zt = z * cosT;                        // y is 0 in the ring plane
+        const xr = px * cosR - yt * sinR, yr = px * sinR + yt * cosR; // same roll as the globe
         const ripple = 0.72 + 0.28 * Math.abs(Math.sin((r - Rr1) * 26));
-        put(r * ca, yt, zt, (0.4 + 0.5 * ringL) * ripple * spokes);
+        put(xr, yr, zt, (0.4 + 0.5 * ringL) * ripple * spokes);
       }
     }
 
