@@ -422,6 +422,31 @@ function redrawLines() {
       return { x: backX / sx, y: backY / sy };
     };
 
+    if (edge.elbow) {
+      /* A right-angle route instead of a diagonal: `edge.a` (the phone) leaves
+         from its top or bottom edge, runs straight up or down to the height of
+         `edge.b` (the laptop), then turns once and runs in to the laptop's RIGHT
+         side, so the head enters horizontally. Two 90-degree bends, one up-left
+         and one down-left, rather than two slants. */
+      const rb = edge.b.getBoundingClientRect();
+      const bhw = (rb.width / box.width) * w / 2;
+      const ra = edge.a.getBoundingClientRect();
+      const ahh = (ra.height / box.height) * h / 2;
+      const up = cb.y < ca.y;
+      const start = { x: ca.x, y: ca.y + (up ? -ahh : ahh) };  // phone top / bottom
+      const tip = { x: cb.x + bhw, y: cb.y };                  // laptop right edge
+      const corner = { x: ca.x, y: cb.y };
+      const base = edge.head ? drawHead(edge.head, corner, tip) : tip;
+      edge.path.setAttribute('d',
+        `M ${start.x} ${start.y} L ${corner.x} ${corner.y} L ${base.x} ${base.y}`);
+      if (edge.label) {
+        // On the vertical run beside the phone, where no card sits.
+        edge.label.style.left = (ca.x + (edge.labelDx || 0)) / w * 100 + '%';
+        edge.label.style.top = ((start.y + cb.y) / 2 + (edge.labelDy || 0)) / h * 100 + '%';
+      }
+      continue;
+    }
+
     const pa = edge.head2 ? drawHead(edge.head2, b, a) : a;
     const pb = edge.head ? drawHead(edge.head, a, b) : b;
     edge.path.setAttribute('d', curve(pa, pb));
@@ -845,8 +870,8 @@ const DEVICES = [
    - so its two sides are one-way (`arrow`), the head on the laptop. All three
    sides ride the same tailnet, so they carry the one label. */
 const LINKS = [
-  { from: 'phone', to: 'go', label: 'termius / tailscale', arrow: true },
-  { from: 'phone', to: 'acer', label: 'termius / tailscale', arrow: true },
+  { from: 'phone', to: 'go', label: 'termius / tailscale', arrow: true, elbow: true },
+  { from: 'phone', to: 'acer', label: 'termius / tailscale', arrow: true, elbow: true },
   { from: 'go', to: 'acer', label: 'termius / tailscale', both: true },
 ];
 
@@ -995,7 +1020,7 @@ function renderDevices() {
     label.textContent = link.label;
     nodes.appendChild(label);
     EDGES.push({ a: made[link.from], b: made[link.to], path, head, head2, label,
-                 host: stage, w: DW, h: DH,
+                 elbow: link.elbow, host: stage, w: DW, h: DH,
                  labelDx: link.dx || 0, labelDy: link.dy || 0 });
   }
 

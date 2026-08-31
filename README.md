@@ -152,30 +152,28 @@ under it, pressing it again puts it away — the same behaviour as Used Coding L
 Inside: the three machines and how each reaches the others.
 
 ```
-   Lenovo Legion Go
-        ▲  ↕
-        │    ╲  termius / tailscale
- termius│      ╲
-      / │     moto g23   (phone, pushed right)
-tailscale      ╱
-        │    ╱  termius / tailscale
-        ▼  ╱
-   Acer Swift 3
-   (laptops ↕ each other; phone → each laptop, one way)
+   Lenovo Legion Go ◀──┐
+        ▲              │  ┌── moto g23   (phone)
+        │ ↕            └──┤
+        ▼              ┌──┘
+   Acer Swift 3 ◀──────┘
+   (laptops ↕ each other; phone → each laptop, right side, 90°)
 ```
 
-The three sit as a **triangle**, not a column — the two laptops down the left and the phone
-pushed out to the right, so the three links draw the three sides. The two laptops reach each
-other both ways, so the left side is double-headed; the phone only ever reaches **out** — you
-SSH from it, not into it — so its two sides are one-way, the head on the laptop. All three
-sides are the same tailnet, so they carry the one label, `termius / tailscale`, each centred
-on its own line.
+The two laptops down the left and the phone pushed out to the right. The two laptops reach
+each other both ways, so their side is a straight double-headed line down the left. The phone
+only ever reaches **out** — you SSH from it, not into it — so its two links are one-way, and
+they are **right-angled**: the line leaves the phone's top or bottom, runs up or down to the
+laptop's height, then turns once and enters the laptop's **right side**, so the head arrives
+horizontally rather than on a slant. All three sides are the same tailnet, so they carry the
+one label, `termius / tailscale`, each centred on its own run.
 
 Inside that frame it is a little map of its own: three boxes the same connector engine drags
 and springs back, joined by the same curves. `DEVICES` holds the boxes and their resting
 places on a 100 x 100 grid — `at.x` is the triangle (spaceCards shares out the y and leaves
 the x alone); `LINKS` holds who reaches whom, `both: true` puts a head on each end and
-`arrow: true` only on the `to` end.
+`arrow: true` only on the `to` end, and `elbow: true` routes a link as a right angle into the
+target's right side instead of a diagonal.
 
 `redrawLines()` takes each edge's own host element and coordinate space, so the big map and
 this one share the code without sharing a grid, and draws a head at either end an edge asks
