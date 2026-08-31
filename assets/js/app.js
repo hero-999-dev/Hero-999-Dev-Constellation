@@ -1121,6 +1121,7 @@ function spinSaturn(pre) {
   const G0 = 2.34, G1 = 2.44;                 // Cassini gap
   const TILT = 0.28, K2 = 6.2, K1 = 44;       // low tilt: the ring runs through the globe's middle
   const ROLL = 0.262;                         // ~15 deg roll about the view axis, so the rings slant
+  const RING_LIFT = 0.3;                       // nudge the ring up so it crosses the globe's middle, not low
   // sinT negated: we look at the ring from a touch above, so its far side runs
   // behind the globe's top and its near side crosses in front of the bottom.
   const cosT = Math.cos(TILT), sinT = -Math.sin(TILT);
@@ -1177,7 +1178,7 @@ function spinSaturn(pre) {
         const yt = -z * sinT, zt = z * cosT;                        // y is 0 in the ring plane
         const xr = px * cosR - yt * sinR, yr = px * sinR + yt * cosR; // same roll as the globe
         const ripple = 0.84 + 0.16 * Math.abs(Math.sin((r - Rr1) * 9)); // a couple of soft bands, not noise
-        put(xr, yr, zt, (0.4 + 0.5 * ringL) * ripple * spokes);
+        put(xr, yr + RING_LIFT, zt, (0.4 + 0.5 * ringL) * ripple * spokes);
       }
     }
 
