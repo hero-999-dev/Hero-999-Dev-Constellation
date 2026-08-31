@@ -1177,11 +1177,15 @@ function spinSaturn(pre) {
 
   let spin = 0.6;
   render(spin);
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  // The turn is the point of the screen and the owner asked for it plainly, so it
+  // always runs - a system "reduce motion" setting only eases it to a gentler
+  // pace rather than freezing the planet (which read as broken across browsers).
+  const gentle = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const rate = gentle ? 0.014 : 0.032;
   let last = 0;
   const step = (now) => {
     if (!pre.isConnected) return;              // gate removed on unlock - stop
-    if (now - last >= 70) { last = now; render(spin); spin += 0.032; }   // ~14 fps, a visible turn
+    if (now - last >= 70) { last = now; render(spin); spin += rate; }   // ~14 fps
     requestAnimationFrame(step);
   };
   requestAnimationFrame(step);
