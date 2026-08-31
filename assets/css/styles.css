@@ -205,18 +205,21 @@ a{ color:inherit; text-decoration:none; }
   top:50%; left:50%; transform:translate(-50%, -50%);
   font-family:var(--font-mono);
   font-size:clamp(8px, 1.75vw, 18px); line-height:1;
-  white-space:pre; color:var(--orange);
-  text-shadow:0 0 16px rgba(232,129,60,.3);
-  user-select:none;
+  white-space:pre; user-select:none;
+  /* Light: browner ink on the cream, a soft brown halo. Dark below keeps the
+     amber glow so the planet still burns against the black. */
+  color:var(--terra); text-shadow:0 0 14px rgba(122,84,48,.22);
 }
+:root[data-theme="dark"] .gate-saturn{ color:var(--orange); text-shadow:0 0 16px rgba(232,129,60,.3); }
 /* A scatter of faint asterisks behind everything - the deep-space ground the
    planet turns against. Filled in app.js so the count and spread stay in one
    place; each star sets its own position, size and dimness. */
 .gate-stars{ position:absolute; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
 .gate-star{
   position:absolute; font-family:var(--font-mono); line-height:1;
-  color:var(--amber); user-select:none; transform:translate(-50%, -50%);
+  color:var(--brown-soft); user-select:none; transform:translate(-50%, -50%);
 }
+:root[data-theme="dark"] .gate-star{ color:var(--amber); }
 /* The switch is parked in the corner. */
 .gate-controls{ position:fixed; top:1.1rem; right:1.1rem; display:flex; align-items:center; gap:.5rem; z-index:4; }
 /* Narrow: the planet slips behind the centred column and dims so the text over
