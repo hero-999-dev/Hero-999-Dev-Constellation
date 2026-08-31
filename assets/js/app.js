@@ -95,6 +95,18 @@ const BRANCHES = [
   },
 ];
 
+/* The page's own repository. It is not a card - it is the name of the outer
+   ring, and its one line sits in the gutter to the left of that ring. There is
+   nowhere inside to put it: at the ring's own height the Pixel Pomo ring comes
+   within about 60 grid units of it, which is narrower than any of these four
+   translations. The card list on narrow screens carries it as a row instead,
+   because the whole map goes away down there and the ring with it. */
+const SELF = {
+  title: 'Constellation',
+  desc: 'dSelf',
+  repo: 'Hero-999-Dev-Constellation', lang: 'JavaScript', private: false,
+};
+
 /* --------------------------------------------------------------- language */
 
 /* Four locales, one flat table. Repository names, the Pixel Pomo label and
@@ -112,6 +124,7 @@ const I18N = {
     dKit: 'Editor for its sprites.', dCube: 'Fifteen tools for YouTube.',
     dCat: 'Cat sitting in Warsaw.', dSplit: 'Splits video for Discord.',
     dClaw: 'When to use Claude.', dLea: 'A hook for Claude Code.',
+    dSelf: 'A map of every repository.',
   },
   tr: {
     gateSub: 'Açmak için parolayı gir.', password: 'Parola', open: 'Aç',
@@ -124,6 +137,7 @@ const I18N = {
     dKit: "Sprite'ları için editör.", dCube: 'YouTube için on beş araç.',
     dCat: "Varşova'da kedi bakımı.", dSplit: 'Videoyu Discord için böler.',
     dClaw: 'Claude ne zaman uygun.', dLea: 'Claude Code için hook.',
+    dSelf: "Her repo'nun haritası.",
   },
   pl: {
     gateSub: 'Wpisz hasło, aby otworzyć.', password: 'Hasło', open: 'Otwórz',
@@ -136,6 +150,7 @@ const I18N = {
     dKit: "Edytor jego sprite'ów.", dCube: '15 narzędzi do YouTube.',
     dCat: 'Opieka nad kotami.', dSplit: 'Dzieli wideo pod Discorda.',
     dClaw: 'Kiedy używać Claude.', dLea: 'Hook do Claude Code.',
+    dSelf: 'Mapa wszystkich repozytoriów.',
   },
   de: {
     gateSub: 'Passwort eingeben, um zu öffnen.', password: 'Passwort', open: 'Öffnen',
@@ -148,6 +163,7 @@ const I18N = {
     dKit: 'Editor für seine Sprites.', dCube: '15 Werkzeuge für YouTube.',
     dCat: 'Katzenbetreuung, Warschau.', dSplit: 'Teilt Videos für Discord.',
     dClaw: 'Wann man Claude nutzt.', dLea: 'Ein Hook für Claude Code.',
+    dSelf: 'Karte aller Repositorys.',
   },
 };
 
@@ -536,6 +552,25 @@ function layoutRings() {
       ring.label.setAttribute('x', cx);
       ring.label.setAttribute('y', cy - ry * Math.sqrt(1 - ratio * ratio) + size * 0.96);
     }
+    if (ring.note) {
+      // The ring's own line, in the gutter to its left. The connector layer is
+      // overflow: visible, so this draws outside the map box on purpose - which
+      // means the room it needs is the page's, not the map's. Measure the text
+      // and stand the line down when the gutter cannot hold it, the same bargain
+      // the device column makes: nothing here scrolls, so it must never spill.
+      // getComputedTextLength() answers in the viewBox's own units, not in
+      // pixels - the whole subtraction has to happen in grid units and be scaled
+      // once at the end. Mixing the two hid the line on windows that had room
+      // for it, because 186 units read as 186px against a 179px gutter.
+      const x = cx - rx - 16;
+      ring.note.setAttribute('x', x);
+      ring.note.setAttribute('y', cy + 6);
+      // Shown first, then measured: a hidden <text> can measure 0, and a check
+      // that reads 0 puts it back on screen for the next pass to take off again.
+      ring.note.style.visibility = 'visible';
+      const left = box.left + (x - ring.note.getComputedTextLength()) * (box.width / W);
+      if (left < 8) ring.note.style.visibility = 'hidden';
+    }
   }
 }
 
@@ -576,14 +611,27 @@ function renderMap() {
     EDGES.push({ a, b, path });
   };
 
-  const addRing = (els, cls, pad, text, centre) => {
+  const addRing = (els, cls, pad, text, centre, href) => {
     const shape = svg('ellipse', cls);
     ink.prepend(shape);                // behind the connectors
     let label = null;
     if (text) {
       label = svg('text', 'ring-label');
       label.textContent = text;
-      linesEl.appendChild(label);
+      // A named ring that stands for a repository is clickable like a card is.
+      // The map is pointer-events: none, so `.ring-link` switches them back on
+      // for this one element the way `.node` does for the cards.
+      if (href) {
+        const link = document.createElementNS(NS, 'a');
+        link.setAttribute('class', 'ring-link');
+        link.setAttribute('href', href);
+        link.setAttribute('target', '_blank');
+        link.setAttribute('rel', 'noopener');
+        link.appendChild(label);
+        linesEl.appendChild(link);
+      } else {
+        linesEl.appendChild(label);
+      }
     }
     RINGS.push({ els, shape, label, pad, centre });
   };
@@ -613,7 +661,11 @@ function renderMap() {
     add(branch);
   }
 
-  addRing(all, 'ring outer-ring', 48, null, { x: W / 2, y: H / 2 });
+  addRing(all, 'ring outer-ring', 48, SELF.title, { x: W / 2, y: H / 2 }, GH(SELF.repo));
+  const note = svg('text', 'ring-note');
+  note.textContent = t(SELF.desc);
+  linesEl.appendChild(note);
+  RINGS[RINGS.length - 1].note = note;   // layoutRings puts it beside the ring
 
   settle();
 }
@@ -734,12 +786,20 @@ function makeDraggable(el) {
 
 function renderList() {
   const list = document.getElementById('list');
+  const leafOf = (item) => {
+    const leaf = makeNode(item);
+    leaf.classList.remove('node');
+    leaf.classList.add('leaf');
+    // Room for the third badge down here, which is why the map card does without.
+    if (item.live) leaf.querySelector('.node-meta')?.appendChild(tag(t('live'), 'live'));
+    return leaf;
+  };
+  // Up on the map the page's own repository is the outer ring; there is no ring
+  // down here, so it leads the list instead.
+  list.appendChild(leafOf(SELF));
   for (const branch of BRANCHES) {
     if (!branch.children) {
-      const leaf = makeNode(branch);
-      leaf.classList.remove('node');
-      leaf.classList.add('leaf');
-      list.appendChild(leaf);
+      list.appendChild(leafOf(branch));
       continue;
     }
     const box = document.createElement('section');
@@ -748,13 +808,7 @@ function renderList() {
     head.className = 'node-title';
     head.textContent = branch.ring || branch.title;   // the ring's name is the group's name
     box.appendChild(head);
-    for (const child of branch.children) {
-      const leaf = makeNode(child);
-      leaf.classList.remove('node');
-      leaf.classList.add('leaf');
-      if (child.live) leaf.querySelector('.node-meta')?.appendChild(tag(t('live'), 'live'));
-      box.appendChild(leaf);
-    }
+    for (const child of branch.children) box.appendChild(leafOf(child));
     list.appendChild(box);
   }
 }
