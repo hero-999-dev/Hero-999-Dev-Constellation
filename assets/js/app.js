@@ -1119,8 +1119,8 @@ function spinSaturn(pre) {
   const Rs = 1.28;                            // globe radius
   const Rr1 = 2.0, Rr2 = 2.42;               // ring inner / outer (a thin band, sticks out sideways)
   const G0 = 2.16, G1 = 2.22;                 // Cassini gap
-  const TILT = 0.46, K2 = 6.2, K1 = 42;       // fixed 3/4 tilt, viewer distance, scale
-  const ROLL = 0.175;                         // ~10 deg roll about the view axis, so the rings slant
+  const TILT = 0.28, K2 = 6.2, K1 = 48;       // low tilt: the ring runs through the globe's middle
+  const ROLL = 0.262;                         // ~15 deg roll about the view axis, so the rings slant
   const cosT = Math.cos(TILT), sinT = Math.sin(TILT);
   const cosR = Math.cos(ROLL), sinR = Math.sin(ROLL);
   // the ring's fixed normal, tilted then rolled, against the light
