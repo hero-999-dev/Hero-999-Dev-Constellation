@@ -269,21 +269,19 @@ a{ color:inherit; text-decoration:none; }
 }
 .gate-input::placeholder{ color:var(--brown-soft); }
 .gate-input:focus{ outline:none; border-bottom-color:var(--amber); }
-/* A slim pill, sized to its word and set to the left - light, not a slab. */
+/* A slim pill, sized to its word and set to the left - light, not a slab. In
+   the planet's own brown key, with a light label, so it belongs to the scene in
+   both themes rather than jumping out as a bright amber slab. */
 .btn{
   display:inline-block; width:auto; padding:.4rem 1.5rem;
-  font:inherit; font-size:.9rem; font-weight:500; color:#43301F;
-  background:linear-gradient(140deg, var(--amber-soft), var(--orange));
+  font:inherit; font-size:.9rem; font-weight:500; color:#FBEEDD;
+  background:linear-gradient(140deg, #C56A2E, #964526);
   border:0; border-radius:var(--radius-pill); cursor:pointer;
   transition:transform .18s var(--ease), box-shadow .18s var(--ease);
 }
 .btn:hover{ transform:translateY(-2px); box-shadow:var(--shadow); }
-/* Dark: a browner pill in the planet's own key, not the bright amber, with a
-   light label so it still reads. */
-:root[data-theme="dark"] .btn{
-  background:linear-gradient(140deg, #D67C39, #9C4A26);
-  color:#FBEEDD;
-}
+/* Dark: a touch warmer so it still glows against the black. */
+:root[data-theme="dark"] .btn{ background:linear-gradient(140deg, #D67C39, #9C4A26); }
 .gate-error{ margin:.9rem 0 0; color:var(--terra); font-size:.92rem; font-weight:500; }
 .gate-card.shake{ animation:shake .38s var(--ease); }
 @keyframes shake{
