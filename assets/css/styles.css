@@ -143,20 +143,6 @@ a{ color:inherit; text-decoration:none; }
   position:fixed; left:clamp(1rem, 4vw, 2.4rem); bottom:1.4rem; z-index:21;
   display:flex; align-items:center; gap:.7rem; pointer-events:none;
 }
-/* The name is drawn in a gradient clipped to the letters. Light takes the deep
-   brown key the planet is in, so the name belongs to the scene instead of
-   glowing amber over it; dark keeps the warm gradient, which brown would lose
-   against the black. The dark rule repeats the clip because the `background`
-   shorthand resets background-clip. */
-.signature h1{
-  font-size:1.45rem; line-height:1.05;
-  background:linear-gradient(140deg, #C56A2E, #964526);
-  -webkit-background-clip:text; background-clip:text; color:transparent;
-}
-:root[data-theme="dark"] .signature h1{
-  background:linear-gradient(140deg, var(--amber-soft), var(--orange));
-  -webkit-background-clip:text; background-clip:text;
-}
 /* Credits in the machine's own voice - a monospace log, quiet until hovered.
    Parked in the bottom-right corner, opposite the signature, and set from one
    font-size that tracks the window - everything inside is in em, so the whole
@@ -236,11 +222,12 @@ body:not(.on-saturn) .gate-insp{ display:none; }
   body:not(.on-saturn) .signature{ display:none; }
 }
 .gate-mark{
-  height:42px; padding:0 .85rem; flex:none;
+  margin:0; padding:.34rem 1rem; flex:none;
   display:grid; place-items:center;
-  font-family:var(--font-head); font-size:1rem; white-space:nowrap;
+  font-family:var(--font-head); font-weight:500; font-size:1.5rem; line-height:1.15;
+  white-space:nowrap;
   background:#43301F;
-  border-radius:13px;
+  border-radius:15px;
   box-shadow:var(--shadow-sm);
 }
 /* Inside out: the tile takes the ink the letter used to be drawn in, and the
@@ -297,13 +284,12 @@ body.on-saturn .topbar::before{ display:none; }
   color:var(--brown); pointer-events:none;
 }
 body:not(.on-saturn) .topbar .gate-top{ display:none; }
+/* Colour, ground and border come from the shared control rule below - only the
+   shape of this one differs, because it carries an icon beside its word. */
 .theme-btn{
   display:flex; align-items:center; gap:.5rem;
   padding:.5rem .95rem;
-  font:inherit; font-size:.92rem; color:var(--brown);
-  background:var(--glass);
-  border:1px solid var(--line-strong);
-  border-radius:var(--radius-pill); cursor:pointer;
+  cursor:pointer;
   transition:border-color .18s var(--ease);
 }
 .theme-btn:hover{ border-color:var(--amber); }
@@ -327,17 +313,20 @@ body:not(.on-saturn) .topbar .gate-top{ display:none; }
 .wrap[hidden]{ display:none; }
 
 /* The two faces, Language and the theme switch are the same control in four
-   guises: one size, one padding, one shape, so the row reads as a set. */
+   guises: one size, one padding, one shape, so the row reads as a set - and the
+   set wears the signature's own tile, a deep brown slab with warm type on it, so
+   the chrome in the corners is plainly one family. */
 .pill, .topbar .theme-btn{
   font-family:var(--font-head);
   font-weight:500;
   font-size:.92rem;
   line-height:1.25;
   padding:.46rem 1.05rem;
-  color:var(--brown);
-  background:var(--glass);
-  border:1px solid var(--line-strong);
+  color:var(--amber-soft);
+  background:#43301F;
+  border:1px solid transparent;
   border-radius:var(--radius-pill);
+  box-shadow:var(--shadow-sm);
 }
 .pill{
   display:inline-block; letter-spacing:0;
