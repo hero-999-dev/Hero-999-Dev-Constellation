@@ -1222,6 +1222,47 @@ function fillStars(el) {
   el.appendChild(frag);
 }
 
+/* One shooting star at a time, drawn as a short ASCII trail: the head is the
+   last character, so the string lies tail-first along the direction of travel
+   and the whole span is rotated onto its slant. It falls to the left or the
+   right from a fresh spot each run - the first after 15s, then one every 30s.
+   Like the planet, this ignores "reduce motion": a frozen gate reads as broken,
+   and nothing here flashes or fills the screen. */
+function shootStars(el) {
+  if (!el) return;
+  let timer = 0;
+  const fire = () => {
+    if (!el.isConnected) { clearInterval(timer); return; }   // gate removed on unlock - stop
+    const dir = Math.random() < 0.5 ? 1 : -1;                // falls right, or falls left
+    const slope = 16 + Math.random() * 26;                   // degrees below the horizontal
+    const angle = dir > 0 ? slope : 180 - slope;             // CSS rotate: +y is down
+    const s = document.createElement('span');
+    s.className = 'gate-shot';
+    s.textContent = '. ..:-=*';
+    // Start on the side it is coming from, in the upper sky so there is room below.
+    const topPct = 4 + Math.random() * 40;
+    s.style.left = (dir > 0 ? -6 + Math.random() * 46 : 60 + Math.random() * 46).toFixed(1) + '%';
+    s.style.top = topPct.toFixed(1) + '%';
+    el.appendChild(s);
+    // The run is a slice of the width, but never longer than the sky left below
+    // the start - on a short, wide window a full-width run dives out of the
+    // bottom and the star vanishes halfway through.
+    const room = el.clientHeight * (0.96 - topPct / 100);
+    const dist = Math.min(el.clientWidth * (0.45 + Math.random() * 0.3),
+                          room / Math.sin(slope * Math.PI / 180));
+    // Linear: a meteor holds its speed, and an eased run spends most of the
+    // flight already fading out.
+    const run = s.animate([
+      { transform: `rotate(${angle}deg) translateX(0px)`, opacity: 0 },
+      { opacity: 0.9, offset: 0.12 },
+      { opacity: 0.9, offset: 0.82 },
+      { transform: `rotate(${angle}deg) translateX(${dist.toFixed(0)}px)`, opacity: 0 }
+    ], { duration: 1100 + Math.random() * 500, easing: 'linear' });
+    run.onfinish = () => s.remove();
+  };
+  setTimeout(() => { fire(); timer = setInterval(fire, 30000); }, 15000);
+}
+
 function initGate() {
   const gate = document.getElementById('gate');
   // Answered already this session - do not ask again on every reload.
@@ -1231,6 +1272,7 @@ function initGate() {
   }
   gate.hidden = false;
   fillStars(document.getElementById('gateStars'));
+  shootStars(gate);   // on the gate itself, so the trail passes in front of the planet
   spinSaturn(document.getElementById('saturn'));
   const form = document.getElementById('gateForm');
   const input = document.getElementById('gateInput');

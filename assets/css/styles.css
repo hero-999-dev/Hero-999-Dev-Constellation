@@ -182,12 +182,19 @@ a{ color:inherit; text-decoration:none; }
   display:flex; flex-direction:column; justify-content:space-between; gap:1.3rem;
   min-width:0;
 }
-/* The name wears the tile's own theme - the same warm gradient the H is drawn in,
-   clipped to the letters. */
+/* The name is drawn in a gradient clipped to the letters. Light takes the deep
+   brown key the Open button and the planet are in, so the name belongs to the
+   scene instead of glowing amber over it; dark keeps the warm gradient, which
+   brown would lose against the black. The dark rule repeats the clip because
+   the `background` shorthand resets background-clip. */
 .gate-id h1{
   font-size:1.45rem; line-height:1.05;
-  background:linear-gradient(140deg, var(--amber-soft), var(--orange));
+  background:linear-gradient(140deg, #C56A2E, #964526);
   -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+:root[data-theme="dark"] .gate-id h1{
+  background:linear-gradient(140deg, var(--amber-soft), var(--orange));
+  -webkit-background-clip:text; background-clip:text;
 }
 /* Credits in the machine's own voice - a monospace log, quiet until hovered. */
 .gate-insp{ display:flex; flex-direction:column; gap:.35rem; align-items:flex-start; }
@@ -221,9 +228,23 @@ a{ color:inherit; text-decoration:none; }
 .gate-stars{ position:absolute; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
 .gate-star{
   position:absolute; font-family:var(--font-mono); line-height:1;
-  color:var(--brown-soft); user-select:none; transform:translate(-50%, -50%);
+  /* The same ink as the planet in front of them - one sky, one colour. Each
+     star's own opacity is what holds them back behind it. */
+  color:var(--terra); user-select:none; transform:translate(-50%, -50%);
 }
 :root[data-theme="dark"] .gate-star{ color:var(--amber); }
+/* A shooting star: a short ASCII trail laid along its own slant and slid across
+   the sky by app.js. Same ink as the fixed stars; the animation supplies its
+   own opacity, so it is invisible before and after the run. Rotation is about
+   the tail, which is where the trail is anchored. It rides over the planet
+   rather than in the starfield behind it - a meteor is the near thing in the
+   scene, and behind the dense ASCII it simply could not be seen. */
+.gate-shot{
+  position:absolute; z-index:2; font-family:var(--font-mono); font-size:15px; line-height:1;
+  white-space:pre; user-select:none; opacity:0; pointer-events:none;
+  transform-origin:0 50%; color:var(--terra);
+}
+:root[data-theme="dark"] .gate-shot{ color:var(--amber); }
 /* The switch is parked in the corner. */
 .gate-controls{ position:fixed; top:1.1rem; right:1.1rem; display:flex; align-items:center; gap:.5rem; z-index:4; }
 /* Narrow: the planet slips behind the centred column and dims so the text over
