@@ -117,6 +117,8 @@ const I18N = {
     hardware: 'Hardware', dark: 'Dark', light: 'Light',
     private: 'Private', public: 'Public', live: 'Live',
     Extension: 'Extension', Desktop: 'Desktop',
+    handheld: 'Handheld', phone: 'Phone', integrated: 'integrated',
+    vibecoded: 'This project is vibecoded by using Opus 5',
     dPomo: 'Pixel-art Pomodoro timer.', dWeb: 'Runs in the browser.',
     dKit: 'Editor for its sprites.', dCube: 'Fifteen tools for YouTube.',
     dCat: 'Cat sitting in Warsaw.', dSplit: 'Splits video for Discord.',
@@ -129,6 +131,8 @@ const I18N = {
     hardware: 'Donanım', dark: 'Koyu', light: 'Açık',
     private: 'Özel', public: 'Herkese açık', live: 'Canlı',   // not 'Açık' - that is the light theme
     Extension: 'Eklenti', Desktop: 'Masaüstü',
+    handheld: 'Avuç içi', phone: 'Telefon', integrated: 'tümleşik',
+    vibecoded: 'Bu proje Opus 5 ile vibecode edildi',
     dPomo: 'Piksel Pomodoro sayacı.', dWeb: 'Tarayıcıda çalışır.',
     dKit: "Sprite'ları için editör.", dCube: 'YouTube için on beş araç.',
     dCat: "Varşova'da kedi bakımı.", dSplit: 'Videoyu Discord için böler.',
@@ -137,10 +141,12 @@ const I18N = {
   },
   pl: {
     inspiration: 'Inspiracje',
-    home: 'Start', projectsHardware: 'Projekty i sprzęt',
+    home: 'Strona główna', projectsHardware: 'Projekty i sprzęt',
     hardware: 'Sprzęt', dark: 'Ciemny', light: 'Jasny',
     private: 'Prywatne', public: 'Publiczne', live: 'Na żywo',
     Extension: 'Rozszerzenie', Desktop: 'Desktop',
+    handheld: 'Konsola przenośna', phone: 'Telefon', integrated: 'zintegrowana',
+    vibecoded: 'Ten projekt powstał w vibecodingu z Opus 5',
     dPomo: 'Pikselowe Pomodoro.', dWeb: 'Działa w przeglądarce.',
     dKit: "Edytor jego sprite'ów.", dCube: '15 narzędzi do YouTube.',
     dCat: 'Opieka nad kotami.', dSplit: 'Dzieli wideo pod Discorda.',
@@ -149,10 +155,12 @@ const I18N = {
   },
   de: {
     inspiration: 'Inspiration',
-    home: 'Start', projectsHardware: 'Projekte & Hardware',
+    home: 'Startseite', projectsHardware: 'Projekte & Hardware',
     hardware: 'Hardware', dark: 'Dunkel', light: 'Hell',
     private: 'Privat', public: 'Öffentlich', live: 'Live',
     Extension: 'Erweiterung', Desktop: 'Desktop',
+    handheld: 'Handheld', phone: 'Telefon', integrated: 'integriert',
+    vibecoded: 'Dieses Projekt wurde mit Opus 5 vibecoded',
     dPomo: 'Pixel-Art-Pomodoro-Timer.', dWeb: 'Läuft im Browser.',
     dKit: 'Editor für seine Sprites.', dCube: '15 Werkzeuge für YouTube.',
     dCat: 'Katzenbetreuung, Warschau.', dSplit: 'Teilt Videos für Discord.',
@@ -582,16 +590,31 @@ function layoutRings() {
     ring.shape.setAttribute('rx', rx);
     ring.shape.setAttribute('ry', ry);
     if (ring.label) {
-      // A fixed inset from the top does not work: the ellipse narrows fast up
-      // there, so the ends of the word hang out over the stroke. Solve the
-      // ellipse for the width this particular text needs instead - that gives
-      // the highest line it fits on - then drop the baseline by the cap height
-      // so the letters, not the baseline, are what sits inside.
-      const size = parseFloat(getComputedStyle(ring.label).fontSize) || 22;
-      const halfText = ring.label.getComputedTextLength() / 2 + 26;
-      const ratio = Math.min(halfText / rx, 0.999);
+      /* A fixed inset from the top does not work: the ellipse narrows fast up
+         there, so the ends of the word hang out over the stroke. Solve the
+         ellipse for the width this particular text needs instead - that gives
+         the highest line it fits on - then drop the baseline by the cap height
+         so the letters, not the baseline, are what sits inside.
+         A name too wide for the top of a narrow ring gets pushed down onto the
+         cards inside it, which is what the tracked group label did, so it is
+         stepped down in size until the line it wants is one near the top. The
+         inline size is cleared first: this runs on every resize, and reading
+         back its own last answer would ratchet the label away to nothing. */
+      ring.label.style.fontSize = '';
+      const css = parseFloat(getComputedStyle(ring.label).fontSize) || 19;
+      let size = css, y = 0;
+      for (;;) {
+        // Side clearance is a share of the ring, not a fixed 26 units: on the
+        // small group ring a fixed inset was most of its width.
+        const halfText = ring.label.getComputedTextLength() / 2 + Math.min(26, rx * 0.14);
+        const ratio = Math.min(halfText / rx, 0.999);
+        y = cy - ry * Math.sqrt(1 - ratio * ratio) + size * 0.96;
+        if (y <= cy - ry + size * 3 || size <= css * 0.72) break;
+        size -= 1;
+        ring.label.style.fontSize = size + 'px';
+      }
       ring.label.setAttribute('x', cx);
-      ring.label.setAttribute('y', cy - ry * Math.sqrt(1 - ratio * ratio) + size * 0.96);
+      ring.label.setAttribute('y', y);
     }
   }
 }
@@ -852,14 +875,14 @@ const DEVICES = [
   {
     key: 'go', at: { x: 30, y: 12 }, w: '56%',
     name: 'Lenovo Legion Go',
-    sub: 'Handheld · 2023',
+    subKey: 'handheld', sub: '2023',
     specs: ['AMD Ryzen Z1 Extreme · 8C/16T', 'Radeon RDNA 3 (integrated)',
             '16 GB LPDDR5X-7500', '512 GB NVMe', '8.8" 2560×1600', 'Windows 11'],
   },
   {
     key: 'phone', at: { x: 76, y: 50 }, w: '42%',
     name: 'Motorola g23',
-    sub: 'Phone · 2023',
+    subKey: 'phone', sub: '2023',
     specs: ['MediaTek Helio G85', '8 GB RAM · 128 GB', '6.5" 1600×720 90 Hz', 'Android 14'],
   },
   {
@@ -1021,12 +1044,14 @@ function renderDevices() {
     name.textContent = item.name;
     const sub = document.createElement('span');
     sub.className = 'dev-sub';
-    sub.textContent = item.sub;
+    // A category ahead of the year translates; a model number does not.
+    sub.textContent = item.subKey ? t(item.subKey) + ' · ' + item.sub : item.sub;
     card.append(name, sub);
     for (const line of item.specs) {
       const row = document.createElement('span');
       row.className = 'dev-spec';
-      row.textContent = line;
+      // Specs are model names and numbers except for this one English word.
+      row.textContent = line.replace('(integrated)', '(' + t('integrated') + ')');
       card.appendChild(row);
     }
     nodes.appendChild(card);
@@ -1107,15 +1132,19 @@ function spaceCards() {
    out again on the way back. */
 function showView(name) {
   const saturn = name === 'saturn';
-  const btn = document.getElementById('viewBtn');
+  const gate = document.getElementById('gate');
+  const wrap = document.getElementById('constellation');
+  /* Both faces stay laid out and slide past each other - the class is the whole
+     switch, the transforms are in the stylesheet. `inert` is what actually takes
+     the face that has left out of reach; it cannot be `hidden`, because
+     display:none has nothing to animate from. */
   document.body.classList.toggle('on-saturn', saturn);
-  document.getElementById('gate').hidden = !saturn;
-  document.getElementById('constellation').hidden = saturn;
-  if (btn) {
-    btn.classList.toggle('on', saturn);
-    btn.setAttribute('aria-pressed', String(saturn));
-  }
-  if (!saturn) settle();
+  gate.inert = !saturn;
+  wrap.inert = saturn;
+  document.getElementById('viewBtn')?.setAttribute('aria-pressed', String(saturn));
+  // The map measures itself in viewport coordinates, and it is mid-slide right
+  // now; let it come to rest first.
+  if (!saturn) setTimeout(settle, GLIDE_MS + 40);
   // The sky's own loops idle while it is away; this is their cue to catch up.
   document.dispatchEvent(new Event('hdh:view'));
 }
@@ -1220,7 +1249,7 @@ function spinSaturn(pre) {
     // Idle while the map is the face on show: the loop stays alive, but there is
     // nothing to draw into a box with no width, and the planet is then mid-turn
     // when the airlock comes back rather than starting over.
-    if (!pre.clientWidth) { requestAnimationFrame(step); return; }
+    if (!skyShowing()) { requestAnimationFrame(step); return; }
     if (now - last >= 70) { last = now; render(spin); spin += rate; }   // ~14 fps
     requestAnimationFrame(step);
   };
@@ -1254,6 +1283,10 @@ function fillStars(el) {
    The first after 15s, then one every 30s.
    Like the planet, this ignores "reduce motion": a frozen gate reads as broken,
    and nothing here flashes or fills the screen. */
+/* The airlock keeps its size when it is off to the left, so "is it on show" is
+   the class the switch sets, not a measurement. */
+const skyShowing = () => document.body.classList.contains('on-saturn');
+
 const SHOT_RAMP = '.,-~:;=!*#';   // the planet's ramp, faint tail to bright head
 const SHOT_TAIL = 14;             // cells of trail behind the head
 const SHOT_FRAMES = 32;           // frames to cross, at the planet's own ~14fps
@@ -1303,7 +1336,7 @@ function shootStars(el) {
        sky full of them is worth keeping, so it is on purpose and it is capped.
        The same goes for the sky being away rather than the tab - while the map
        is the face on show this box has no width. */
-    if (document.hidden || !el.clientWidth) { pending = Math.min(pending + 1, SHOT_QUEUE_MAX); return; }
+    if (document.hidden || !skyShowing()) { pending = Math.min(pending + 1, SHOT_QUEUE_MAX); return; }
     const pre = document.createElement('pre');
     pre.className = 'gate-shot';
     el.appendChild(pre);
@@ -1384,7 +1417,7 @@ function shootStars(el) {
   /* Back in view: let the banked turns go, each after its own short delay, so
      they arrive as a shower rather than all on one frame. */
   const release = () => {
-    if (document.hidden || !el.isConnected || !el.clientWidth) return;
+    if (document.hidden || !el.isConnected || !skyShowing()) return;
     const owed = pending;
     pending = 0;
     for (let i = 0; i < owed; i++) setTimeout(fire, Math.random() * 1400);

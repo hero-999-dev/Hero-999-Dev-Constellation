@@ -138,10 +138,19 @@ a{ color:inherit; text-decoration:none; }
    it: nothing but the starfield and the planet. The chrome around it - the switch
    to the map, the signature, the language and the theme - belongs to the page
    and is shared, so it sits under that chrome rather than over it. */
+/* The two faces slide past each other rather than swapping in place: the sky
+   waits off the left edge and comes in from there, the map leaves to the right.
+   Both stay laid out the whole time - display:none has nothing to animate from,
+   and the map would have to measure itself again every crossing - so `inert`,
+   set by showView(), is what puts the face that has left out of reach. */
 .gate{
   position:fixed; inset:0; z-index:1; overflow:hidden;
   background:var(--ground);
+  transform:translateX(-100%);
+  transition:transform .56s var(--ease);
 }
+body.on-saturn .gate{ transform:translateX(0); }
+body.on-saturn .wrap{ transform:translateX(100%); }
 /* The signature: the same identity the airlock used to wear in its top-left,
    holding the bottom-left of both faces now. */
 .signature{
@@ -317,10 +326,8 @@ body:not(.on-saturn) .topbar .gate-top{ display:none; }
   display:flex; flex-direction:column;
   padding:0;
   position:relative;
+  transition:transform .56s var(--ease);
 }
-/* The author `display` above beats the UA's `[hidden]{display:none}`, so the map
-   stayed on screen over the airlock when the other face was chosen. */
-.wrap[hidden]{ display:none; }
 
 /* The two faces, Language and the theme switch are the same control in four
    guises: one size, one padding, one shape, so the row reads as a set - and the
@@ -357,11 +364,9 @@ body:not(.on-saturn) .topbar .gate-top{ display:none; }
   transition:border-color .18s var(--ease), background .18s var(--ease);
 }
 .pill:hover{ border-color:var(--amber); }
-.pill.on{
-  background:linear-gradient(140deg, var(--amber-soft), var(--orange));
-  border-color:transparent; color:#43301F;
-}
-:root[data-theme="dark"] .pill.on{ background:#43301F; color:var(--amber-soft); }
+/* No latched colour on the two face switches: which face you are looking at is
+   the whole screen, and a button that changed colour to tell you so read as a
+   toggle stuck down. The press feedback above is the answer they give. */
 
 /* Whatever is left after the text. The map sizes itself to fit inside it, so
    the ring ends up close to the top and bottom edges of the screen. */
