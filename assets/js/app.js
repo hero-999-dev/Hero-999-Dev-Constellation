@@ -288,10 +288,14 @@ function initTheme() {
    with a `+` where two meet and an arrowhead at whichever end asked for one.
    Rebuilt whole on every frame - the grid is a few hundred cells, and a card
    being dragged moves its ends every frame anyway. */
-function paintLines(pre, routes) {
-  if (!pre) return;
+/* A character grid the size of a <pre>, with the few pen strokes everything
+   here needs: straight runs, a rectangle, and a word written into an edge. The
+   cell is measured rather than assumed - the mono face is whatever the system
+   gave us, and every box on the page is spaced by it. */
+function gridFor(pre) {
+  if (!pre) return null;
   const w = pre.clientWidth, h = pre.clientHeight;
-  if (!w || !h) return;
+  if (!w || !h) return null;
   const probe = document.createElement('span');
   probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre';
   probe.textContent = '0'.repeat(40);
@@ -299,22 +303,24 @@ function paintLines(pre, routes) {
   const pb = probe.getBoundingClientRect();
   const cw = pb.width / 40, chh = pb.height;
   probe.remove();
-  if (!cw || !chh) return;
+  if (!cw || !chh) return null;
 
   const cols = Math.max(1, Math.floor(w / cw)), rows = Math.max(1, Math.floor(h / chh));
-  const grid = [];
-  for (let r = 0; r < rows; r++) grid.push(new Array(cols).fill(' '));
-  const put = (c, r, ch) => {
+  const cells = [];
+  for (let r = 0; r < rows; r++) cells.push(new Array(cols).fill(' '));
+
+  const put = (c, r, ch, force) => {
     if (r < 0 || r >= rows || c < 0 || c >= cols) return;
+    const was = cells[r][c];
     // A crossing is a crossing: never let a straight overwrite a corner.
-    if (ch === '-' && (grid[r][c] === '|' || grid[r][c] === '+')) { grid[r][c] = '+'; return; }
-    if (ch === '|' && (grid[r][c] === '-' || grid[r][c] === '+')) { grid[r][c] = '+'; return; }
-    grid[r][c] = ch;
+    if (!force && ch === '-' && (was === '|' || was === '+')) { cells[r][c] = '+'; return; }
+    if (!force && ch === '|' && (was === '-' || was === '+')) { cells[r][c] = '+'; return; }
+    cells[r][c] = ch;
   };
   const cell = (pt) => ({ c: Math.round(pt.x / cw), r: Math.round(pt.y / chh) });
 
-  for (const route of routes) {
-    const pts = route.points.map(cell);
+  const run = (points, opts = {}) => {
+    const pts = points.map(cell);
     for (let i = 0; i < pts.length - 1; i++) {
       const from = pts[i], to = pts[i + 1];
       if (from.c === to.c) {
@@ -328,13 +334,43 @@ function paintLines(pre, routes) {
     }
     // Heads point the way the last (or first) segment runs.
     const head = (at, from) => {
-      if (at.c === from.c) put(at.c, at.r, at.r > from.r ? 'v' : '^');
-      else put(at.c, at.r, at.c > from.c ? '>' : '<');
+      if (at.c === from.c) put(at.c, at.r, at.r > from.r ? 'v' : '^', true);
+      else put(at.c, at.r, at.c > from.c ? '>' : '<', true);
     };
-    if (route.head && pts.length > 1) head(pts[pts.length - 1], pts[pts.length - 2]);
-    if (route.head2 && pts.length > 1) head(pts[0], pts[1]);
-  }
-  pre.textContent = grid.map((r) => r.join('').replace(/\s+$/, '')).join('\n');
+    if (opts.head && pts.length > 1) head(pts[pts.length - 1], pts[pts.length - 2]);
+    if (opts.head2 && pts.length > 1) head(pts[0], pts[1]);
+  };
+
+  const box = (a, b) => {
+    const p0 = cell(a), p1 = cell(b);
+    const c0 = Math.min(p0.c, p1.c), c1 = Math.max(p0.c, p1.c);
+    const r0 = Math.min(p0.r, p1.r), r1 = Math.max(p0.r, p1.r);
+    for (let c = c0; c <= c1; c++) { put(c, r0, '-'); put(c, r1, '-'); }
+    for (let r = r0; r <= r1; r++) { put(c0, r, '|'); put(c1, r, '|'); }
+    put(c0, r0, '.', true); put(c1, r0, '.', true);
+    put(c0, r1, "'", true); put(c1, r1, "'", true);
+    return { c0, c1, r0, r1 };
+  };
+
+  // A name sits IN the edge it labels, with a space either side of it, the way
+  // a plate is engraved rather than captioned.
+  const label = (text, rect, row) => {
+    const word = ' ' + text + ' ';
+    let c = Math.round((rect.c0 + rect.c1 - word.length) / 2);
+    const at = { c, r: row, w: word.length };
+    for (const ch of word) put(c++, row, ch, true);
+    return at;
+  };
+
+  const flush = () => { pre.textContent = cells.map((r) => r.join('').replace(/\s+$/, '')).join('\n'); };
+  return { cols, rows, cw, ch: chh, put, run, box, label, flush };
+}
+
+function paintLines(pre, routes) {
+  const g = gridFor(pre);
+  if (!g) return;
+  for (const route of routes) g.run(route.points, route);
+  g.flush();
 }
 
 /* ------------------------------------------------------------------- boxes */
@@ -395,8 +431,8 @@ function asciiBox(lines, cols, { rows = 0, rule = '-' } = {}) {
 
 /* ------------------------------------------------------------------ nodes */
 
-const NODE_COLS = 28, NODE_ROWS = 6;   // inside the frame, in characters
-const HUB_COLS = 26;
+const NODE_COLS = 30, NODE_ROWS = 6;   // inside the frame, in characters
+const HUB_COLS = 28;
 
 /* Fills a node body. Used by both renderers, so a card looks the same in the
    map and in the list. */
@@ -437,22 +473,10 @@ function place(el, item) {
   el.style.top = pct(item.y, H);
 }
 
-/* A flat horizontal-ish curve between two points. Control points sit on the
-   midpoint in x, which gives the branch its bend without any maths worth a
-   comment. */
-function curve(a, b) {
-  const mx = (a.x + b.x) / 2;
-  return `M ${a.x} ${a.y} C ${mx} ${a.y}, ${mx} ${b.y}, ${b.x} ${b.y}`;
-}
-
-/* Every edge holds the two elements it joins, not their coordinates. The line
-   is redrawn from where the cards actually ARE, so nothing has to be kept in
-   sync by hand: dragging, the spring back, a window resize and the first paint
-   after the fonts load all go through the same measurement. */
+/* Every connector on the page, and every rectangle the map draws round a group.
+   One list each, rebuilt with whatever renders them. */
 const EDGES = [];
-let mapEl, linesEl;
-
-const ARROW = 10;                            // arrowhead length on screen, px
+const RINGS = [];
 
 function centreOf(el, box, w = W, h = H) {
   const r = el.getBoundingClientRect();
@@ -505,11 +529,13 @@ function fitMap() {
 }
 
 function redrawLines() {
-  // Routes for the panel, gathered as they are worked out and drawn in one pass
-  // at the end - they share a grid, so they cannot be written one at a time.
+  /* Only the panel has runs to draw now - the map paints its own grid. Routes
+     are gathered as they are worked out and drawn in one pass at the end,
+     because they share a grid and cannot be written one at a time. */
   const asciiRoutes = new Map();
   for (const edge of EDGES) {
-    const host = edge.host || mapEl;
+    if (!edge.ascii) continue;
+    const host = edge.host;
     if (!host || host.hidden || !host.isConnected) continue;
     const box = host.getBoundingClientRect();
     if (!box.width || !box.height) continue;   // hidden on narrow screens
@@ -517,182 +543,215 @@ function redrawLines() {
     const sx = box.width / w, sy = box.height / h;
     const ca = centreOf(edge.a, box, w, h);
     const cb = centreOf(edge.b, box, w, h);
-    // An end with a head stops at the box edge, not the centre - a head drawn on
-    // the centre hides under the card. An end without one runs to the centre.
+    // An end with a head stops at the box edge; a head on the centre would hide
+    // under the card.
     const a = edge.head2 ? edgeOf(edge.a, box, w, h, cb) : ca;
     const b = edge.head ? edgeOf(edge.b, box, w, h, ca) : cb;
+    const ra = edge.a.getBoundingClientRect(), rb = edge.b.getBoundingClientRect();
+    const px = (pt) => ({ x: pt.x * sx, y: pt.y * sy });
 
-    /* The arrowhead is a triangle of its own rather than an SVG marker. A marker
-       is laid out in the same space as the line, and this space is a square
-       stretched over a tall narrow panel - the head came out as a spike. Built
-       in screen pixels and converted back, it keeps its shape at any panel size.
-       It also lets the line stop at the base of the head, not run through it.
-       Returns that base, so a double-headed edge is pulled in at both ends. */
-    const drawHead = (headEl, tail, tip) => {
-      let dx = (tip.x - tail.x) * sx, dy = (tip.y - tail.y) * sy;
-      const len = Math.hypot(dx, dy) || 1;
-      dx /= len; dy /= len;
-      const tipX = tip.x * sx, tipY = tip.y * sy;
-      const backX = tipX - dx * ARROW, backY = tipY - dy * ARROW;
-      const wing = ARROW / 2;
-      const u = (px, py) => `${px / sx} ${py / sy}`;
-      headEl.setAttribute('d',
-        `M ${u(tipX, tipY)} L ${u(backX - dy * wing, backY + dx * wing)}` +
-        ` L ${u(backX + dy * wing, backY - dx * wing)} Z`);
-      return { x: backX / sx, y: backY / sy };
-    };
-
-    /* The panel's runs are characters rather than strokes: the same route, in
-       the same order, handed to the raster instead of to a path. */
-    if (edge.ascii) {
-      const rb = edge.b.getBoundingClientRect();
-      const ra = edge.a.getBoundingClientRect();
-      const px = (pt) => ({ x: pt.x * sx, y: pt.y * sy });
-      let points;
-      if (edge.elbow) {
-        const bhw = (rb.width / box.width) * w / 2;
-        const ahh = (ra.height / box.height) * h / 2;
-        const up = cb.y < ca.y;
-        points = [{ x: ca.x, y: ca.y + (up ? -ahh : ahh) },
-                  { x: ca.x, y: cb.y },
-                  { x: cb.x + bhw, y: cb.y }];
-      } else {
-        points = [edge.head2 ? a : ca, edge.head ? b : cb];
-      }
-      if (!asciiRoutes.has(edge.host)) asciiRoutes.set(edge.host, []);
-      asciiRoutes.get(edge.host).push({ points: points.map(px), head: !!edge.head, head2: !!edge.head2 });
-      if (edge.label) {
-        const gap = edge.elbow
-          ? (cb.y < ca.y ? [rb.bottom, ra.top] : [ra.bottom, rb.top])
-          : (ra.bottom <= rb.top ? [ra.bottom, rb.top] : [rb.bottom, ra.top]);
-        const y = ((gap[0] + gap[1]) / 2 - box.top) / box.height * h;
-        const x = edge.elbow ? ca.x : (ca.x + cb.x) / 2;
-        edge.label.style.left = (x + (edge.labelDx || 0)) / w * 100 + '%';
-        edge.label.style.top = (y + (edge.labelDy || 0)) / h * 100 + '%';
-      }
-      continue;
-    }
-
+    /* The elbow leaves the phone from its top or bottom, runs to the height of
+       the laptop, then turns once and goes in at the laptop's right side. */
+    let points;
     if (edge.elbow) {
-      /* A right-angle route instead of a diagonal: `edge.a` (the phone) leaves
-         from its top or bottom edge, runs straight up or down to the height of
-         `edge.b` (the laptop), then turns once and runs in to the laptop's RIGHT
-         side, so the head enters horizontally. Two 90-degree bends, one up-left
-         and one down-left, rather than two slants. */
-      const rb = edge.b.getBoundingClientRect();
       const bhw = (rb.width / box.width) * w / 2;
-      const ra = edge.a.getBoundingClientRect();
       const ahh = (ra.height / box.height) * h / 2;
       const up = cb.y < ca.y;
-      const start = { x: ca.x, y: ca.y + (up ? -ahh : ahh) };  // phone top / bottom
-      const tip = { x: cb.x + bhw, y: cb.y };                  // laptop right edge
-      const corner = { x: ca.x, y: cb.y };
-      const base = edge.head ? drawHead(edge.head, corner, tip) : tip;
-      edge.path.setAttribute('d',
-        `M ${start.x} ${start.y} L ${corner.x} ${corner.y} L ${base.x} ${base.y}`);
-      if (edge.label) {
-        // On the vertical run, centred in the clear band between the phone and
-        // the laptop - not the run's own midpoint, which climbs into the laptop
-        // once the laptop is wide enough to reach the run.
-        const g0 = up ? rb.bottom : ra.bottom;
-        const g1 = up ? ra.top : rb.top;
-        const y = ((g0 + g1) / 2 - box.top) / box.height * h;
-        edge.label.style.left = (ca.x + (edge.labelDx || 0)) / w * 100 + '%';
-        edge.label.style.top = (y + (edge.labelDy || 0)) / h * 100 + '%';
-      }
-      continue;
+      points = [{ x: ca.x, y: ca.y + (up ? -ahh : ahh) },
+                { x: ca.x, y: cb.y },
+                { x: cb.x + bhw, y: cb.y }];
+    } else {
+      points = [a, b];
     }
+    if (!asciiRoutes.has(host)) asciiRoutes.set(host, []);
+    asciiRoutes.get(host).push({ points: points.map(px), head: !!edge.head, head2: !!edge.head2 });
 
-    const pa = edge.head2 ? drawHead(edge.head2, b, a) : a;
-    const pb = edge.head ? drawHead(edge.head, a, b) : b;
-    edge.path.setAttribute('d', curve(pa, pb));
     if (edge.label) {
-      // Halfway along the line is halfway between the two CENTRES, which is not
-      // the middle of the space between the boxes once they are different
-      // heights - the label ends up sitting on the taller one. Where there is a
-      // clear gap, centre the label in the gap instead.
-      let y = (a.y + b.y) / 2;
-      const ra = edge.a.getBoundingClientRect(), rb = edge.b.getBoundingClientRect();
-      const gap = ra.bottom <= rb.top ? [ra.bottom, rb.top]
-                : rb.bottom <= ra.top ? [rb.bottom, ra.top] : null;
-      if (gap) y = ((gap[0] + gap[1]) / 2 - box.top) / box.height * h;
-      edge.label.style.left = ((a.x + b.x) / 2 + (edge.labelDx || 0)) / w * 100 + '%';
+      // Centred in the clear band between the two boxes, not at the midpoint of
+      // the run - which climbs onto the taller box once they differ.
+      const gap = edge.elbow
+        ? (cb.y < ca.y ? [rb.bottom, ra.top] : [ra.bottom, rb.top])
+        : (ra.bottom <= rb.top ? [ra.bottom, rb.top] : [rb.bottom, ra.top]);
+      const y = ((gap[0] + gap[1]) / 2 - box.top) / box.height * h;
+      const x = edge.elbow ? ca.x : (ca.x + cb.x) / 2;
+      edge.label.style.left = (x + (edge.labelDx || 0)) / w * 100 + '%';
       edge.label.style.top = (y + (edge.labelDy || 0)) / h * 100 + '%';
     }
   }
   for (const [host, routes] of asciiRoutes) paintLines(host.querySelector('.dev-lines'), routes);
 }
+function paintMap() {
+  if (!linesEl || !mapEl) return;
+  const box = mapEl.getBoundingClientRect();
+  if (!box.width || !box.height) return;
+  const g = gridFor(linesEl);
+  if (!g) return;
 
-/* ------------------------------------------------------------------ rings */
+  // Where an element sits inside the map, in the map's own pixels.
+  const local = (el) => {
+    const q = el.getBoundingClientRect();
+    return { l: q.left - box.left, t: q.top - box.top, r: q.right - box.left, b: q.bottom - box.top,
+             x: q.left + q.width / 2 - box.left, y: q.top + q.height / 2 - box.top };
+  };
 
-/* The smallest ellipse of the group's own proportions that contains every
-   corner of every card in it. Scaling the half-extents by the worst corner is
-   what makes it enclose rather than merely hug: a ring fitted to the bounding
-   box passes through the middle of each edge and leaves the corners outside.
-   Rings sit at the cards' resting places, so dragging one does not drag the
-   boundary with it. */
-const RINGS = [];
+  /* The runs first, so a rectangle drawn over one turns the meeting into a `+`
+     rather than being broken by it. Every card hangs off the hub: out of the
+     hub's near side, across to halfway, then up or down and in. */
+  for (const edge of EDGES) {
+    if (edge.host && edge.host !== mapEl) continue;
+    const a = local(edge.a), b = local(edge.b);
+    const right = b.x > a.x;
+    const ax = right ? a.r : a.l, bx = right ? b.l : b.r;
+    const mid = (ax + bx) / 2;
+    g.run([{ x: ax, y: a.y }, { x: mid, y: a.y }, { x: mid, y: b.y }, { x: bx, y: b.y }]);
+  }
 
-function fitRing(els, box, pad, centre) {
-  const pts = els.map((el) => {
-    const r = el.getBoundingClientRect();
-    return { c: centreOf(el, box), hw: (r.width / box.width) * W / 2, hh: (r.height / box.height) * H / 2 };
-  });
-  const xs = pts.flatMap((p) => [p.c.x - p.hw, p.c.x + p.hw]);
-  const ys = pts.flatMap((p) => [p.c.y - p.hh, p.c.y + p.hh]);
-  // `centre` pins the ring to a point instead of to the middle of what it holds.
-  // The outer ring uses the middle of the canvas, so its top and bottom margins
-  // come out equal - the cards are not quite symmetric (the centre card is
-  // taller than the rest), which left the ring about a unit low.
-  const cx = centre ? centre.x : (Math.min(...xs) + Math.max(...xs)) / 2;
-  const cy = centre ? centre.y : (Math.min(...ys) + Math.max(...ys)) / 2;
-  const hw = Math.max(...xs.map((v) => Math.abs(v - cx)));
-  const hh = Math.max(...ys.map((v) => Math.abs(v - cy)));
-  let s = 1;
-  for (const p of pts) {
-    for (const sx of [-1, 1]) {
-      for (const sy of [-1, 1]) {
-        s = Math.max(s, Math.hypot(
-          Math.abs(p.c.x + sx * p.hw - cx) / hw,
-          Math.abs(p.c.y + sy * p.hh - cy) / hh));
+  for (const ring of RINGS) {
+    let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity;
+    for (const el of ring.els) {
+      const q = local(el);
+      l = Math.min(l, q.l); t = Math.min(t, q.t); r = Math.max(r, q.r); b = Math.max(b, q.b);
+    }
+    if (!Number.isFinite(l)) continue;
+    const padX = ring.pad * g.cw, padY = ring.pad * g.ch;
+    const rect = g.box({ x: l - padX, y: t - padY }, { x: r + padX, y: b + padY });
+    if (ring.label) {
+      // Named in the frame itself. Uppercased in JS, not CSS: `text-transform`
+      // follows the page's language, and Turkish turns the i of Constellation
+      // into a dotted I.
+      const at = g.label(ring.label.toUpperCase(), rect, rect.r0);
+      if (ring.link) {
+        ring.link.style.left = (at.c * g.cw) + 'px';
+        ring.link.style.top = (at.r * g.ch) + 'px';
+        ring.link.style.width = (at.w * g.cw) + 'px';
+        ring.link.style.height = g.ch + 'px';
       }
     }
+    if (ring.badge) g.label(ring.badge, rect, rect.r1);
   }
-  return { cx, cy, rx: hw * s + pad, ry: hh * s + pad };
+  g.flush();
 }
 
-/* Punches a hole the shape of the outer ring out of the header strip, so the
-   strip and its rule stop where the ring runs and stay whole everywhere else.
-   The mask is written in the bar's own coordinates - the ring's centre sits far
-   below it, so what crosses the bar is the top of the arc. */
-function maskHeader(ring, box) {
+function renderMap() {
+  linesEl = document.getElementById('mapLines');
+  mapEl = document.getElementById('map');
+  const nodes = document.getElementById('mapNodes');
+
+  /* Drawn twice over: initLang() runs before the gate is answered and rebuilds
+     the map, then the boot sequence drew it again on top - two full sets of cards, one
+     hiding under the other until a drag pulled the top one away. Clearing here
+     makes the function safe to call from anywhere. */
+  nodes.textContent = '';
+  linesEl.textContent = '';
+  for (let i = EDGES.length - 1; i >= 0; i--) {
+    if (!EDGES[i].host || EDGES[i].host === mapEl) EDGES.splice(i, 1);
+  }
+  RINGS.length = 0;
+
+  const join = (a, b) => EDGES.push({ a, b });
+
+  /* A ring is a record now, not a shape: which cards it holds, how much clear
+     space to leave round them, and the words to write into its frame. paintMap()
+     draws it. The name keeps its link as a bare anchor laid over the letters. */
+  const addRing = (els, pad, text, href, badge) => {
+    let link = null;
+    if (text && href) {
+      link = document.createElement('a');
+      link.className = 'ring-link';
+      link.href = href;
+      link.target = '_blank';
+      link.rel = 'noopener';
+      link.setAttribute('aria-label', text);
+      nodes.appendChild(link);
+    }
+    RINGS.push({ els, pad, label: text || null, link, badge: badge || null });
+  };
+
+  const me = makeNode(ME, 'me');
+  place(me, ME);
+  nodes.appendChild(me);
+
+  const all = [me];
+  const add = (item) => {
+    const el = makeNode(item);
+    place(el, item);
+    nodes.appendChild(el);
+    join(me, el);
+    all.push(el);
+    return el;
+  };
+
+  for (const branch of BRANCHES) {
+    // A ring group has no card of its own - the circle IS the grouping.
+    if (branch.ring) {
+      addRing(branch.children.map(add), 2, branch.ring);
+      continue;
+    }
+    add(branch);
+  }
+
+  addRing(all, 4, SELF.title, GH(SELF.repo),
+          '[' + t(SELF.lang) + '] [' + t(SELF.private ? 'private' : 'public') + ']');
+
+  settle();
+}
+
+/* Everything under the bar starts at --bar-h: the hardware panel, the narrow
+   list, the signature when it steps up on a phone. The bar's height is whatever
+   its controls come out to, and they are sized from the window, so it is
+   measured rather than written down - a guess that was too small had the panel
+   starting underneath the bar, with the buttons cutting across its top. */
+const measureBar = () => {
   const bar = document.querySelector('.topbar');
   if (!bar) return;
-  const barBox = bar.getBoundingClientRect();
-  const sx = box.width / W, sy = box.height / H;
-  const cx = box.left + ring.cx * sx - barBox.left;
-  const cy = box.top + ring.cy * sy - barBox.top;
-  // The hole is cut a hair wider than the ring - enough that the bar's own rules
-  // do not land on top of the ring's line and read as a bright nick, and no more.
-  // At 7px the bar's lines stopped well clear of the ring on both sides, and the
-  // eye joined those ends into a second circle that was not drawn anywhere.
-  const CLEAR = 2;
-  bar.style.setProperty('--ring-mask',
-    `radial-gradient(ellipse ${ring.rx * sx + CLEAR}px ${ring.ry * sy + CLEAR}px at ${cx}px ${cy}px,` +
-    ' transparent 99.4%, #000 100%)');
+  const h = Math.round(bar.getBoundingClientRect().height);
+  if (h) document.documentElement.style.setProperty('--bar-h', h + 'px');
+};
+
+const settle = () => {
+  measureBar();
+  if (!mapEl) return;
+  fitMap(); spaceCards(); capSidePanels(); redrawLines(); paintMap();
+};
+addEventListener('resize', settle);
+// Web fonts and the scrollbar appearing both move things after first paint.
+addEventListener('load', settle);
+
+function renderList() {
+  const list = document.getElementById('list');
+  // Same guard renderMap has: initLang()'s rebuild runs one set, then
+  // the boot sequence calls this again on top. renderMap clears its own
+  // containers; this did not, so the list came out doubled - invisible while it
+  // was display:none, plain once it showed on narrow screens. Clear here so it
+  // is safe to call from anywhere.
+  list.textContent = '';
+  const leafOf = (item) => {
+    const leaf = makeNode(item);
+    leaf.classList.add('leaf');   // keeps `node`: same box, out of the map's flow
+    return leaf;
+  };
+  // Up on the map the page's own repository is the outer ring; there is no ring
+  // down here, so it leads the list instead.
+  list.appendChild(leafOf(SELF));
+  for (const branch of BRANCHES) {
+    if (!branch.children) {
+      list.appendChild(leafOf(branch));
+      continue;
+    }
+    const box = document.createElement('section');
+    box.className = 'branch';
+    const head = document.createElement('span');
+    head.className = 'branch-head';
+    head.textContent = branch.ring || branch.title;   // the ring's name is the group's name
+    box.appendChild(head);
+    for (const child of branch.children) box.appendChild(leafOf(child));
+    list.appendChild(box);
+  }
 }
 
-/* Panel width, and the rail it reserves on the map's right. One place, so the
-   CSS `.devices` width, the rail the map slides off, and the room test below all
-   agree - keep the CSS width equal to DEV_W. */
-const DEV_W = 430;
-const DEV_RAIL = DEV_W + 20;
-
-/* The language panel is not allowed past the leftmost point of the outer ring.
-   That point moves with the window - the map is centred in the page and its
-   size follows the shorter side - so the width is measured rather than guessed
-   and handed to CSS as --lang-max. */
-function capSidePanels(ring, box) {
+/* Whether there is room for the machines at all. Called from settle(), so it is
+   re-judged on every resize the way the map is. */
+function capSidePanels() {
   const wrapBox = (document.querySelector('.wrap') || document.body).getBoundingClientRect();
   // Mirror image on the right: the device column stops before the ring does.
   // Below about 160px the specs wrap to mush, and on a short window the three
@@ -726,181 +785,6 @@ function capSidePanels(ring, box) {
   }
 }
 
-function layoutRings() {
-  const box = mapEl.getBoundingClientRect();
-  if (!box.width || !box.height) return;
-  for (const ring of RINGS) {
-    const { cx, cy, rx, ry } = fitRing(ring.els, box, ring.pad, ring.centre);
-    if (ring.shape.classList.contains('outer-ring')) {
-      maskHeader({ cx, cy, rx, ry }, box);
-      capSidePanels({ cx, rx }, box);
-    }
-    ring.shape.setAttribute('cx', cx);
-    ring.shape.setAttribute('cy', cy);
-    ring.shape.setAttribute('rx', rx);
-    ring.shape.setAttribute('ry', ry);
-    if (ring.label) {
-      /* A fixed inset from the top does not work: the ellipse narrows fast up
-         there, so the ends of the word hang out over the stroke. Solve the
-         ellipse for the width this particular text needs instead - that gives
-         the highest line it fits on - then drop the baseline by the cap height
-         so the letters, not the baseline, are what sits inside.
-         A name too wide for the top of a narrow ring gets pushed down onto the
-         cards inside it, which is what the tracked group label did, so it is
-         stepped down in size until the line it wants is one near the top. The
-         inline size is cleared first: this runs on every resize, and reading
-         back its own last answer would ratchet the label away to nothing. */
-      ring.label.style.fontSize = '';
-      const css = parseFloat(getComputedStyle(ring.label).fontSize) || 19;
-      let size = css, y = 0;
-      for (;;) {
-        // Side clearance is a share of the ring, not a fixed 26 units: on the
-        // small group ring a fixed inset was most of its width.
-        const halfText = ring.label.getComputedTextLength() / 2 + Math.min(26, rx * 0.14);
-        const ratio = Math.min(halfText / rx, 0.999);
-        y = cy - ry * Math.sqrt(1 - ratio * ratio) + size * 0.96;
-        if (y <= cy - ry + size * 3 || size <= css * 0.72) break;
-        size -= 1;
-        ring.label.style.fontSize = size + 'px';
-      }
-      ring.label.setAttribute('x', cx);
-      ring.label.setAttribute('y', y);
-    }
-    if (ring.foot) {
-      // The same solve read from the foot of the ellipse: the highest line the
-      // badges fit on, mirrored, then lifted clear of the stroke.
-      const size = parseFloat(getComputedStyle(ring.foot).fontSize) || 16;
-      const half = ring.foot.getComputedTextLength() / 2 + Math.min(26, rx * 0.14);
-      const ratio = Math.min(half / rx, 0.999);
-      ring.foot.setAttribute('x', cx);
-      ring.foot.setAttribute('y', cy + ry * Math.sqrt(1 - ratio * ratio) - size * 0.5);
-    }
-  }
-}
-
-function renderMap() {
-  linesEl = document.getElementById('mapLines');
-  mapEl = document.getElementById('map');
-  const nodes = document.getElementById('mapNodes');
-
-  /* Drawn twice over: initLang() runs before the gate is answered and rebuilds
-     the map, then the boot sequence drew it again on top - two full sets of cards, one
-     hiding under the other until a drag pulled the top one away. Clearing here
-     makes the function safe to call from anywhere. */
-  nodes.textContent = '';
-  linesEl.textContent = '';
-  for (let i = EDGES.length - 1; i >= 0; i--) {
-    if (!EDGES[i].host || EDGES[i].host === mapEl) EDGES.splice(i, 1);
-  }
-  RINGS.length = 0;
-  const NS = 'http://www.w3.org/2000/svg';
-  const svg = (tag, cls) => {
-    const el = document.createElementNS(NS, tag);
-    if (cls) el.setAttribute('class', cls);
-    return el;
-  };
-
-  // Every stroke goes in one group and the group carries the fade, instead of
-  // each stroke carrying its own alpha. Translucent strokes ADD where they
-  // overlap - two at .3 come out at .51 - which is what put a dark smudge at
-  // every place a connector crossed a ring or another connector. A group with
-  // `opacity` is composited once and then faded, so a crossing looks the same
-  // as a single line. Labels stay outside it, at full strength.
-  const ink = svg('g', 'ink');
-  linesEl.appendChild(ink);
-
-  const join = (a, b, cls) => {
-    const path = svg('path', cls);
-    ink.appendChild(path);
-    EDGES.push({ a, b, path });
-  };
-
-  const addRing = (els, cls, pad, text, centre, href, badge) => {
-    const shape = svg('ellipse', cls);
-    ink.prepend(shape);                // behind the connectors
-    let label = null, foot = null;
-    if (text) {
-      // The outer ring carries the site's name and is set like the wordmark
-      // over the airlock; a group ring names a box of cards and is set like the
-      // cards themselves.
-      label = svg('text', 'ring-label ' +
-        (cls.includes('outer-ring') ? 'ring-label-site' : 'ring-label-group'));
-      label.textContent = text;
-      // A named ring that stands for a repository is clickable like a card is.
-      // The map is pointer-events: none, so `.ring-link` switches them back on
-      // for this one element the way `.node` does for the cards.
-      if (href) {
-        const link = document.createElementNS(NS, 'a');
-        link.setAttribute('class', 'ring-link');
-        link.setAttribute('href', href);
-        link.setAttribute('target', '_blank');
-        link.setAttribute('rel', 'noopener');
-        link.appendChild(label);
-        linesEl.appendChild(link);
-      } else {
-        linesEl.appendChild(label);
-      }
-    }
-    if (badge) {
-      foot = svg('text', 'ring-label ring-label-badge');
-      foot.textContent = badge;
-      linesEl.appendChild(foot);
-    }
-    RINGS.push({ els, shape, label, foot, pad, centre });
-  };
-
-  const me = makeNode(ME, 'me');
-  place(me, ME);
-  nodes.appendChild(me);
-  makeDraggable(me);
-
-  const all = [me];
-  const add = (item) => {
-    const el = makeNode(item);
-    place(el, item);
-    nodes.appendChild(el);
-    makeDraggable(el);
-    join(me, el, 'trunk');
-    all.push(el);
-    return el;
-  };
-
-  for (const branch of BRANCHES) {
-    // A ring group has no card of its own - the circle IS the grouping.
-    if (branch.ring) {
-      addRing(branch.children.map(add), 'ring group-ring', 14, branch.ring);
-      continue;
-    }
-    add(branch);
-  }
-
-  addRing(all, 'ring outer-ring', 48, SELF.title, { x: W / 2, y: H / 2 }, GH(SELF.repo),
-          '[' + t(SELF.lang) + '] [' + t(SELF.private ? 'private' : 'public') + ']');
-
-  settle();
-}
-
-/* Everything under the bar starts at --bar-h: the hardware panel, the narrow
-   list, the signature when it steps up on a phone. The bar's height is whatever
-   its controls come out to, and they are sized from the window, so it is
-   measured rather than written down - a guess that was too small had the panel
-   starting underneath the bar, with the buttons cutting across its top. */
-const measureBar = () => {
-  const bar = document.querySelector('.topbar');
-  if (!bar) return;
-  const h = Math.round(bar.getBoundingClientRect().height);
-  if (h) document.documentElement.style.setProperty('--bar-h', h + 'px');
-};
-
-const settle = () => {
-  measureBar();
-  if (!mapEl) return;
-  fitMap(); spaceCards(); redrawLines(); layoutRings();
-};
-addEventListener('resize', settle);
-// Web fonts and the scrollbar appearing both move things after first paint.
-addEventListener('load', settle);
-
 /* Switching language changes every card's text, and card size feeds the ring
    geometry, so the map is thrown away and drawn again rather than patched. The
    listeners above are registered once, outside, so this cannot stack them. */
@@ -913,128 +797,9 @@ function rebuildMap() {
 
 /* ------------------------------------------------------------------ drag */
 
-const BASE = 'translate(-50%, -50%)';
-let dragging = 0;   // how many cards are mid-drag or mid-spring
-
-/* Lines are redrawn every frame for as long as anything is moving. The spring
-   back is a CSS transition rather than hand-rolled physics - the loop just
-   watches where the card has got to, so the curve cannot drift away from it. */
-function follow() {
-  redrawLines();
-  if (dragging > 0) requestAnimationFrame(follow);
-}
-
-function makeDraggable(el) {
-  let startX = 0, startY = 0, moved = false, live = false;
-
-  el.addEventListener('pointerdown', (event) => {
-    if (event.button !== 0) return;
-    live = true;
-    moved = false;
-    startX = event.clientX;
-    startY = event.clientY;
-    el.setPointerCapture(event.pointerId);
-    el.classList.remove('returning');
-    el.classList.add('dragging');
-    dragging++;
-    requestAnimationFrame(follow);
-  });
-
-  el.addEventListener('pointermove', (event) => {
-    if (!live) return;
-    const dx = event.clientX - startX;
-    const dy = event.clientY - startY;
-    // A few pixels of slop, so a click on a card is still a click.
-    if (!moved && Math.hypot(dx, dy) > 4) moved = true;
-    el.style.transform = `${BASE} translate(${dx}px, ${dy}px)`;
-  });
-
-  const release = (event) => {
-    if (!live) return;
-    live = false;
-    el.releasePointerCapture?.(event.pointerId);
-    el.classList.remove('dragging');
-    if (!moved) {
-      el.style.transform = '';
-      dragging--;
-      return;
-    }
-    // Spring home. The frame loop keeps running until the transition ends, so
-    // the connector stays attached the whole way back.
-    el.classList.add('returning');
-    el.style.transform = BASE;
-    let settled = false;
-    const done = () => {
-      if (settled) return;
-      settled = true;
-      el.removeEventListener('transitionend', onEnd);
-      el.classList.remove('returning');
-      el.style.transform = '';
-      dragging--;
-      redrawLines();
-      // Clearing the transform above does not always move the card in the same
-      // tick - it can still measure at the point it was let go from, which
-      // leaves the connectors and their labels behind. One more pass once the
-      // style has settled. A timer, not a frame: the frame loop is the first
-      // thing a browser stops handing out when the tab is not being painted.
-      setTimeout(redrawLines, 0);
-    };
-    // Dropping the card also drops its drag shadow and border colour, and on the
-    // map those transition too - their `transitionend` lands at .2s, less than
-    // half way home. Only the transform finishing means the card has arrived;
-    // anything earlier cuts the spring short and freezes the label mid-flight.
-    const onEnd = (event) => { if (event.propertyName === 'transform') done(); };
-    el.addEventListener('transitionend', onEnd);
-    // transitionend does not fire at all if the card was let go where it started.
-    setTimeout(done, 900);
-  };
-
-  el.addEventListener('pointerup', release);
-  el.addEventListener('pointercancel', release);
-
-  // A drag that ends on a link must not also open it.
-  el.addEventListener('click', (event) => {
-    if (moved) {
-      event.preventDefault();
-      moved = false;
-    }
-  });
-  el.addEventListener('dragstart', (event) => event.preventDefault());
-}
-
-/* ------------------------------------------------------------------ list */
-
-function renderList() {
-  const list = document.getElementById('list');
-  // Same guard renderMap has: initLang()'s rebuild runs one set, then
-  // the boot sequence calls this again on top. renderMap clears its own
-  // containers; this did not, so the list came out doubled - invisible while it
-  // was display:none, plain once it showed on narrow screens. Clear here so it
-  // is safe to call from anywhere.
-  list.textContent = '';
-  const leafOf = (item) => {
-    const leaf = makeNode(item);
-    leaf.classList.add('leaf');   // keeps `node`: same box, out of the map's flow
-    return leaf;
-  };
-  // Up on the map the page's own repository is the outer ring; there is no ring
-  // down here, so it leads the list instead.
-  list.appendChild(leafOf(SELF));
-  for (const branch of BRANCHES) {
-    if (!branch.children) {
-      list.appendChild(leafOf(branch));
-      continue;
-    }
-    const box = document.createElement('section');
-    box.className = 'branch';
-    const head = document.createElement('span');
-    head.className = 'branch-head';
-    head.textContent = branch.ring || branch.title;   // the ring's name is the group's name
-    box.appendChild(head);
-    for (const child of branch.children) box.appendChild(leafOf(child));
-    list.appendChild(box);
-  }
-}
+/* The cards were draggable, with a spring back to their places. They are part
+   of a drawing now rather than furniture on a board, so the whole follow loop,
+   the pointer handlers and the spring have gone with the idea. */
 
 /* ----------------------------------------------------------------- rigs */
 
@@ -1079,9 +844,9 @@ const DEVICES = [
    - so its two sides are one-way (`arrow`), the head on the laptop. All three
    sides ride the same tailnet, so they carry the one label. */
 const LINKS = [
-  { from: 'phone', to: 'go', label: 'termius / tailscale', arrow: true, elbow: true },
-  { from: 'phone', to: 'acer', label: 'termius / tailscale', arrow: true, elbow: true },
-  { from: 'go', to: 'acer', label: 'termius / tailscale', both: true },
+  { from: 'phone', to: 'go', label: 'termius|tailscale', arrow: true, elbow: true },
+  { from: 'phone', to: 'acer', label: 'termius|tailscale', arrow: true, elbow: true },
+  { from: 'go', to: 'acer', label: 'termius|tailscale', both: true },
 ];
 
 /* Natural height of the panel, measured the first time it is drawn. Nothing on
@@ -1110,7 +875,7 @@ function glide(change) {
   const until = performance.now() + GLIDE_MS;
   const step = () => {
     redrawLines();
-    layoutRings();
+    paintMap();
     if (performance.now() < until) requestAnimationFrame(step);
     else wrap.classList.remove('gliding');
   };
@@ -1171,6 +936,11 @@ function initDevices() {
    frame, joined by the same connector engine as the big one - same follow loop,
    same spring back. Its own coordinate space (DW x DH) so the two never mix. */
 const DW = 100, DH = 100;
+/* Panel width, and the rail it reserves on the map's right. One place, so the
+   CSS `.devices` width, the rail the map slides off, and the room test all
+   agree - keep the CSS width equal to DEV_W. */
+const DEV_W = 430;
+const DEV_RAIL = DEV_W + 20;
 const DEV_COLS = 30;   // inside the frame, in characters
 
 function renderDevices() {
@@ -1220,7 +990,6 @@ function renderDevices() {
     const cols = Math.min(DEV_COLS, lines.reduce((n, l) => Math.max(n, l.length), 0)) + 2;
     card.textContent = asciiBox(lines, cols);
     nodes.appendChild(card);
-    makeDraggable(card);
     made[item.key] = card;
   }
 
@@ -1410,7 +1179,7 @@ function spinSaturn(pre) {
     // Idle while the map is the face on show: the loop stays alive, but there is
     // nothing to draw into a box with no width, and the planet is then mid-turn
     // when the airlock comes back rather than starting over.
-    if (!skyShowing()) { requestAnimationFrame(step); return; }
+    if (!planetShowing()) { requestAnimationFrame(step); return; }
     if (now - last >= 70) { last = now; render(spin); spin += rate; }   // ~14 fps
     requestAnimationFrame(step);
   };
@@ -1444,9 +1213,10 @@ function fillStars(el) {
    The first after 15s, then one every 30s.
    Like the planet, this ignores "reduce motion": a frozen gate reads as broken,
    and nothing here flashes or fills the screen. */
-/* The airlock keeps its size when it is off to the left, so "is it on show" is
-   the class the switch sets, not a measurement. */
-const skyShowing = () => document.body.classList.contains('on-saturn');
+/* The planet keeps its size when it is off to the left, so "is it on show" is
+   the class the switch sets, not a measurement. The sky it turns against is
+   behind both faces now and always on show, so only the planet asks. */
+const planetShowing = () => document.body.classList.contains('on-saturn');
 
 const SHOT_RAMP = '.,-~:;=!*#';   // the planet's ramp, faint tail to bright head
 const SHOT_TAIL = 14;             // cells of trail behind the head
@@ -1495,9 +1265,9 @@ function shootStars(el) {
        per turn for as long as the tab was away. Bank the turn instead and let
        the shower out when the tab comes back: leaving a page and returning to a
        sky full of them is worth keeping, so it is on purpose and it is capped.
-       The same goes for the sky being away rather than the tab - while the map
-       is the face on show this box has no width. */
-    if (document.hidden || !skyShowing()) { pending = Math.min(pending + 1, SHOT_QUEUE_MAX); return; }
+       The sky itself is never away - it lies behind both faces - so only the tab
+       leaving banks a turn. */
+    if (document.hidden || !el.clientWidth) { pending = Math.min(pending + 1, SHOT_QUEUE_MAX); return; }
     const pre = document.createElement('pre');
     pre.className = 'gate-shot';
     el.appendChild(pre);
@@ -1578,7 +1348,7 @@ function shootStars(el) {
   /* Back in view: let the banked turns go, each after its own short delay, so
      they arrive as a shower rather than all on one frame. */
   const release = () => {
-    if (document.hidden || !el.isConnected || !skyShowing()) return;
+    if (document.hidden || !el.isConnected || !el.clientWidth) return;
     const owed = pending;
     pending = 0;
     for (let i = 0; i < owed; i++) setTimeout(fire, Math.random() * 1400);

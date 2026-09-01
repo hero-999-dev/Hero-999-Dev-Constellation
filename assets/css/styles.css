@@ -145,7 +145,6 @@ a{ color:inherit; text-decoration:none; }
    set by showView(), is what puts the face that has left out of reach. */
 .gate{
   position:fixed; inset:0; z-index:1; overflow:hidden;
-  background:var(--ground);
   transform:translateX(-100%);
   transition:transform .56s var(--ease);
 }
@@ -200,7 +199,9 @@ body.on-saturn .wrap{ transform:translateX(100%); }
 /* A scatter of faint asterisks behind everything - the deep-space ground the
    planet turns against. Filled in app.js so the count and spread stay in one
    place; each star sets its own position, size and dimness. */
-.gate-stars{ position:absolute; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+/* Behind both faces and fixed to the window, so the sky holds still while they
+   cross it - and the shooting stars keep falling whichever face is up. */
+.gate-stars{ position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
 .gate-star{
   position:absolute; font-family:var(--font-mono); line-height:1;
   /* The same ink as the planet in front of them - one sky, one colour. Each
@@ -361,65 +362,25 @@ body:not(.on-saturn) .topbar .gate-top{ display:none; }
   max-width:100%;
   container-type: size;
 }
-/* An <svg> clips to its viewBox by default. Drag a card past the edge of the map
-   and its connector runs to a point outside 0..1200 / 0..840, so the tail was cut
-   off and the line looked half drawn while the card kept going. */
-.map-lines{ position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
-.ink{ opacity:var(--ink-alpha); }
-/* One colour for rings and connectors alike - only the stroke weight separates
-   a trunk from the rest. */
-.map-lines path{ fill:none; stroke:var(--ink-thin); stroke-width:2.2; }
-.map-lines path.trunk{ stroke:var(--ink-thin); stroke-width:3; }
+/* The map's own grid: a rectangle round each group, its name written into the
+   top edge, the site's badges into the bottom, and an orthogonal run from the
+   hub out to every card - all characters, drawn by paintMap(). Held back a
+   little from the boxes it joins, so the cards read first and the wiring
+   second. */
+.map-lines{
+  position:absolute; inset:0; margin:0; overflow:hidden;
+  font-family:var(--font-mono); font-size:1.12cqw; line-height:1;
+  white-space:pre; pointer-events:none; user-select:none;
+  color:var(--terra); opacity:.62;
+}
+:root[data-theme="dark"] .map-lines{ color:var(--orange); }
 .map-nodes{ position:absolute; inset:0; pointer-events:none; }
+/* The site's name in the outer frame is a link like every card is: a bare
+   anchor laid over the letters, sized and placed by paintMap(). */
+.ring-link{ position:absolute; z-index:2; pointer-events:auto; cursor:pointer; }
 
-/* Grouping rings. Drawn first, so the connectors and the cards sit on top. */
-.ring{ fill:none; stroke:var(--ink-thin); stroke-width:2; }
-.outer-ring{ fill:none; stroke:var(--ink-thin); stroke-width:2.4; }
-.group-ring{ fill:none; stroke:var(--ink-thin); stroke-width:2.4; }
-/* Ring names are set the way the thing they name is set. layoutRings() solves
-   the ellipse for whatever width the text ends up needing, so tracking costs
-   nothing - and it steps the size down if the name will not fit up top.
-   Sizes are in the map's own user units: the SVG is scaled to fit, so 28 here
-   lands at about the 19px the wordmark is drawn at. */
-.ring-label{
-  fill:var(--brown-mid);
-  text-anchor:middle;
-  text-transform:uppercase;
-}
-/* The site's name, exactly as it is set over the airlock - ink included. */
-.ring-label-site{
-  font-family:var(--font-head);
-  font-weight:500;
-  font-size:28px;
-  letter-spacing:.28em;
-  fill:var(--brown);
-}
-/* A group of cards, set like the cards inside it. */
-.ring-label-group{
-  font-family:var(--font-mono);
-  font-weight:400;
-  font-size:20px;
-  letter-spacing:.16em;
-  fill:var(--terra);
-}
-:root[data-theme="dark"] .ring-label-group{ fill:var(--orange); }
-/* The outer ring stands for a repository, so it wears the same badges its cards
-   do, at the foot of the ellipse. */
-.ring-label-badge{
-  font-family:var(--font-mono);
-  font-weight:400;
-  font-size:16px;
-  letter-spacing:.04em;
-  fill:var(--terra);
-  text-transform:none;
-}
-:root[data-theme="dark"] .ring-label-badge{ fill:var(--orange); }
 :root[data-theme="dark"] .lang-menu{ border-color:var(--orange); }
 :root[data-theme="dark"] .lang-menu li{ color:var(--orange); }
-/* The map is pointer-events: none so the header strip stays clickable through
-   it; a ring that names a repository has to opt back in, as the cards do. */
-.ring-link{ pointer-events:auto; cursor:pointer; }
-.ring-link:hover .ring-label{ fill:var(--amber); }
 
 /* Nodes are placed by percentage on the same 1200x840 grid the lines use,
    so the two stay locked together at any width. */
@@ -431,24 +392,17 @@ body:not(.on-saturn) .topbar .gate-top{ display:none; }
   position:absolute;
   transform:translate(-50%, -50%);
   pointer-events:auto;
-  cursor:grab;
-  touch-action:none;      /* let a finger drag the card instead of the page */
   user-select:none;
   -webkit-user-drag:none;
-  font-size:1.12cqw;
+  font-size:1.34cqw;
   background:var(--ground);
   transition:transform .2s var(--ease), color .2s var(--ease);
 }
-a.node:hover{ transform:translate(-50%, -50%) scale(1.05); color:var(--amber); }
+a.node:hover{ color:var(--amber); }
 
-/* While a card is held, and on the way home. The inline transform the drag
-   writes beats the :hover rule above, so the card does not also grow. */
-.node.dragging{ cursor:grabbing; z-index:5; color:var(--amber); }
-/* Slight overshoot on the way back - that is the whole "fluid" of it. */
-.node.returning{ transition:transform .62s cubic-bezier(.34, 1.42, .5, 1); }
 /* The hub is the same box in a heavier rule - app.js draws its frame in `=` -
    and a size up, because it is the plate's title and not another repository. */
-.node.me{ font-size:1.36cqw; }
+.node.me{ font-size:1.62cqw; }
 
 
 /* ------------------------------------------------------------ list (narrow) */
@@ -558,11 +512,9 @@ a.node:hover{ transform:translate(-50%, -50%) scale(1.05); color:var(--amber); }
   transform:translate(-50%, -50%);
   font-size:clamp(8px, .8vw, 12px);
   background:var(--ground);
-  pointer-events:auto;
-  cursor:grab; touch-action:none; user-select:none;
+  pointer-events:none;
+  user-select:none;
 }
-.dev-card.dragging{ cursor:grabbing; z-index:5; color:var(--amber); }
-.dev-card.returning{ transition:transform .62s cubic-bezier(.34, 1.42, .5, 1); }
 
 /* ------------------------------------------------------- language picker */
 

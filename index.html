@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#F3E2C4">
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%2343301F'/><path d='M10 9v14M22 9v14M10 16h12' stroke='%23F6A03D' stroke-width='3.4' stroke-linecap='round'/></svg>">
-<link rel="stylesheet" href="assets/css/styles.css?v=202609020340">
+<link rel="stylesheet" href="assets/css/styles.css?v=202609020450">
 </head>
 <body>
 
@@ -16,8 +16,11 @@
      everything. The frame around them is shared - the switch between the faces,
      the signature, the language and the theme - so crossing over swaps the
      middle and leaves the edges where they were. -->
+<!-- The sky is the page's own ground, not the airlock's: it lies behind both
+     faces and stays where it is while they cross over it. -->
+<div class="gate-stars" id="gateStars" aria-hidden="true"></div>
+
 <div class="gate" id="gate">
-  <div class="gate-stars" id="gateStars" aria-hidden="true"></div>
   <pre class="gate-saturn" id="saturn" aria-hidden="true"></pre>
   <!-- Credits for the ASCII the airlock is drawn from. Inside the airlock, so
        they cross with it instead of blinking on and off at either end. -->
@@ -61,7 +64,7 @@
        one place to add a repository. -->
   <div class="stage">
     <div class="map" id="map">
-      <svg class="map-lines" id="mapLines" viewBox="0 0 1200 840" preserveAspectRatio="none" aria-hidden="true"></svg>
+      <pre class="map-lines" id="mapLines" aria-hidden="true"></pre>
       <div class="map-nodes" id="mapNodes"></div>
     </div>
 
@@ -80,6 +83,6 @@
   <h1 class="gate-mark" data-box="Hero Dev"></h1>
 </div>
 
-<script src="assets/js/app.js?v=202609020340"></script>
+<script src="assets/js/app.js?v=202609020450"></script>
 </body>
 </html>
