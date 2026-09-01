@@ -54,6 +54,11 @@
      airlock was given, so crossing between the map and the planet does not
      change the colour of the room. Cards keep --cream and read as panels on it. */
   --ground:      #F3E2C4;
+  /* One size for every control in the corners, the signature included, and it
+     grows a little with the window rather than holding one pixel size. */
+  --chrome-font: clamp(.88rem, .25vw + .8rem, 1.06rem);
+  /* How close the four corner blocks sit to the edges. */
+  --corner:      clamp(.6rem, 1.4vw, 1.1rem);
 
   /* Ink: one solid colour for every stroke, and the fade lives on the group that
      holds them - see .ink. Translucent strokes double up where they cross. */
@@ -140,8 +145,8 @@ a{ color:inherit; text-decoration:none; }
 /* The signature: the same identity the airlock used to wear in its top-left,
    holding the bottom-left of both faces now. */
 .signature{
-  position:fixed; left:clamp(1rem, 4vw, 2.4rem); bottom:1.4rem; z-index:21;
-  display:flex; align-items:center; gap:.7rem; pointer-events:none;
+  position:fixed; left:var(--corner); bottom:var(--corner); z-index:21;
+  display:flex; align-items:center; pointer-events:none;
 }
 /* Credits in the machine's own voice - a monospace log, quiet until hovered.
    Parked in the bottom-right corner, opposite the signature, and set from one
@@ -150,7 +155,7 @@ a{ color:inherit; text-decoration:none; }
    They credit the ASCII the airlock is drawn from, so they are shown with it;
    the map's right-hand side belongs to the hardware rail. */
 .gate-insp{
-  position:fixed; right:clamp(1.2rem, 4vw, 3rem); bottom:1.6rem; z-index:21;
+  position:fixed; right:var(--corner); bottom:var(--corner); z-index:21;
   display:flex; flex-direction:column; align-items:flex-end; text-align:right;
   font-size:clamp(9px, .78vw, 13px); gap:.4em;
 }
@@ -221,13 +226,16 @@ body:not(.on-saturn) .gate-insp{ display:none; }
   body.on-saturn .signature{ bottom:auto; top:calc(var(--bar-h) + .8rem); }
   body:not(.on-saturn) .signature{ display:none; }
 }
+/* The mark is one of the corner controls, so it is set to their size and its
+   padding is in em - it grows with them rather than on its own. */
 .gate-mark{
-  margin:0; padding:.34rem 1rem; flex:none;
+  margin:0; padding:.46em 1.14em; flex:none;
   display:grid; place-items:center;
-  font-family:var(--font-head); font-weight:500; font-size:1.5rem; line-height:1.15;
+  font-family:var(--font-head); font-weight:500;
+  font-size:var(--chrome-font); line-height:1.25;
   white-space:nowrap;
   background:#43301F;
-  border-radius:15px;
+  border-radius:var(--radius-pill);
   box-shadow:var(--shadow-sm);
 }
 /* Inside out: the tile takes the ink the letter used to be drawn in, and the
@@ -244,7 +252,7 @@ body:not(.on-saturn) .gate-insp{ display:none; }
 .topbar{
   position:fixed; top:0; left:0; right:0; z-index:20;
   display:flex; align-items:center; justify-content:space-between; gap:1rem;
-  padding:.5rem clamp(1rem, 4vw, 2.4rem);
+  padding:var(--corner);
   /* No band and no rule under it: both cut across the ring. The switch sits on
      the page itself. */
   background:none;
@@ -295,7 +303,9 @@ body:not(.on-saturn) .topbar .gate-top{ display:none; }
 .theme-btn:hover{ border-color:var(--amber); }
 /* Classic pair: a moon while the page is light (click to go dark), a sun while
    it is dark. Only one is in the DOM flow at a time. */
-.theme-icon{ width:17px; height:17px; color:var(--amber); flex:none; }
+/* The icon takes the button's own ink: on the amber tile dark turns over, an
+   amber glyph would be an amber glyph on amber. */
+.theme-icon{ width:17px; height:17px; color:inherit; flex:none; }
 :root:not([data-theme="dark"]) .icon-sun{ display:none; }
 :root[data-theme="dark"] .icon-moon{ display:none; }
 
@@ -319,15 +329,28 @@ body:not(.on-saturn) .topbar .gate-top{ display:none; }
 .pill, .topbar .theme-btn{
   font-family:var(--font-head);
   font-weight:500;
-  font-size:.92rem;
+  font-size:var(--chrome-font);
   line-height:1.25;
-  padding:.46rem 1.05rem;
+  padding:.46em 1.14em;
   color:var(--amber-soft);
   background:#43301F;
   border:1px solid transparent;
   border-radius:var(--radius-pill);
   box-shadow:var(--shadow-sm);
 }
+/* Light stands the controls in deep brown against the warm ground; dark turns
+   them over, because a brown slab on a near-black ground is a hole rather than a
+   button. Whichever way round, the chosen face is the other one of the pair, so
+   it still reads at a glance. */
+:root[data-theme="dark"] .pill,
+:root[data-theme="dark"] .topbar .theme-btn{
+  color:#43301F;
+  background:linear-gradient(140deg, var(--amber-soft), var(--orange));
+}
+/* Pressing anything says so: the same lift and lightening on every control, so
+   the ones that do not latch still answer the click. */
+.pill, .topbar .theme-btn{ transition:border-color .18s var(--ease), filter .12s var(--ease), transform .12s var(--ease); }
+.pill:active, .topbar .theme-btn:active{ transform:translateY(1px); filter:brightness(1.22); }
 .pill{
   display:inline-block; letter-spacing:0;
   cursor:pointer;
@@ -338,6 +361,7 @@ body:not(.on-saturn) .topbar .gate-top{ display:none; }
   background:linear-gradient(140deg, var(--amber-soft), var(--orange));
   border-color:transparent; color:#43301F;
 }
+:root[data-theme="dark"] .pill.on{ background:#43301F; color:var(--amber-soft); }
 
 /* Whatever is left after the text. The map sizes itself to fit inside it, so
    the ring ends up close to the top and bottom edges of the screen. */
@@ -391,12 +415,18 @@ body:not(.on-saturn) .topbar .gate-top{ display:none; }
 .outer-ring{ fill:none; stroke:var(--ink-thin); stroke-width:2.4; }
 /* fill-opacity 1 here because the group already fades everything inside it */
 .group-ring{ fill:var(--sand); fill-opacity:1; stroke:var(--ink-thin); stroke-width:2.4; }
+/* Ring names wear the wordmark's treatment - the label on an astronomical
+   plate: small caps-height serif, tracked wide. layoutRings() solves the
+   ellipse for whatever width the text ends up needing, so the extra tracking
+   costs nothing. */
 .ring-label{
   fill:var(--brown-mid);
   font-family:var(--font-head);
-  font-size:22px;
+  font-weight:500;
+  font-size:19px;
   text-anchor:middle;
-  letter-spacing:.02em;
+  text-transform:uppercase;
+  letter-spacing:.16em;
 }
 /* The map is pointer-events: none so the header strip stays clickable through
    it; a ring that names a repository has to opt back in, as the cards do. */
@@ -473,7 +503,9 @@ a.node:hover{ transform:translate(-50%, -50%) scale(1.05); box-shadow:var(--shad
   box-shadow:var(--shadow-lg);
   color:#43301F;
 }
-.node.me .node-title{ font-size:2cqw; }
+/* The hub carries the name the way the wordmark does, tracked wide - it is the
+   plate's title, not another repository label. */
+.node.me .node-title{ font-size:1.66cqw; text-transform:uppercase; letter-spacing:.16em; }
 .node.me .node-desc{ color:#5C4020; }
 
 
