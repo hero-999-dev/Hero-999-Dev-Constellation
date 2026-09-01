@@ -1233,10 +1233,11 @@ function fillStars(el) {
 const SHOT_RAMP = '.,-~:;=!*#';   // the planet's ramp, faint tail to bright head
 const SHOT_TAIL = 14;             // cells of trail behind the head
 const SHOT_FRAMES = 32;           // frames to cross, at the planet's own ~14fps
+const SHOT_QUEUE_MAX = 14;        // most that can bank up while the tab is away
 
 function shootStars(el) {
   if (!el) return;
-  let timer = 0;
+  let timer = 0, pending = 0;
 
   /* Where the planet's ink actually is. Its <pre> is a 98x30 block of cells and
      most of the corners of that block are blank, so the element's own box would
@@ -1265,7 +1266,17 @@ function shootStars(el) {
   };
 
   const fire = () => {
-    if (!el.isConnected) { clearInterval(timer); return; }   // gate removed on unlock - stop
+    if (!el.isConnected) {                                   // gate removed on unlock - stop
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', release);
+      return;
+    }
+    /* A hidden tab runs no requestAnimationFrame, so a streak started now would
+       sit frozen on its start line - and left as it was, one dead <pre> piled up
+       per turn for as long as the tab was away. Bank the turn instead and let
+       the shower out when the tab comes back: leaving a page and returning to a
+       sky full of them is worth keeping, so it is on purpose and it is capped. */
+    if (document.hidden) { pending = Math.min(pending + 1, SHOT_QUEUE_MAX); return; }
     const pre = document.createElement('pre');
     pre.className = 'gate-shot';
     el.appendChild(pre);
@@ -1342,6 +1353,16 @@ function shootStars(el) {
     };
     requestAnimationFrame(step);
   };
+
+  /* Back in view: let the banked turns go, each after its own short delay, so
+     they arrive as a shower rather than all on one frame. */
+  const release = () => {
+    if (document.hidden || !el.isConnected) return;
+    const owed = pending;
+    pending = 0;
+    for (let i = 0; i < owed; i++) setTimeout(fire, Math.random() * 1400);
+  };
+  document.addEventListener('visibilitychange', release);
   setTimeout(() => { fire(); timer = setInterval(fire, 30000); }, 15000);
 }
 
