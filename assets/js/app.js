@@ -113,7 +113,7 @@ const SELF = {
 const I18N = {
   en: {
     inspiration: 'Inspiration',
-    projectsHardware: 'Projects & Hardware',
+    home: 'Home', projectsHardware: 'Projects & Hardware',
     hardware: 'Hardware', dark: 'Dark', light: 'Light',
     private: 'Private', public: 'Public', live: 'Live',
     Extension: 'Extension', Desktop: 'Desktop',
@@ -125,7 +125,7 @@ const I18N = {
   },
   tr: {
     inspiration: 'İlham',
-    projectsHardware: 'Projeler & Donanım',
+    home: 'Ana sayfa', projectsHardware: 'Projeler & Donanım',
     hardware: 'Donanım', dark: 'Koyu', light: 'Açık',
     private: 'Özel', public: 'Herkese açık', live: 'Canlı',   // not 'Açık' - that is the light theme
     Extension: 'Eklenti', Desktop: 'Masaüstü',
@@ -137,7 +137,7 @@ const I18N = {
   },
   pl: {
     inspiration: 'Inspiracje',
-    projectsHardware: 'Projekty i sprzęt',
+    home: 'Start', projectsHardware: 'Projekty i sprzęt',
     hardware: 'Sprzęt', dark: 'Ciemny', light: 'Jasny',
     private: 'Prywatne', public: 'Publiczne', live: 'Na żywo',
     Extension: 'Rozszerzenie', Desktop: 'Desktop',
@@ -149,7 +149,7 @@ const I18N = {
   },
   de: {
     inspiration: 'Inspiration',
-    projectsHardware: 'Projekte & Hardware',
+    home: 'Start', projectsHardware: 'Projekte & Hardware',
     hardware: 'Hardware', dark: 'Dunkel', light: 'Hell',
     private: 'Privat', public: 'Öffentlich', live: 'Live',
     Extension: 'Erweiterung', Desktop: 'Desktop',
@@ -922,10 +922,9 @@ function setRail(open) {
   const panel = document.getElementById('devices');
   if (!panel) return;
   {
-    if (btn) {
-      btn.setAttribute('aria-expanded', String(open));
-      btn.classList.toggle('on', open);
-    }
+    // No pressed state on the button: the rail is a fixture of the map, not
+    // something you switch on, so a lit button would just be lit forever.
+    if (btn) btn.setAttribute('aria-expanded', String(open));
     if (open) {
       // Out of `hidden` before the glide is armed, and measured once, so the
       // browser has the off-screen starting position to animate FROM. Leave it
@@ -957,11 +956,12 @@ function initDevices() {
   const panel = document.getElementById('devices');
   if (!btn || !panel) return;
   btn.addEventListener('click', () => {
-    /* One button for "projects and hardware, both open". From the airlock it is
-       the way back and brings the rail with it; on the map it is the rail's own
-       switch. */
-    if (document.body.classList.contains('on-saturn')) { showView('map'); setRail(true); return; }
-    setRail(panel.hidden || !panel.classList.contains('in'));
+    /* One button, one direction: projects and hardware, both open. The rail is
+       not something to switch off again - pressing this on the map you are
+       already looking at should do nothing rather than slide it away. */
+    const alreadyOut = !panel.hidden && panel.classList.contains('in');
+    showView('map');
+    if (!alreadyOut) setRail(true);
   });
 }
 

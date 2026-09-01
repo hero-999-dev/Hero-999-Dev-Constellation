@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#F3E2C4">
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%2343301F'/><path d='M10 9v14M22 9v14M10 16h12' stroke='%23F6A03D' stroke-width='3.4' stroke-linecap='round'/></svg>">
-<link rel="stylesheet" href="assets/css/styles.css?v=202609011700">
+<link rel="stylesheet" href="assets/css/styles.css?v=202609011820">
 </head>
 <body>
 
@@ -22,7 +22,11 @@
 </div>
 
 <header class="topbar">
-  <button class="pill" id="viewBtn" type="button" aria-pressed="false" lang="en">Constellation</button>
+  <button class="pill" id="viewBtn" type="button" aria-pressed="false" data-i18n="home"></button>
+  <!-- The site's name, tracked wide like the label on an astronomical plate and
+       centred over the whole bar. The map has its own Constellation on the outer
+       ring, so this shows with the airlock. -->
+  <div class="gate-top" lang="en">Constellation</div>
   <div class="topbar-right">
     <button class="pill" id="devBtn" type="button" aria-expanded="false" aria-controls="devices"
             data-i18n="projectsHardware"></button>
@@ -68,7 +72,7 @@
 
 <!-- The signature holds the bottom-left of both faces. -->
 <div class="signature">
-  <div class="gate-mark" aria-hidden="true"><span>H</span></div>
+  <div class="gate-mark" aria-hidden="true"><span>Hero Dev</span></div>
   <h1>Hero Dev</h1>
 </div>
 
@@ -82,6 +86,6 @@
   <p class="gate-insp-note" lang="en">This project is vibecoded by using Opus 5</p>
 </div>
 
-<script src="assets/js/app.js?v=202609011700"></script>
+<script src="assets/js/app.js?v=202609011820"></script>
 </body>
 </html>

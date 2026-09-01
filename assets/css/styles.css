@@ -236,9 +236,9 @@ body:not(.on-saturn) .gate-insp{ display:none; }
   body:not(.on-saturn) .signature{ display:none; }
 }
 .gate-mark{
-  width:42px; height:42px; flex:none;
+  height:42px; padding:0 .85rem; flex:none;
   display:grid; place-items:center;
-  font-family:var(--font-head); font-size:1.3rem;
+  font-family:var(--font-head); font-size:1rem; white-space:nowrap;
   background:#43301F;
   border-radius:13px;
   box-shadow:var(--shadow-sm);
@@ -283,6 +283,20 @@ body:not(.on-saturn) .gate-insp{ display:none; }
    cut it to, and a strip across the sky is just a strip - so the controls stand
    on the starfield on their own. */
 body.on-saturn .topbar::before{ display:none; }
+/* The name, tracked wide like the label on an astronomical plate, absolutely
+   centred over the whole bar so it lines up between the two groups of controls.
+   The trailing letter-space is padded back so the word stays optically centred.
+   It shows with the airlock only: the map carries its own Constellation on the
+   outer ring, in the same place. */
+.topbar .gate-top{
+  position:absolute; left:50%; top:50%; transform:translate(-50%, -50%);
+  font-family:var(--font-head); font-weight:500;
+  font-size:clamp(.82rem, 1.7vw, 1.2rem);
+  letter-spacing:.28em; padding-left:.28em;
+  text-transform:uppercase; white-space:nowrap;
+  color:var(--brown); pointer-events:none;
+}
+body:not(.on-saturn) .topbar .gate-top{ display:none; }
 .theme-btn{
   display:flex; align-items:center; gap:.5rem;
   padding:.5rem .95rem;
