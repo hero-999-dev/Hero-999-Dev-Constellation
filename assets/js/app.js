@@ -1222,49 +1222,125 @@ function fillStars(el) {
   el.appendChild(frag);
 }
 
-/* One shooting star at a time, drawn as an ASCII streak: dots thinning back into
-   space, a dashed line, then the bright head last, so the string lies tail-first
-   along the direction of travel and the whole span is rotated onto its slant.
-   It comes out of the top-left corner and runs down towards the middle, which is
-   the one stretch of open sky on this screen - and it sits in the starfield,
-   behind the planet, so it passes over Saturn's shoulder rather than cutting
-   through it. The first after 15s, then one every 30s.
+/* One shooting star at a time, drawn the way the planet is: characters stepped
+   across a grid a frame at a time, out of the planet's own luminance ramp and in
+   the planet's own ink - not a CSS slide of a fixed string. It enters off one
+   edge, crosses a stretch of open sky picked to miss Saturn's ink, and carries
+   on out of the far edge; nothing fades out in the middle of the screen.
+   The first after 15s, then one every 30s.
    Like the planet, this ignores "reduce motion": a frozen gate reads as broken,
    and nothing here flashes or fills the screen. */
-const SHOT_TRAIL = '.  . ..:::---=====***';   // tail to head
+const SHOT_RAMP = '.,-~:;=!*#';   // the planet's ramp, faint tail to bright head
+const SHOT_TAIL = 22;             // cells of trail behind the head
+const SHOT_FRAMES = 64;           // frames to cross, at the planet's own ~14fps
 
 function shootStars(el) {
   if (!el) return;
   let timer = 0;
+
+  /* Where the planet's ink actually is. Its <pre> is a 98x30 block of cells and
+     most of the corners of that block are blank, so the element's own box would
+     fence off sky that is in fact empty. Measured per run, because the planet
+     turns and its outline breathes with it. */
+  const inkBox = () => {
+    const sat = document.getElementById('saturn');
+    if (!sat || !sat.textContent) return null;
+    const rows = sat.textContent.split('\n');
+    let c0 = 1e9, c1 = -1, r0 = 1e9, r1 = -1;
+    rows.forEach((line, r) => {
+      const first = line.search(/\S/);
+      if (first < 0) return;
+      const last = line.replace(/\s+$/, '').length - 1;
+      if (first < c0) c0 = first;
+      if (last > c1) c1 = last;
+      if (r < r0) r0 = r;
+      if (r > r1) r1 = r;
+    });
+    if (c1 < 0) return null;
+    const box = sat.getBoundingClientRect();
+    const w = box.width / rows[0].length, h = box.height / rows.length;
+    const pad = 2 * h;                        // a couple of lines of clearance
+    return { x0: box.left + c0 * w - pad, x1: box.left + (c1 + 1) * w + pad,
+             y0: box.top + r0 * h - pad,   y1: box.top + (r1 + 1) * h + pad };
+  };
+
   const fire = () => {
     if (!el.isConnected) { clearInterval(timer); return; }   // gate removed on unlock - stop
-    const slope = 26 + Math.random() * 10;                   // degrees below the horizontal
-    const s = document.createElement('span');
-    s.className = 'gate-shot';
-    s.textContent = SHOT_TRAIL;
-    // Out of the top-left, angled in towards the middle.
-    const topPct = 4 + Math.random() * 8;
-    s.style.left = (2 + Math.random() * 6).toFixed(1) + '%';
-    s.style.top = topPct.toFixed(1) + '%';
-    el.appendChild(s);
-    // The run is held to the top-left quarter: the planet is centred and fills
-    // most of the frame, so this is the corner of open sky where the streak reads
-    // on its own. Whichever bound bites first - a quarter of the width, or the
-    // sky left above the planet's shoulder - the head stops there and burns out,
-    // rather than carrying on across Saturn's face.
-    const room = el.clientHeight * 0.32 - el.clientHeight * (topPct / 100);
-    const dist = Math.max(160, Math.min(el.clientWidth * 0.26,
-                                        room / Math.sin(slope * Math.PI / 180)));
-    // Linear: a meteor holds its speed, and an eased run spends most of the
-    // flight already fading out. It burns out over the last quarter, which is
-    // where it meets the planet.
-    const run = s.animate([
-      { transform: `rotate(${slope}deg) translateX(0px)`, opacity: 0 },
-      { opacity: 1, offset: 0.1 },
-      { opacity: 1, offset: 0.72 },
-      { transform: `rotate(${slope}deg) translateX(${dist.toFixed(0)}px)`, opacity: 0 }
-    ], { duration: 1100 + Math.random() * 500, easing: 'linear' });
-    run.onfinish = () => s.remove();
+    const pre = document.createElement('pre');
+    pre.className = 'gate-shot';
+    el.appendChild(pre);
+
+    // Cell size measured, not assumed - the mono face is whatever the system has.
+    const probe = document.createElement('span');
+    probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre';
+    probe.textContent = '0'.repeat(50);
+    pre.appendChild(probe);
+    const pb = probe.getBoundingClientRect();
+    const cw = pb.width / 50, chh = pb.height;
+    probe.remove();
+    const W = el.clientWidth, H = el.clientHeight;
+    if (!cw || !chh || !W || !H) { pre.remove(); return; }
+    const cols = Math.floor(W / cw), rows = Math.floor(H / chh);
+
+    const ink = inkBox();
+    const clear = (x, y) => !ink || x < ink.x0 || x > ink.x1 || y < ink.y0 || y > ink.y1;
+
+    /* Find a crossing that stays in open sky: come in off the top or a side, aim
+       down and across, and score the line by how much of it lands on the planet's
+       ink. A clean lane wins outright; if the planet fills the frame and none is
+       clean, the least-bad one still runs, because a turn where nothing comes
+       reads as broken. */
+    let best = null;
+    for (let attempt = 0; attempt < 60; attempt++) {
+      const right = Math.random() < 0.5;
+      const a = (14 + Math.random() * 62) * Math.PI / 180;    // below the horizontal
+      const dx = (right ? 1 : -1) * Math.cos(a), dy = Math.sin(a);
+      let sx, sy;
+      if (Math.random() < 0.5) { sx = Math.random() * W; sy = -chh * 2; }
+      else { sx = right ? -cw * 2 : W + cw * 2; sy = Math.random() * H * 0.7; }
+      let len = 0;                                           // run until it is out again
+      while (len < W + H) {
+        const x = sx + dx * len, y = sy + dy * len;
+        if (y > H + chh * 2 || x < -cw * 3 || x > W + cw * 3) break;
+        len += cw;
+      }
+      if (len <= Math.max(W, H) * 0.4) continue;             // too short to be a run
+      let bad = 0;
+      for (let t = 0; t <= 1.0001; t += 0.02) {
+        if (!clear(sx + dx * len * t, sy + dy * len * t)) bad++;
+      }
+      if (!best || bad < best.bad) best = { sx, sy, dx, dy, len, bad };
+      if (bad === 0) break;
+    }
+    if (!best) { pre.remove(); return; }
+    const { sx, sy, dx, dy, len } = best;
+
+    const line = new Array(cols + 1).join(' ');
+    const draw = (head) => {
+      const grid = [];
+      for (let r = 0; r < rows; r++) grid.push(line.split(''));
+      for (let k = 0; k <= SHOT_TAIL; k++) {
+        const d = head - k * cw;              // the trail lies behind the head
+        if (d < 0) continue;
+        const c = Math.round((sx + dx * d) / cw), r = Math.round((sy + dy * d) / chh);
+        if (c < 0 || c >= cols || r < 0 || r >= rows) continue;
+        grid[r][c] = SHOT_RAMP[Math.round((1 - k / SHOT_TAIL) * (SHOT_RAMP.length - 1))];
+      }
+      pre.textContent = grid.map((r) => r.join('')).join('\n');
+    };
+
+    let head = 0, last = 0;
+    const step = (now) => {
+      if (!pre.isConnected || !el.isConnected) { pre.remove(); return; }
+      if (now - last >= 70) {                 // the planet's own frame rate
+        last = now;
+        head += len / SHOT_FRAMES;
+        if (head - SHOT_TAIL * cw > len) { pre.remove(); return; }   // tail is out too
+        draw(head);
+      }
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
   };
   setTimeout(() => { fire(); timer = setInterval(fire, 30000); }, 15000);
 }
