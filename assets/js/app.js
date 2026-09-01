@@ -607,27 +607,36 @@ function paintMap() {
   }
 
   for (const ring of RINGS) {
-    let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity;
-    for (const el of ring.els) {
-      const q = local(el);
-      l = Math.min(l, q.l); t = Math.min(t, q.t); r = Math.max(r, q.r); b = Math.max(b, q.b);
-    }
-    if (!Number.isFinite(l)) continue;
-    const padX = ring.pad * g.cw, padY = ring.pad * g.ch;
-    const rect = g.box({ x: l - padX, y: t - padY }, { x: r + padX, y: b + padY });
-    if (ring.label) {
-      // Named in the frame itself. Uppercased in JS, not CSS: `text-transform`
-      // follows the page's language, and Turkish turns the i of Constellation
-      // into a dotted I.
-      const at = g.label(ring.label.toUpperCase(), rect, rect.r0);
-      if (ring.link) {
-        ring.link.style.left = (at.c * g.cw) + 'px';
-        ring.link.style.top = (at.r * g.ch) + 'px';
-        ring.link.style.width = (at.w * g.cw) + 'px';
-        ring.link.style.height = g.ch + 'px';
+    let rect;
+    if (ring.full) {
+      // The outer frame is the map's own edge, so its top line rises to the row
+      // the controls stand on rather than to whatever the topmost card reaches.
+      rect = g.box({ x: 0, y: 0 }, { x: (g.cols - 1) * g.cw, y: (g.rows - 1) * g.ch });
+    } else {
+      let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity;
+      for (const el of ring.els) {
+        const q = local(el);
+        l = Math.min(l, q.l); t = Math.min(t, q.t); r = Math.max(r, q.r); b = Math.max(b, q.b);
       }
+      if (!Number.isFinite(l)) continue;
+      const padX = ring.pad * g.cw, padY = ring.pad * g.ch;
+      rect = g.box({ x: l - padX, y: t - padY }, { x: r + padX, y: b + padY });
     }
-    if (ring.badge) g.label(ring.badge, rect, rect.r1);
+    // Under the top line and over the bottom one, rather than written into
+    // them: the name is set in the page's own serif and the badges in its mono,
+    // and neither fits in a character cell.
+    const mid = (rect.c0 + rect.c1 + 1) / 2 * g.cw;
+    // Clear of the line rather than across it, so it is measured: the two are
+    // set in different faces at different sizes, and neither is a cell tall.
+    const put = (el, lineRow, below) => {
+      if (!el) return;
+      el.style.left = mid + 'px';
+      const h = el.getBoundingClientRect().height || g.ch;
+      el.style.top = (below ? (lineRow + 1) * g.ch + h / 2 + 1
+                            : lineRow * g.ch - h / 2 - 1) + 'px';
+    };
+    put(ring.nameEl, rect.r0, true);
+    put(ring.badgeEl, rect.r1, false);
   }
   g.flush();
 }
@@ -653,18 +662,29 @@ function renderMap() {
   /* A ring is a record now, not a shape: which cards it holds, how much clear
      space to leave round them, and the words to write into its frame. paintMap()
      draws it. The name keeps its link as a bare anchor laid over the letters. */
-  const addRing = (els, pad, text, href, badge) => {
-    let link = null;
-    if (text && href) {
-      link = document.createElement('a');
-      link.className = 'ring-link';
-      link.href = href;
-      link.target = '_blank';
-      link.rel = 'noopener';
-      link.setAttribute('aria-label', text);
-      nodes.appendChild(link);
+  const addRing = (els, pad, text, href, badge, full) => {
+    let nameEl = null, badgeEl = null;
+    if (text) {
+      // The name IS the link where there is one - a wrapper would be a second
+      // positioned box around a box that positions itself.
+      nameEl = document.createElement(href ? 'a' : 'span');
+      nameEl.className = 'ring-name ' + (full ? 'ring-name-site' : 'ring-name-group') +
+        (href ? ' ring-link' : '');
+      // A proper noun in every language, and uppercased here rather than by CSS:
+      // `text-transform` follows the page's language, and Turkish turns the i of
+      // Constellation into a dotted I.
+      nameEl.lang = 'en';
+      nameEl.textContent = text.toUpperCase();
+      if (href) { nameEl.href = href; nameEl.target = '_blank'; nameEl.rel = 'noopener'; }
+      nodes.appendChild(nameEl);
     }
-    RINGS.push({ els, pad, label: text || null, link, badge: badge || null });
+    if (badge) {
+      badgeEl = document.createElement('span');
+      badgeEl.className = 'ring-badge';
+      badgeEl.textContent = badge;
+      nodes.appendChild(badgeEl);
+    }
+    RINGS.push({ els, pad, nameEl, badgeEl, full: !!full });
   };
 
   const me = makeNode(ME, 'me');
@@ -691,7 +711,7 @@ function renderMap() {
   }
 
   addRing(all, 4, SELF.title, GH(SELF.repo),
-          '[' + t(SELF.lang) + '] [' + t(SELF.private ? 'private' : 'public') + ']');
+          '[' + t(SELF.lang) + '] [' + t(SELF.private ? 'private' : 'public') + ']', true);
 
   settle();
 }
