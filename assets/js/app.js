@@ -1234,46 +1234,91 @@ function spinSaturn(pre) {
   requestAnimationFrame(step);
 }
 
-/* A rocket, from the same wall of ASCII the planet came off. It drifts across
-   the sky rather than falling through it: in from one edge, out at another over
-   half a minute, fading up as it comes and down as it goes, then away for a
-   while before it puts in another appearance somewhere else. First one after
-   10s, and it crosses both faces of the page - the sky is behind them both. */
-const ROCKET = [
+/* A rocket, off the same wall of ASCII the planet came from and drawn in the
+   planet's own ink. Two things move: the exhaust burns, cycling three frames the
+   way the shooting stars step their ramp, and the whole thing flies a route with
+   corners in it - in off one edge, two to four turns inside the window, out at
+   another - leaning into whichever way it is going, because the art points up.
+   The waypoints are picked clear of the planet's ink, so it goes round Saturn
+   rather than through it. First crossing ten seconds in, then it is away for a
+   while before it shows up somewhere else. */
+const ROCKET_BODY = [
   '   .   ',
-  '  .\'.  ',
+  "  .'.  ",
   '  |o|  ',
-  ' .\'o\'. ',
+  " .'o'. ",
   ' |.-.| ',
   " '   ' ",
-  '  ( )  ',
-  '   )   ',
-  '  ( )  ',
-].join('\n');
+];
+const ROCKET_BURN = [
+  ['  ( )  ', '   )   ', '  ( )  '],
+  ['   )   ', '  ( )  ', '   )   '],
+  ['  ( )  ', '   )   ', '   (   '],
+];
 
 function flyRocket(el) {
   if (!el) return;
   const pre = document.createElement('pre');
   pre.className = 'gate-rocket';
-  pre.textContent = ROCKET;
   el.appendChild(pre);
+
+  // The burn runs the whole time; it costs one string join every ninth frame.
+  let puff = 0, last = 0;
+  const burn = (now) => {
+    if (!pre.isConnected) return;
+    if (now - last >= 130) {
+      last = now;
+      pre.textContent = ROCKET_BODY.concat(ROCKET_BURN[puff++ % ROCKET_BURN.length]).join('\n');
+    }
+    requestAnimationFrame(burn);
+  };
+  requestAnimationFrame(burn);
 
   const cross = () => {
     if (!el.isConnected) return;
     const W = el.clientWidth, H = el.clientHeight;
     if (!W || !H) { setTimeout(cross, 4000); return; }
-    // In from one side, out somewhere along another: any long slow diagonal.
-    const fromLeft = Math.random() < 0.5;
-    const x0 = fromLeft ? -18 : 100, x1 = fromLeft ? 100 : -18;
-    const y0 = 6 + Math.random() * 70, y1 = 6 + Math.random() * 70;
-    const px = (x, y) => 'translate(' + (x / 100 * W).toFixed(0) + 'px,' + (y / 100 * H).toFixed(0) + 'px)';
-    const run = pre.animate([
-      { transform: px(x0, y0), opacity: 0 },
-      { opacity: .55, offset: .18 },
-      { opacity: .55, offset: .82 },
-      { transform: px(x1, y1), opacity: 0 },
-    ], { duration: 26000 + Math.random() * 16000, easing: 'linear' });
-    // Away for a while, then somewhere else.
+
+    const ink = inkBox();
+    const clear = (p) => !ink || p.x < ink.x0 || p.x > ink.x1 || p.y < ink.y0 || p.y > ink.y1;
+    // Off one of the four sides, far enough out that the whole rocket is gone.
+    const offEdge = () => {
+      const side = Math.floor(Math.random() * 4);
+      if (side === 0) return { x: Math.random() * W, y: -140 };
+      if (side === 1) return { x: Math.random() * W, y: H + 140 };
+      if (side === 2) return { x: -140, y: Math.random() * H };
+      return { x: W + 140, y: Math.random() * H };
+    };
+    // A turn inside the window, in open sky.
+    const waypoint = () => {
+      for (let i = 0; i < 60; i++) {
+        const p = { x: 50 + Math.random() * (W - 100), y: 50 + Math.random() * (H - 100) };
+        if (clear(p)) return p;
+      }
+      return { x: 60, y: 60 };
+    };
+
+    const pts = [offEdge()];
+    const turns = 2 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < turns; i++) pts.push(waypoint());
+    pts.push(offEdge());
+
+    // It leans the way it is going: the art points up, so the heading is turned
+    // a quarter turn on. Rotation is applied about the rocket's own middle -
+    // transforms read right to left, so the rotate lands before the move.
+    const lean = (a, b) => Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI + 90;
+    const frames = pts.map((p, i) => {
+      const j = Math.min(i, pts.length - 2);
+      const head = lean(pts[j], pts[j + 1]);
+      return {
+        offset: i / (pts.length - 1),
+        opacity: (i === 0 || i === pts.length - 1) ? 0 : 1,
+        transform: 'translate(calc(' + p.x.toFixed(0) + 'px - 50%), calc(' +
+                   p.y.toFixed(0) + 'px - 50%)) rotate(' + head.toFixed(1) + 'deg)',
+      };
+    });
+
+    const run = pre.animate(frames, { duration: 30000 + Math.random() * 20000, easing: 'linear' });
     run.onfinish = () => setTimeout(cross, 14000 + Math.random() * 26000);
   };
   setTimeout(cross, 10000);
@@ -1306,6 +1351,33 @@ function fillStars(el) {
    The first after 15s, then one every 30s.
    Like the planet, this ignores "reduce motion": a frozen gate reads as broken,
    and nothing here flashes or fills the screen. */
+/* Where the planet's ink actually is. Its <pre> is a 98x30 block of cells and
+   most of the corners of that block are blank, so the element's own box would
+   fence off sky that is in fact empty. Measured per call, because the planet
+   turns and its outline breathes with it. Everything that crosses the sky asks
+   this before it picks a line - a streak, and now a rocket. */
+function inkBox() {
+  const sat = document.getElementById('saturn');
+  if (!sat || !sat.textContent) return null;
+  const rows = sat.textContent.split('\n');
+  let c0 = 1e9, c1 = -1, r0 = 1e9, r1 = -1;
+  rows.forEach((line, r) => {
+    const first = line.search(/\S/);
+    if (first < 0) return;
+    const last = line.replace(/\s+$/, '').length - 1;
+    if (first < c0) c0 = first;
+    if (last > c1) c1 = last;
+    if (r < r0) r0 = r;
+    if (r > r1) r1 = r;
+  });
+  if (c1 < 0) return null;
+  const box = sat.getBoundingClientRect();
+  const w = box.width / rows[0].length, h = box.height / rows.length;
+  const pad = 2 * h;                        // a couple of lines of clearance
+  return { x0: box.left + c0 * w - pad, x1: box.left + (c1 + 1) * w + pad,
+           y0: box.top + r0 * h - pad,   y1: box.top + (r1 + 1) * h + pad };
+}
+
 /* The planet keeps its size when it is off to the left, so "is it on show" is
    the class the switch sets, not a measurement. The sky it turns against is
    behind both faces now and always on show, so only the planet asks. */
@@ -1319,32 +1391,6 @@ const SHOT_QUEUE_MAX = 14;        // most that can bank up while the tab is away
 function shootStars(el) {
   if (!el) return;
   let timer = 0, pending = 0;
-
-  /* Where the planet's ink actually is. Its <pre> is a 98x30 block of cells and
-     most of the corners of that block are blank, so the element's own box would
-     fence off sky that is in fact empty. Measured per run, because the planet
-     turns and its outline breathes with it. */
-  const inkBox = () => {
-    const sat = document.getElementById('saturn');
-    if (!sat || !sat.textContent) return null;
-    const rows = sat.textContent.split('\n');
-    let c0 = 1e9, c1 = -1, r0 = 1e9, r1 = -1;
-    rows.forEach((line, r) => {
-      const first = line.search(/\S/);
-      if (first < 0) return;
-      const last = line.replace(/\s+$/, '').length - 1;
-      if (first < c0) c0 = first;
-      if (last > c1) c1 = last;
-      if (r < r0) r0 = r;
-      if (r > r1) r1 = r;
-    });
-    if (c1 < 0) return null;
-    const box = sat.getBoundingClientRect();
-    const w = box.width / rows[0].length, h = box.height / rows.length;
-    const pad = 2 * h;                        // a couple of lines of clearance
-    return { x0: box.left + c0 * w - pad, x1: box.left + (c1 + 1) * w + pad,
-             y0: box.top + r0 * h - pad,   y1: box.top + (r1 + 1) * h + pad };
-  };
 
   const fire = () => {
     if (!el.isConnected) {                                   // gate removed on unlock - stop

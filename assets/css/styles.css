@@ -200,11 +200,12 @@ body.on-saturn .wrap{ transform:translateX(100%); }
    edge and out at another, then away for a while before it shows up elsewhere. */
 .gate-rocket{
   position:absolute; top:0; left:0; margin:0;
-  font-family:var(--font-mono); font-size:clamp(9px, .8vw, 13px); line-height:1;
+  font-family:var(--font-mono); font-size:clamp(8px, 1.2vw, 15px); line-height:1;
   white-space:pre; user-select:none; pointer-events:none; opacity:0;
-  color:var(--terra);
+  /* The planet's own ink and halo - it came off the same wall of ASCII. */
+  color:var(--terra); text-shadow:0 0 14px rgba(122,84,48,.22);
 }
-:root[data-theme="dark"] .gate-rocket{ color:var(--orange); }
+:root[data-theme="dark"] .gate-rocket{ color:var(--orange); text-shadow:0 0 16px rgba(232,129,60,.3); }
 /* A scatter of faint asterisks behind everything - the deep-space ground the
    planet turns against. Filled in app.js so the count and spread stay in one
    place; each star sets its own position, size and dimness. */
