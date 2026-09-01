@@ -196,6 +196,15 @@ body.on-saturn .wrap{ transform:translateX(100%); }
   color:var(--terra); text-shadow:0 0 14px rgba(122,84,48,.22);
 }
 :root[data-theme="dark"] .gate-saturn{ color:var(--orange); text-shadow:0 0 16px rgba(232,129,60,.3); }
+/* The rocket drifts behind everything, at the stars' own weight - in from one
+   edge and out at another, then away for a while before it shows up elsewhere. */
+.gate-rocket{
+  position:absolute; top:0; left:0; margin:0;
+  font-family:var(--font-mono); font-size:clamp(9px, .8vw, 13px); line-height:1;
+  white-space:pre; user-select:none; pointer-events:none; opacity:0;
+  color:var(--terra);
+}
+:root[data-theme="dark"] .gate-rocket{ color:var(--orange); }
 /* A scatter of faint asterisks behind everything - the deep-space ground the
    planet turns against. Filled in app.js so the count and spread stay in one
    place; each star sets its own position, size and dimness. */
@@ -426,9 +435,7 @@ body:not(.on-saturn) .topbar .gate-top{ display:none; }
 }
 a.node:hover{ color:var(--amber); }
 
-/* The hub is the same box in a heavier rule - app.js draws its frame in `=` -
-   and a size up, because it is the plate's title and not another repository. */
-.node.me{ font-size:1.62cqw; }
+/* The hub is a card like the others now: one rule, one size. */
 
 
 /* ------------------------------------------------------------ list (narrow) */
@@ -522,15 +529,16 @@ a.node:hover{ color:var(--amber); }
   position:absolute;
   transform:translate(-50%, -50%);
   padding:0 .3rem;
-  /* Same face and same size as the grid it sits on, so the upright between the
+  /* Same face, size and ink as the grid it sits on, so the upright between the
      words is indistinguishable from the run it lands on. */
   font-family:var(--font-mono);
   font-size:clamp(9px, 1vw, 15px); line-height:1.25;
   text-align:center; white-space:nowrap;
-  color:var(--brown);
+  color:var(--terra);
   background:var(--ground);
   pointer-events:none;
 }
+:root[data-theme="dark"] .dev-label{ color:var(--orange); }
 .dev-nodes{ position:absolute; inset:0; }
 
 /* Drawn like the cards on the map: the frame is characters, so the width is

@@ -25,7 +25,8 @@ const GH = (repo) => `https://github.com/${OWNER}/${repo}`;
  * inner ring reaches 0.909 of the outer at its worst point - inside, with room
  * to see. Move a card and that number moves; check it before shipping.
  */
-const ME = { id: 'me', title: 'Hero Dev', desc: OWNER, x: 600, y: 420 };
+const ME = { id: 'me', title: 'Hero Dev', desc: OWNER, href: `https://github.com/${OWNER}`,
+             x: 600, y: 420 };
 
 /* A ring is a group: the circle around the cards IS the grouping, which is why
    Pixel Pomo has no box of its own.
@@ -447,15 +448,18 @@ function fillNode(el, item) {
   const lines = wrapText(item.title, cols);
   if (item.desc) lines.push('', ...wrapText(t(item.desc), cols));
   if (badges.length) lines.push('', ...wrapText(badges.join(' '), cols));
-  el.textContent = asciiBox(lines, cols, hub ? { rule: '=' } : { rows: NODE_ROWS });
+  el.textContent = asciiBox(lines, cols, hub ? {} : { rows: NODE_ROWS });
 }
 
 /* A repo card is a link; a grouping node is not. */
 function makeNode(item, extraClass) {
-  const el = document.createElement(item.repo ? 'a' : 'div');
+  // A card is a link when it stands for something on GitHub: a repository, or -
+  // for the hub in the middle - the owner's own page.
+  const href = item.repo ? GH(item.repo) : item.href;
+  const el = document.createElement(href ? 'a' : 'div');
   el.className = 'node' + (extraClass ? ' ' + extraClass : '');
-  if (item.repo) {
-    el.href = GH(item.repo);
+  if (href) {
+    el.href = href;
     el.target = '_blank';
     el.rel = 'noopener';
   }
@@ -1230,6 +1234,51 @@ function spinSaturn(pre) {
   requestAnimationFrame(step);
 }
 
+/* A rocket, from the same wall of ASCII the planet came off. It drifts across
+   the sky rather than falling through it: in from one edge, out at another over
+   half a minute, fading up as it comes and down as it goes, then away for a
+   while before it puts in another appearance somewhere else. First one after
+   10s, and it crosses both faces of the page - the sky is behind them both. */
+const ROCKET = [
+  '   .   ',
+  '  .\'.  ',
+  '  |o|  ',
+  ' .\'o\'. ',
+  ' |.-.| ',
+  " '   ' ",
+  '  ( )  ',
+  '   )   ',
+  '  ( )  ',
+].join('\n');
+
+function flyRocket(el) {
+  if (!el) return;
+  const pre = document.createElement('pre');
+  pre.className = 'gate-rocket';
+  pre.textContent = ROCKET;
+  el.appendChild(pre);
+
+  const cross = () => {
+    if (!el.isConnected) return;
+    const W = el.clientWidth, H = el.clientHeight;
+    if (!W || !H) { setTimeout(cross, 4000); return; }
+    // In from one side, out somewhere along another: any long slow diagonal.
+    const fromLeft = Math.random() < 0.5;
+    const x0 = fromLeft ? -18 : 100, x1 = fromLeft ? 100 : -18;
+    const y0 = 6 + Math.random() * 70, y1 = 6 + Math.random() * 70;
+    const px = (x, y) => 'translate(' + (x / 100 * W).toFixed(0) + 'px,' + (y / 100 * H).toFixed(0) + 'px)';
+    const run = pre.animate([
+      { transform: px(x0, y0), opacity: 0 },
+      { opacity: .55, offset: .18 },
+      { opacity: .55, offset: .82 },
+      { transform: px(x1, y1), opacity: 0 },
+    ], { duration: 26000 + Math.random() * 16000, easing: 'linear' });
+    // Away for a while, then somewhere else.
+    run.onfinish = () => setTimeout(cross, 14000 + Math.random() * 26000);
+  };
+  setTimeout(cross, 10000);
+}
+
 /* Dozens of faint asterisks scattered behind the gate - the deep-space ground
    the planet turns against. Each carries its own place, size and dimness. */
 function fillStars(el) {
@@ -1408,6 +1457,7 @@ function shootStars(el) {
 function initSaturn() {
   fillStars(document.getElementById('gateStars'));
   shootStars(document.getElementById('gateStars'));   // in the starfield, behind the planet
+  flyRocket(document.getElementById('gateStars'));
   spinSaturn(document.getElementById('saturn'));
   const btn = document.getElementById('viewBtn');
   if (btn) btn.addEventListener('click', () => {
