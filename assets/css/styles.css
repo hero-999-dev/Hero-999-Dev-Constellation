@@ -233,18 +233,20 @@ a{ color:inherit; text-decoration:none; }
   color:var(--terra); user-select:none; transform:translate(-50%, -50%);
 }
 :root[data-theme="dark"] .gate-star{ color:var(--amber); }
-/* A shooting star: a short ASCII trail laid along its own slant and slid across
-   the sky by app.js. Same ink as the fixed stars; the animation supplies its
-   own opacity, so it is invisible before and after the run. Rotation is about
-   the tail, which is where the trail is anchored. It rides over the planet
-   rather than in the starfield behind it - a meteor is the near thing in the
-   scene, and behind the dense ASCII it simply could not be seen. */
+/* A shooting star: an ASCII streak laid along its own slant and slid across the
+   sky by app.js. It lives in the starfield, so the planet passes in front of it.
+   Bigger and heavier than the fixed stars, with the planet's own halo, so the
+   streak reads against the ground instead of disappearing into the scatter; the
+   animation supplies its own opacity, so it is invisible before and after the
+   run. Rotation is about the tail, which is where the trail is anchored. */
 .gate-shot{
-  position:absolute; z-index:2; font-family:var(--font-mono); font-size:15px; line-height:1;
+  position:absolute; font-family:var(--font-mono); font-size:18px; line-height:1;
+  font-weight:700; letter-spacing:-.04em;
   white-space:pre; user-select:none; opacity:0; pointer-events:none;
-  transform-origin:0 50%; color:var(--terra);
+  transform-origin:0 50%;
+  color:#8E3F20; text-shadow:0 0 12px rgba(122,84,48,.35);
 }
-:root[data-theme="dark"] .gate-shot{ color:var(--amber); }
+:root[data-theme="dark"] .gate-shot{ color:var(--amber-soft); text-shadow:0 0 14px rgba(246,160,61,.45); }
 /* The switch is parked in the corner. */
 .gate-controls{ position:fixed; top:1.1rem; right:1.1rem; display:flex; align-items:center; gap:.5rem; z-index:4; }
 /* Narrow: the planet slips behind the centred column and dims so the text over

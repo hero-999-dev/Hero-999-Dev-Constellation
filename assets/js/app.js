@@ -1222,41 +1222,47 @@ function fillStars(el) {
   el.appendChild(frag);
 }
 
-/* One shooting star at a time, drawn as a short ASCII trail: the head is the
-   last character, so the string lies tail-first along the direction of travel
-   and the whole span is rotated onto its slant. It falls to the left or the
-   right from a fresh spot each run - the first after 15s, then one every 30s.
+/* One shooting star at a time, drawn as an ASCII streak: dots thinning back into
+   space, a dashed line, then the bright head last, so the string lies tail-first
+   along the direction of travel and the whole span is rotated onto its slant.
+   It comes out of the top-left corner and runs down towards the middle, which is
+   the one stretch of open sky on this screen - and it sits in the starfield,
+   behind the planet, so it passes over Saturn's shoulder rather than cutting
+   through it. The first after 15s, then one every 30s.
    Like the planet, this ignores "reduce motion": a frozen gate reads as broken,
    and nothing here flashes or fills the screen. */
+const SHOT_TRAIL = '.  . ..:::---=====***';   // tail to head
+
 function shootStars(el) {
   if (!el) return;
   let timer = 0;
   const fire = () => {
     if (!el.isConnected) { clearInterval(timer); return; }   // gate removed on unlock - stop
-    const dir = Math.random() < 0.5 ? 1 : -1;                // falls right, or falls left
-    const slope = 16 + Math.random() * 26;                   // degrees below the horizontal
-    const angle = dir > 0 ? slope : 180 - slope;             // CSS rotate: +y is down
+    const slope = 26 + Math.random() * 10;                   // degrees below the horizontal
     const s = document.createElement('span');
     s.className = 'gate-shot';
-    s.textContent = '. ..:-=*';
-    // Start on the side it is coming from, in the upper sky so there is room below.
-    const topPct = 4 + Math.random() * 40;
-    s.style.left = (dir > 0 ? -6 + Math.random() * 46 : 60 + Math.random() * 46).toFixed(1) + '%';
+    s.textContent = SHOT_TRAIL;
+    // Out of the top-left, angled in towards the middle.
+    const topPct = 4 + Math.random() * 8;
+    s.style.left = (2 + Math.random() * 6).toFixed(1) + '%';
     s.style.top = topPct.toFixed(1) + '%';
     el.appendChild(s);
-    // The run is a slice of the width, but never longer than the sky left below
-    // the start - on a short, wide window a full-width run dives out of the
-    // bottom and the star vanishes halfway through.
-    const room = el.clientHeight * (0.96 - topPct / 100);
-    const dist = Math.min(el.clientWidth * (0.45 + Math.random() * 0.3),
-                          room / Math.sin(slope * Math.PI / 180));
+    // The run is held to the top-left quarter: the planet is centred and fills
+    // most of the frame, so this is the corner of open sky where the streak reads
+    // on its own. Whichever bound bites first - a quarter of the width, or the
+    // sky left above the planet's shoulder - the head stops there and burns out,
+    // rather than carrying on across Saturn's face.
+    const room = el.clientHeight * 0.32 - el.clientHeight * (topPct / 100);
+    const dist = Math.max(160, Math.min(el.clientWidth * 0.26,
+                                        room / Math.sin(slope * Math.PI / 180)));
     // Linear: a meteor holds its speed, and an eased run spends most of the
-    // flight already fading out.
+    // flight already fading out. It burns out over the last quarter, which is
+    // where it meets the planet.
     const run = s.animate([
-      { transform: `rotate(${angle}deg) translateX(0px)`, opacity: 0 },
-      { opacity: 0.9, offset: 0.12 },
-      { opacity: 0.9, offset: 0.82 },
-      { transform: `rotate(${angle}deg) translateX(${dist.toFixed(0)}px)`, opacity: 0 }
+      { transform: `rotate(${slope}deg) translateX(0px)`, opacity: 0 },
+      { opacity: 1, offset: 0.1 },
+      { opacity: 1, offset: 0.72 },
+      { transform: `rotate(${slope}deg) translateX(${dist.toFixed(0)}px)`, opacity: 0 }
     ], { duration: 1100 + Math.random() * 500, easing: 'linear' });
     run.onfinish = () => s.remove();
   };
@@ -1272,7 +1278,7 @@ function initGate() {
   }
   gate.hidden = false;
   fillStars(document.getElementById('gateStars'));
-  shootStars(gate);   // on the gate itself, so the trail passes in front of the planet
+  shootStars(document.getElementById('gateStars'));   // in the starfield, behind the planet
   spinSaturn(document.getElementById('saturn'));
   const form = document.getElementById('gateForm');
   const input = document.getElementById('gateInput');
