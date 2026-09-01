@@ -674,6 +674,15 @@ function layoutRings() {
       ring.label.setAttribute('x', cx);
       ring.label.setAttribute('y', y);
     }
+    if (ring.foot) {
+      // The same solve read from the foot of the ellipse: the highest line the
+      // badges fit on, mirrored, then lifted clear of the stroke.
+      const size = parseFloat(getComputedStyle(ring.foot).fontSize) || 16;
+      const half = ring.foot.getComputedTextLength() / 2 + Math.min(26, rx * 0.14);
+      const ratio = Math.min(half / rx, 0.999);
+      ring.foot.setAttribute('x', cx);
+      ring.foot.setAttribute('y', cy + ry * Math.sqrt(1 - ratio * ratio) - size * 0.5);
+    }
   }
 }
 
@@ -714,10 +723,10 @@ function renderMap() {
     EDGES.push({ a, b, path });
   };
 
-  const addRing = (els, cls, pad, text, centre, href) => {
+  const addRing = (els, cls, pad, text, centre, href, badge) => {
     const shape = svg('ellipse', cls);
     ink.prepend(shape);                // behind the connectors
-    let label = null;
+    let label = null, foot = null;
     if (text) {
       // The outer ring carries the site's name and is set like the wordmark
       // over the airlock; a group ring names a box of cards and is set like the
@@ -740,7 +749,12 @@ function renderMap() {
         linesEl.appendChild(label);
       }
     }
-    RINGS.push({ els, shape, label, pad, centre });
+    if (badge) {
+      foot = svg('text', 'ring-label ring-label-badge');
+      foot.textContent = badge;
+      linesEl.appendChild(foot);
+    }
+    RINGS.push({ els, shape, label, foot, pad, centre });
   };
 
   const me = makeNode(ME, 'me');
@@ -768,7 +782,8 @@ function renderMap() {
     add(branch);
   }
 
-  addRing(all, 'ring outer-ring', 48, SELF.title, { x: W / 2, y: H / 2 }, GH(SELF.repo));
+  addRing(all, 'ring outer-ring', 48, SELF.title, { x: W / 2, y: H / 2 }, GH(SELF.repo),
+          '[' + t(SELF.lang) + '] [' + t(SELF.private ? 'private' : 'public') + ']');
 
   settle();
 }

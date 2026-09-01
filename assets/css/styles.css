@@ -164,11 +164,10 @@ body.on-saturn .wrap{ transform:translateX(100%); }
    They credit the ASCII the airlock is drawn from, so they are shown with it;
    the map's right-hand side belongs to the hardware rail. */
 .gate-insp{
-  position:fixed; right:var(--corner); bottom:var(--corner); z-index:21;
+  position:absolute; right:var(--corner); bottom:var(--corner); z-index:21;
   display:flex; flex-direction:column; align-items:flex-end; text-align:right;
   font-size:clamp(9px, .78vw, 13px); gap:.4em;
 }
-body:not(.on-saturn) .gate-insp{ display:none; }
 .gate-insp-label{
   font-family:var(--font-mono); font-size:.86em; letter-spacing:.2em;
   text-transform:uppercase; color:var(--brown-soft); margin-bottom:.1em;
@@ -261,7 +260,7 @@ body:not(.on-saturn) .gate-insp{ display:none; }
   content:"";
   position:absolute; inset:0;
   background:var(--header-bg);
-  border-bottom:1px solid var(--line);
+  border:0;
   -webkit-mask-image:var(--ring-mask, none);
   mask-image:var(--ring-mask, none);
 }
@@ -404,6 +403,19 @@ body:not(.on-saturn) .topbar .gate-top{ display:none; }
   fill:var(--terra);
 }
 :root[data-theme="dark"] .ring-label-group{ fill:var(--orange); }
+/* The outer ring stands for a repository, so it wears the same badges its cards
+   do, at the foot of the ellipse. */
+.ring-label-badge{
+  font-family:var(--font-mono);
+  font-weight:400;
+  font-size:16px;
+  letter-spacing:.04em;
+  fill:var(--terra);
+  text-transform:none;
+}
+:root[data-theme="dark"] .ring-label-badge{ fill:var(--orange); }
+:root[data-theme="dark"] .lang-menu{ border-color:var(--orange); }
+:root[data-theme="dark"] .lang-menu li{ color:var(--orange); }
 /* The map is pointer-events: none so the header strip stays clickable through
    it; a ring that names a repository has to opt back in, as the cards do. */
 .ring-link{ pointer-events:auto; cursor:pointer; }
@@ -565,14 +577,15 @@ a.node:hover{ transform:translate(-50%, -50%) scale(1.05); color:var(--amber); }
 .lang-btn[aria-expanded="true"] .lang-caret{ transform:rotate(180deg); }
 
 .lang-menu{
-  position:absolute; top:calc(100% + .4rem); right:0; z-index:30;
+  position:absolute; top:calc(100% + .3rem); right:0; z-index:30;
   min-width:100%;
-  margin:0; padding:.28rem;
+  margin:0; padding:.3rem .1rem;
   list-style:none;
-  background:var(--cream-2);
-  border:1px solid var(--line-strong);
-  border-radius:18px;
-  box-shadow:var(--shadow);
+  font-family:var(--font-mono);
+  background:var(--ground);
+  border:1px solid var(--terra);
+  border-radius:0;
+  box-shadow:none;
   /* Hinged on the corner under the button it belongs to. */
   transform-origin:top right;
   transition:transform .24s var(--ease), opacity .18s var(--ease);
@@ -580,13 +593,11 @@ a.node:hover{ transform:translate(-50%, -50%) scale(1.05); color:var(--amber); }
 .lang-menu[hidden]{ display:none; }
 .lang-menu:not(.in){ transform:translateY(-.4rem) scale(.95); opacity:0; }
 .lang-menu li{
-  padding:.34rem .8rem;
-  border-radius:var(--radius-pill);
-  font-size:.88rem; white-space:nowrap; cursor:pointer;
-  color:var(--brown);
+  padding:.2rem .7rem .2rem .3rem;
+  font-size:var(--chrome-font); white-space:nowrap; cursor:pointer;
+  color:var(--terra);
 }
-.lang-menu li:hover{ background:var(--sand); }
-.lang-menu li[aria-selected="true"]{
-  background:linear-gradient(140deg, var(--amber-soft), var(--orange));
-  color:#43301F;
-}
+/* A caret marks the one in use, the way a menu in a terminal would. */
+.lang-menu li::before{ content:"  "; white-space:pre; }
+.lang-menu li[aria-selected="true"]::before{ content:"> "; }
+.lang-menu li:hover{ color:var(--amber); }
