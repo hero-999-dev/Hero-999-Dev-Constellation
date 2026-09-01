@@ -711,7 +711,20 @@ function renderMap() {
   settle();
 }
 
+/* Everything under the bar starts at --bar-h: the hardware panel, the narrow
+   list, the signature when it steps up on a phone. The bar's height is whatever
+   its controls come out to, and they are sized from the window, so it is
+   measured rather than written down - a guess that was too small had the panel
+   starting underneath the bar, with the buttons cutting across its top. */
+const measureBar = () => {
+  const bar = document.querySelector('.topbar');
+  if (!bar) return;
+  const h = Math.round(bar.getBoundingClientRect().height);
+  if (h) document.documentElement.style.setProperty('--bar-h', h + 'px');
+};
+
 const settle = () => {
+  measureBar();
   if (!mapEl) return;
   fitMap(); spaceCards(); redrawLines(); layoutRings();
 };
@@ -1446,6 +1459,7 @@ initLang();   // after the theme, because it repaints the switch labels
 /* The map is the face the page opens on, with the hardware beside it: the rail
    is out from the start, so projects and machines are on screen together. */
 showView('map');
+measureBar();   // before anything measures itself against the bar
 renderMap();
 renderList();
 renderDevices();
