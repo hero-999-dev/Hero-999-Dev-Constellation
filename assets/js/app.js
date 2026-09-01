@@ -593,7 +593,7 @@ function maskHeader(ring, box) {
 /* Panel width, and the rail it reserves on the map's right. One place, so the
    CSS `.devices` width, the rail the map slides off, and the room test below all
    agree - keep the CSS width equal to DEV_W. */
-const DEV_W = 360;
+const DEV_W = 430;
 const DEV_RAIL = DEV_W + 20;
 
 /* The language panel is not allowed past the leftmost point of the outer ring.
@@ -719,7 +719,11 @@ function renderMap() {
     ink.prepend(shape);                // behind the connectors
     let label = null;
     if (text) {
-      label = svg('text', 'ring-label');
+      // The outer ring carries the site's name and is set like the wordmark
+      // over the airlock; a group ring names a box of cards and is set like the
+      // cards themselves.
+      label = svg('text', 'ring-label ' +
+        (cls.includes('outer-ring') ? 'ring-label-site' : 'ring-label-group'));
       label.textContent = text;
       // A named ring that stands for a repository is clickable like a card is.
       // The map is pointer-events: none, so `.ring-link` switches them back on

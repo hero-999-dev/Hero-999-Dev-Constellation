@@ -377,19 +377,33 @@ body:not(.on-saturn) .topbar .gate-top{ display:none; }
 .ring{ fill:none; stroke:var(--ink-thin); stroke-width:2; }
 .outer-ring{ fill:none; stroke:var(--ink-thin); stroke-width:2.4; }
 .group-ring{ fill:none; stroke:var(--ink-thin); stroke-width:2.4; }
-/* Ring names wear the wordmark's treatment - the label on an astronomical
-   plate: small caps-height serif, tracked wide. layoutRings() solves the
-   ellipse for whatever width the text ends up needing, so the extra tracking
-   costs nothing. */
+/* Ring names are set the way the thing they name is set. layoutRings() solves
+   the ellipse for whatever width the text ends up needing, so tracking costs
+   nothing - and it steps the size down if the name will not fit up top.
+   Sizes are in the map's own user units: the SVG is scaled to fit, so 28 here
+   lands at about the 19px the wordmark is drawn at. */
 .ring-label{
   fill:var(--brown-mid);
-  font-family:var(--font-head);
-  font-weight:500;
-  font-size:19px;
   text-anchor:middle;
   text-transform:uppercase;
-  letter-spacing:.16em;
 }
+/* The site's name, exactly as it is set over the airlock - ink included. */
+.ring-label-site{
+  font-family:var(--font-head);
+  font-weight:500;
+  font-size:28px;
+  letter-spacing:.28em;
+  fill:var(--brown);
+}
+/* A group of cards, set like the cards inside it. */
+.ring-label-group{
+  font-family:var(--font-mono);
+  font-weight:400;
+  font-size:20px;
+  letter-spacing:.16em;
+  fill:var(--terra);
+}
+:root[data-theme="dark"] .ring-label-group{ fill:var(--orange); }
 /* The map is pointer-events: none so the header strip stays clickable through
    it; a ring that names a repository has to opt back in, as the cards do. */
 .ring-link{ pointer-events:auto; cursor:pointer; }
@@ -471,7 +485,7 @@ a.node:hover{ transform:translate(-50%, -50%) scale(1.05); color:var(--amber); }
      so there is no dead air below the last box. */
   position:absolute; right:0; top:calc(var(--bar-h) + .35rem); bottom:var(--corner); z-index:6;
   transition:transform .56s var(--ease), opacity .38s var(--ease);
-  width:360px;   /* = DEV_W in app.js; the rail and room test read from that */
+  width:430px;   /* = DEV_W in app.js; the rail and room test read from that */
   display:flex; flex-direction:column;
   padding:.6rem .5rem .5rem;
   background:none;
@@ -489,11 +503,14 @@ a.node:hover{ transform:translate(-50%, -50%) scale(1.05); color:var(--amber); }
 .gliding .stage{ transition:padding-right .56s var(--ease); }
 .gliding .map{ transition:width .56s var(--ease), height .56s var(--ease); }
 
+/* The panel's name, set like the group ring on the map - same face, same
+   tracking, same ink as the boxes it stands over. */
 .dev-head{
   font-family:var(--font-mono);
-  font-size:.74rem; letter-spacing:.2em; text-transform:uppercase;
-  color:var(--brown-soft); text-align:center; margin-bottom:.4rem;
+  font-size:.86rem; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--terra); text-align:center; margin-bottom:.5rem;
 }
+:root[data-theme="dark"] .dev-head{ color:var(--orange); }
 
 /* The little map: three boxes the connector engine can drag and spring back. */
 .dev-stage{ position:relative; flex:1; min-height:0; }
@@ -510,7 +527,7 @@ a.node:hover{ transform:translate(-50%, -50%) scale(1.05); color:var(--amber); }
   transform:translate(-50%, -50%);
   padding:0 .3rem;
   font-family:var(--font-mono);
-  font-size:.7rem; line-height:1.25; text-align:center; white-space:nowrap;
+  font-size:.78rem; line-height:1.25; text-align:center; white-space:nowrap;
   color:var(--terra);
   background:var(--ground);
   pointer-events:none;
@@ -523,7 +540,7 @@ a.node:hover{ transform:translate(-50%, -50%) scale(1.05); color:var(--amber); }
 .dev-card{
   position:absolute;
   transform:translate(-50%, -50%);
-  font-size:clamp(6px, .58vw, 9.4px);
+  font-size:clamp(8px, .8vw, 12px);
   background:var(--ground);
   pointer-events:auto;
   cursor:grab; touch-action:none; user-select:none;
