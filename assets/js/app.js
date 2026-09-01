@@ -112,9 +112,8 @@ const SELF = {
    prose and the two category badges are translated. */
 const I18N = {
   en: {
-    gateSub: 'Enter the password to open the constellation.', password: 'Password', open: 'Open',
-    wrong: 'That is not it. Try again.', inspiration: 'Inspiration',
-    heading: 'Everything in one map',
+    inspiration: 'Inspiration',
+    projectsHardware: 'Projects & Hardware',
     hardware: 'Hardware', dark: 'Dark', light: 'Light',
     private: 'Private', public: 'Public', live: 'Live',
     Extension: 'Extension', Desktop: 'Desktop',
@@ -125,9 +124,8 @@ const I18N = {
     dSelf: 'A map of every repository.',
   },
   tr: {
-    gateSub: 'Açmak için parolayı gir.', password: 'Parola', open: 'Aç',
-    wrong: 'Bu değil. Tekrar dene.', inspiration: 'İlham',
-    heading: 'Her şey tek haritada',
+    inspiration: 'İlham',
+    projectsHardware: 'Projeler & Donanım',
     hardware: 'Donanım', dark: 'Koyu', light: 'Açık',
     private: 'Özel', public: 'Herkese açık', live: 'Canlı',   // not 'Açık' - that is the light theme
     Extension: 'Eklenti', Desktop: 'Masaüstü',
@@ -138,9 +136,8 @@ const I18N = {
     dSelf: "Her repo'nun haritası.",
   },
   pl: {
-    gateSub: 'Wpisz hasło, aby otworzyć.', password: 'Hasło', open: 'Otwórz',
-    wrong: 'To nie to. Spróbuj ponownie.', inspiration: 'Inspiracje',
-    heading: 'Wszystko na jednej mapie',
+    inspiration: 'Inspiracje',
+    projectsHardware: 'Projekty i sprzęt',
     hardware: 'Sprzęt', dark: 'Ciemny', light: 'Jasny',
     private: 'Prywatne', public: 'Publiczne', live: 'Na żywo',
     Extension: 'Rozszerzenie', Desktop: 'Desktop',
@@ -151,9 +148,8 @@ const I18N = {
     dSelf: 'Mapa wszystkich repozytoriów.',
   },
   de: {
-    gateSub: 'Passwort eingeben, um zu öffnen.', password: 'Passwort', open: 'Öffnen',
-    wrong: 'Das war es nicht. Noch einmal.', inspiration: 'Inspiration',
-    heading: 'Alles auf einer Karte',
+    inspiration: 'Inspiration',
+    projectsHardware: 'Projekte & Hardware',
     hardware: 'Hardware', dark: 'Dunkel', light: 'Hell',
     private: 'Privat', public: 'Öffentlich', live: 'Live',
     Extension: 'Erweiterung', Desktop: 'Desktop',
@@ -173,8 +169,6 @@ function applyLang(code) {
   localStorage.setItem('hdh-lang', LANG);
   document.documentElement.lang = LANG;
   for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = t(el.dataset.i18n);
-  const input = document.getElementById('gateInput');
-  if (input) input.placeholder = t('password');
   for (const pick of document.querySelectorAll('[data-site-lang]')) {
     const now = pick.querySelector('.lang-now');
     const chosen = pick.querySelector(`[data-lang="${LANG}"]`);
@@ -563,7 +557,14 @@ function capSidePanels(ring, box) {
     const headroom = wrapBox.height - offset - 6;
     const fits = room >= 160 && (devNaturalH === 0 || devNaturalH <= headroom);
     if (btn) btn.hidden = !fits;
-    if (!fits) { rigs.hidden = true; btn?.classList.remove('on'); btn?.setAttribute('aria-expanded', 'false'); }
+    if (!fits) {
+      rigs.hidden = true; rigs.classList.remove('in');
+      btn?.classList.remove('on'); btn?.setAttribute('aria-expanded', 'false');
+      // The rail went with it: the page now boots with the panel open, so the
+      // reserved space has to be given back or the map stays pushed off an
+      // empty column.
+      document.documentElement.style.setProperty('--rail-right', '0px');
+    }
   }
 }
 
@@ -601,7 +602,7 @@ function renderMap() {
   const nodes = document.getElementById('mapNodes');
 
   /* Drawn twice over: initLang() runs before the gate is answered and rebuilds
-     the map, then openConstellation() drew it again on top - two full sets of cards, one
+     the map, then the boot sequence drew it again on top - two full sets of cards, one
      hiding under the other until a drag pulled the top one away. Clearing here
      makes the function safe to call from anywhere. */
   nodes.textContent = '';
@@ -801,7 +802,7 @@ function makeDraggable(el) {
 function renderList() {
   const list = document.getElementById('list');
   // Same guard renderMap has: initLang()'s rebuild runs one set, then
-  // openConstellation() calls this again on top. renderMap clears its own
+  // the boot sequence calls this again on top. renderMap clears its own
   // containers; this did not, so the list came out doubled - invisible while it
   // was display:none, plain once it showed on narrow screens. Clear here so it
   // is safe to call from anywhere.
@@ -914,14 +915,17 @@ function glide(change) {
   requestAnimationFrame(step);
 }
 
-function initDevices() {
+/* Opening and closing the rail lives in one place, so the state the page boots
+   into and the state the button sets are the same code. */
+function setRail(open) {
   const btn = document.getElementById('devBtn');
   const panel = document.getElementById('devices');
-  if (!btn || !panel) return;
-  btn.addEventListener('click', () => {
-    const open = panel.hidden || !panel.classList.contains('in');
-    btn.setAttribute('aria-expanded', String(open));
-    btn.classList.toggle('on', open);
+  if (!panel) return;
+  {
+    if (btn) {
+      btn.setAttribute('aria-expanded', String(open));
+      btn.classList.toggle('on', open);
+    }
     if (open) {
       // Out of `hidden` before the glide is armed, and measured once, so the
       // browser has the off-screen starting position to animate FROM. Leave it
@@ -945,6 +949,19 @@ function initDevices() {
         if (!panel.classList.contains('in')) panel.hidden = true;
       }, GLIDE_MS);
     }
+  }
+}
+
+function initDevices() {
+  const btn = document.getElementById('devBtn');
+  const panel = document.getElementById('devices');
+  if (!btn || !panel) return;
+  btn.addEventListener('click', () => {
+    /* One button for "projects and hardware, both open". From the airlock it is
+       the way back and brings the rail with it; on the map it is the rail's own
+       switch. */
+    if (document.body.classList.contains('on-saturn')) { showView('map'); setRail(true); return; }
+    setRail(panel.hidden || !panel.classList.contains('in'));
   });
 }
 
@@ -1084,20 +1101,23 @@ function spaceCards() {
 
 /* ------------------------------------------------------------------ gate */
 
-const PASS_HASH = 'e7626d921d49c0d82020f11470c78af03e2d605c2f6c08823074a6d3e12a98c5';
-
-async function sha256(text) {
-  const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-  return [...new Uint8Array(bytes)].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-function openConstellation() {
-  document.getElementById('gate').remove();
-  document.getElementById('constellation').hidden = false;
-  renderMap();
-  renderList();
-  renderDevices();
-  initDevices();
+/* One page, two faces. Neither is thrown away when the other is up - the planet
+   keeps its place and the map keeps its layout - so crossing over is a swap, not
+   a rebuild. The map measures nothing while it is away, though, so it is laid
+   out again on the way back. */
+function showView(name) {
+  const saturn = name === 'saturn';
+  const btn = document.getElementById('viewBtn');
+  document.body.classList.toggle('on-saturn', saturn);
+  document.getElementById('gate').hidden = !saturn;
+  document.getElementById('constellation').hidden = saturn;
+  if (btn) {
+    btn.classList.toggle('on', saturn);
+    btn.setAttribute('aria-pressed', String(saturn));
+  }
+  if (!saturn) settle();
+  // The sky's own loops idle while it is away; this is their cue to catch up.
+  document.dispatchEvent(new Event('hdh:view'));
 }
 
 /* ---------------------------------------------------------------- saturn */
@@ -1196,7 +1216,11 @@ function spinSaturn(pre) {
   const rate = gentle ? 0.014 : 0.032;
   let last = 0;
   const step = (now) => {
-    if (!pre.isConnected) return;              // gate removed on unlock - stop
+    if (!pre.isConnected) return;
+    // Idle while the map is the face on show: the loop stays alive, but there is
+    // nothing to draw into a box with no width, and the planet is then mid-turn
+    // when the airlock comes back rather than starting over.
+    if (!pre.clientWidth) { requestAnimationFrame(step); return; }
     if (now - last >= 70) { last = now; render(spin); spin += rate; }   // ~14 fps
     requestAnimationFrame(step);
   };
@@ -1269,14 +1293,17 @@ function shootStars(el) {
     if (!el.isConnected) {                                   // gate removed on unlock - stop
       clearInterval(timer);
       document.removeEventListener('visibilitychange', release);
+      document.removeEventListener('hdh:view', release);
       return;
     }
     /* A hidden tab runs no requestAnimationFrame, so a streak started now would
        sit frozen on its start line - and left as it was, one dead <pre> piled up
        per turn for as long as the tab was away. Bank the turn instead and let
        the shower out when the tab comes back: leaving a page and returning to a
-       sky full of them is worth keeping, so it is on purpose and it is capped. */
-    if (document.hidden) { pending = Math.min(pending + 1, SHOT_QUEUE_MAX); return; }
+       sky full of them is worth keeping, so it is on purpose and it is capped.
+       The same goes for the sky being away rather than the tab - while the map
+       is the face on show this box has no width. */
+    if (document.hidden || !el.clientWidth) { pending = Math.min(pending + 1, SHOT_QUEUE_MAX); return; }
     const pre = document.createElement('pre');
     pre.className = 'gate-shot';
     el.appendChild(pre);
@@ -1357,48 +1384,38 @@ function shootStars(el) {
   /* Back in view: let the banked turns go, each after its own short delay, so
      they arrive as a shower rather than all on one frame. */
   const release = () => {
-    if (document.hidden || !el.isConnected) return;
+    if (document.hidden || !el.isConnected || !el.clientWidth) return;
     const owed = pending;
     pending = 0;
     for (let i = 0; i < owed; i++) setTimeout(fire, Math.random() * 1400);
   };
   document.addEventListener('visibilitychange', release);
+  document.addEventListener('hdh:view', release);   // and on the way back to the sky
   setTimeout(() => { fire(); timer = setInterval(fire, 30000); }, 15000);
 }
 
-function initGate() {
-  const gate = document.getElementById('gate');
-  // Answered already this session - do not ask again on every reload.
-  if (sessionStorage.getItem('hdh-open') === '1') {
-    openConstellation();
-    return;
-  }
-  gate.hidden = false;
+/* The airlock's own contents. Drawn once and left running: the loops idle while
+   the map is up rather than stopping, so the planet is mid-turn when you come
+   back to it instead of starting over. */
+function initSaturn() {
   fillStars(document.getElementById('gateStars'));
   shootStars(document.getElementById('gateStars'));   // in the starfield, behind the planet
   spinSaturn(document.getElementById('saturn'));
-  const form = document.getElementById('gateForm');
-  const input = document.getElementById('gateInput');
-  const error = document.getElementById('gateError');
-  input.focus();
-
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    if (await sha256(input.value) === PASS_HASH) {
-      sessionStorage.setItem('hdh-open', '1');
-      openConstellation();
-      return;
-    }
-    error.hidden = false;
-    input.value = '';
-    input.focus();
-    const card = form;
-    card.classList.remove('shake');
-    void card.offsetWidth; // restart the animation
-    card.classList.add('shake');
+  const btn = document.getElementById('viewBtn');
+  if (btn) btn.addEventListener('click', () => {
+    showView(document.body.classList.contains('on-saturn') ? 'map' : 'saturn');
   });
 }
 
 initTheme();
 initLang();   // after the theme, because it repaints the switch labels
-initGate();
+
+/* The map is the face the page opens on, with the hardware beside it: the rail
+   is out from the start, so projects and machines are on screen together. */
+showView('map');
+renderMap();
+renderList();
+renderDevices();
+initDevices();
+initSaturn();
+setRail(true);
