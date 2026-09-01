@@ -196,18 +196,32 @@ a{ color:inherit; text-decoration:none; }
   background:linear-gradient(140deg, var(--amber-soft), var(--orange));
   -webkit-background-clip:text; background-clip:text;
 }
-/* Credits in the machine's own voice - a monospace log, quiet until hovered. */
-.gate-insp{ display:flex; flex-direction:column; gap:.35rem; align-items:flex-start; }
+/* Credits in the machine's own voice - a monospace log, quiet until hovered.
+   Parked in the bottom-right corner, opposite the password, and set from one
+   font-size that tracks the window - everything inside is in em, so the whole
+   block keeps its proportions instead of holding one pixel size on every screen.
+   Fixed rather than absolute: the gate is a full-viewport overlay, and the
+   column this lives in is itself positioned. */
+.gate-insp{
+  position:fixed; right:clamp(1.2rem, 4vw, 3rem); bottom:1.6rem; z-index:3;
+  display:flex; flex-direction:column; align-items:flex-end; text-align:right;
+  font-size:clamp(9px, .78vw, 13px); gap:.4em;
+}
 .gate-insp-label{
-  font-family:var(--font-mono); font-size:.66rem; letter-spacing:.2em;
-  text-transform:uppercase; color:var(--brown-soft); margin-bottom:.1rem;
+  font-family:var(--font-mono); font-size:.86em; letter-spacing:.2em;
+  text-transform:uppercase; color:var(--brown-soft); margin-bottom:.1em;
 }
 .gate-insp a{
-  font-family:var(--font-mono); font-size:.76rem; color:var(--brown-mid);
+  font-family:var(--font-mono); font-size:1em; color:var(--brown-mid);
   text-decoration:none; border-bottom:1px solid var(--line-strong); padding-bottom:1px;
   transition:color .18s var(--ease), border-color .18s var(--ease);
 }
 .gate-insp a:hover{ color:var(--terra); border-color:var(--terra); }
+/* The credit line under the log - quieter than the links, and not one of them. */
+.gate-insp-note{
+  margin:.8em 0 0; font-family:var(--font-mono); font-size:.86em;
+  color:var(--brown-soft); letter-spacing:.02em;
+}
 /* The signature: a 3D Saturn drawn character by character in app.js, turned like
    the spinning-donut demo. Laid over the whole gate, anchored right, behind the
    column - big enough to run off the right edge and reach back past the middle. */
@@ -259,6 +273,12 @@ a{ color:inherit; text-decoration:none; }
     justify-content:start; gap:1.6rem; overflow-y:auto;
   }
   .gate-saturn{ left:50%; transform:translate(-50%, -50%); opacity:.3; font-size:clamp(7px, 3.4vw, 13px); }
+  /* No corner to park in on a phone - the credits fall back into the column,
+     centred under the prompt, and scroll with it. */
+  .gate-insp{
+    position:static; align-items:center; text-align:center;
+    font-size:clamp(10px, 3vw, 13px);
+  }
 }
 /* No frame - just the prompt and a hairline field over the starfield. */
 .gate-card{
