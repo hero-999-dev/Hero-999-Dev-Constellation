@@ -178,13 +178,11 @@ function applyLang(code) {
   document.documentElement.lang = LANG;
   for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = t(el.dataset.i18n);
   for (const pick of document.querySelectorAll('[data-site-lang]')) {
-    const now = pick.querySelector('.lang-now');
-    const chosen = pick.querySelector(`[data-lang="${LANG}"]`);
-    if (now && chosen) now.textContent = chosen.textContent;
     for (const opt of pick.querySelectorAll('[data-lang]')) {
       opt.setAttribute('aria-selected', String(opt.dataset.lang === LANG));
     }
   }
+  paintChrome();
   applyTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
   if (document.getElementById('mapNodes')) rebuildMap();
 }
@@ -246,9 +244,28 @@ function applyTheme(mode) {
   document.documentElement.dataset.theme = mode;
   localStorage.setItem('hdh-theme', mode);
   document.querySelector('meta[name="theme-color"]')
-    ?.setAttribute('content', mode === 'dark' ? '#1A1411' : '#FFFBF4');
-  for (const label of document.querySelectorAll('.theme-label')) {
-    label.textContent = mode === 'dark' ? t('light') : t('dark');
+    ?.setAttribute('content', mode === 'dark' ? '#1A1411' : '#F3E2C4');
+  paintChrome();
+}
+
+/* The controls wear the cards' frame. Their labels come from the language and
+   theme tables, so the frames are drawn from those rather than written into the
+   markup, and redrawn whenever either changes. */
+function chromeLabel(el) {
+  if (el.matches('[data-theme-toggle]')) {
+    return document.documentElement.dataset.theme === 'dark' ? t('light') : t('dark');
+  }
+  if (el.matches('.lang-btn')) {
+    const chosen = el.closest('[data-site-lang]')?.querySelector('[data-lang="' + LANG + '"]');
+    return (chosen ? chosen.textContent : LANG) + ' v';
+  }
+  return el.dataset.i18n ? t(el.dataset.i18n) : (el.dataset.box || '');
+}
+
+function paintChrome() {
+  for (const el of document.querySelectorAll('[data-box]')) {
+    const label = chromeLabel(el);
+    el.textContent = asciiBox([label], label.length + 2);
   }
 }
 
@@ -263,40 +280,81 @@ function initTheme() {
   }
 }
 
+/* ------------------------------------------------------------------- boxes */
+
+/* Every box on the page is drawn the way the planet is: characters on a grid.
+   One shape - a dot at each top corner, an apostrophe at each bottom one,
+   dashes between - and one function that draws it, so the cards, the machines
+   and the controls are plainly the same hand.
+
+     .------------------.
+     |    pixel_pomo    |
+     '------------------'
+*/
+
+/* Break text on words to fit `cols`, and hyphen-free: a word longer than the
+   line is cut rather than allowed to push the frame open. */
+function wrapText(text, cols) {
+  const out = [];
+  let line = '';
+  for (const word of String(text).split(/\s+/)) {
+    if (!word) continue;
+    if (!line) line = word;
+    else if (line.length + 1 + word.length <= cols) line += ' ' + word;
+    else { out.push(line); line = word; }
+    while (line.length > cols) { out.push(line.slice(0, cols)); line = line.slice(cols); }
+  }
+  if (line) out.push(line);
+  return out;
+}
+
+/* Pad a group to its own widest line, so the frame centres the block while the
+   lines inside it stay left-aligned with each other - what a spec list wants. */
+const padBlock = (lines) => {
+  const w = lines.reduce((n, l) => Math.max(n, l.length), 0);
+  return lines.map((l) => l + ' '.repeat(w - l.length));
+};
+
+/* `rows` pins the inside height so every card in a ring comes out the same
+   shape - the ring geometry is solved against a fixed card, and a description
+   that wraps to one more line in one language would otherwise grow it. */
+function asciiBox(lines, cols, { rows = 0, rule = '-' } = {}) {
+  let body = lines.slice();
+  if (rows) {
+    body = body.slice(0, rows);
+    const room = rows - body.length;
+    const top = Math.floor(room / 2);
+    body = [...Array(top).fill(''), ...body, ...Array(room - top).fill('')];
+  }
+  const bar = rule.repeat(cols);
+  const row = (text) => {
+    const clipped = text.length > cols ? text.slice(0, cols) : text;
+    const room = cols - clipped.length;
+    const left = Math.floor(room / 2);
+    return '|' + ' '.repeat(left) + clipped + ' '.repeat(room - left) + '|';
+  };
+  return ['.' + bar + '.', ...body.map(row), "'" + bar + "'"].join('\n');
+}
+
 /* ------------------------------------------------------------------ nodes */
 
-function tag(text, cls) {
-  const el = document.createElement('span');
-  el.className = 'tag' + (cls ? ' ' + cls : '');
-  el.textContent = text;
-  return el;
-}
+const NODE_COLS = 26, NODE_ROWS = 6;   // inside the frame, in characters
+const HUB_COLS = 24;
 
 /* Fills a node body. Used by both renderers, so a card looks the same in the
    map and in the list. */
 function fillNode(el, item) {
-  const title = document.createElement('span');
-  title.className = 'node-title';
-  title.textContent = item.title;
-  el.appendChild(title);
-
-  if (item.desc) {
-    const desc = document.createElement('span');
-    desc.className = 'node-desc';
-    desc.textContent = t(item.desc);
-    el.appendChild(desc);
-  }
-
-  const meta = document.createElement('span');
-  meta.className = 'node-meta';
-  // Language names are proper nouns; the two category words are not.
-  if (item.lang) meta.appendChild(tag(t(item.lang)));
-  if (item.repo) meta.appendChild(tag(item.private ? t('private') : t('public'), item.private ? 'lock' : ''));
-  // The `live` badge is NOT here. Three badges fit one row in English but not
-  // once "Public" becomes "Herkese açık" or "Öffentlich", and a second row makes
-  // the card too tall for the ring geometry the coordinates were solved against.
-  // The list view has room and carries it instead.
-  if (meta.children.length) el.appendChild(meta);
+  const hub = el.classList.contains('me');
+  const cols = hub ? HUB_COLS : NODE_COLS;
+  const badges = [];
+  // Language names are proper nouns; the category words are not.
+  if (item.lang) badges.push('[' + t(item.lang) + ']');
+  if (item.repo) badges.push('[' + (item.private ? t('private') : t('public')) + ']');
+  if (item.live) badges.push('[' + t('live') + ']');
+  const lines = wrapText(item.title, cols);
+  if (item.desc) lines.push('', ...wrapText(t(item.desc), cols));
+  if (badges.length) lines.push('', ...wrapText(badges.join(' '), cols));
+  el.textContent = asciiBox(lines, cols, hub ? { rule: '=' } : { rows: NODE_ROWS });
 }
 
 /* A repo card is a link; a grouping node is not. */
@@ -845,10 +903,7 @@ function renderList() {
   list.textContent = '';
   const leafOf = (item) => {
     const leaf = makeNode(item);
-    leaf.classList.remove('node');
-    leaf.classList.add('leaf');
-    // Room for the third badge down here, which is why the map card does without.
-    if (item.live) leaf.querySelector('.node-meta')?.appendChild(tag(t('live'), 'live'));
+    leaf.classList.add('leaf');   // keeps `node`: same box, out of the map's flow
     return leaf;
   };
   // Up on the map the page's own repository is the outer ring; there is no ring
@@ -862,7 +917,7 @@ function renderList() {
     const box = document.createElement('section');
     box.className = 'branch';
     const head = document.createElement('span');
-    head.className = 'node-title';
+    head.className = 'branch-head';
     head.textContent = branch.ring || branch.title;   // the ring's name is the group's name
     box.appendChild(head);
     for (const child of branch.children) box.appendChild(leafOf(child));
@@ -1005,6 +1060,7 @@ function initDevices() {
    frame, joined by the same connector engine as the big one - same follow loop,
    same spring back. Its own coordinate space (DW x DH) so the two never mix. */
 const DW = 100, DH = 100;
+const DEV_COLS = 30;   // inside the frame, in characters
 
 function renderDevices() {
   const box = document.getElementById('devices');
@@ -1045,28 +1101,18 @@ function renderDevices() {
     card.className = 'dev-card';
     card.style.left = item.at.x + '%';
     card.style.top = item.at.y + '%';
-    // Per-box width overrides the CSS default: the laptops run a touch wider, the
-    // phone narrower (its specs are short and left a gap). The triangle and the
-    // elbows measure the real rect, so they follow whatever these come out to.
-    if (item.w) card.style.width = item.w;
+    // Width is however many characters the widest line needs - the elbows and
+    // the triangle measure the real rect, so they follow it.
     // spaceCards centres the three by height; a box can ask to ride a few px off
     // that (the phone reads better a touch below the go/acer midline).
     if (item.nudge) card.dataset.nudge = item.nudge;
-    const name = document.createElement('span');
-    name.className = 'dev-name';
-    name.textContent = item.name;
-    const sub = document.createElement('span');
-    sub.className = 'dev-sub';
-    // A category ahead of the year translates; a model number does not.
-    sub.textContent = item.subKey ? t(item.subKey) + ' · ' + item.sub : item.sub;
-    card.append(name, sub);
-    for (const line of item.specs) {
-      const row = document.createElement('span');
-      row.className = 'dev-spec';
-      // Specs are model names and numbers except for this one English word.
-      row.textContent = line.replace('(integrated)', '(' + t('integrated') + ')');
-      card.appendChild(row);
-    }
+    // A category ahead of the year translates; a model number does not. Specs
+    // are model names and numbers except for the one English word inside them.
+    const sub = item.subKey ? t(item.subKey) + ' · ' + item.sub : item.sub;
+    const specs = padBlock(item.specs.map(
+      (line) => line.replace('(integrated)', '(' + t('integrated') + ')')));
+    const lines = [...wrapText(item.name, DEV_COLS), ...wrapText(sub, DEV_COLS), '', ...specs];
+    card.textContent = asciiBox(lines, DEV_COLS);
     nodes.appendChild(card);
     makeDraggable(card);
     made[item.key] = card;

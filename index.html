@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#F3E2C4">
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%2343301F'/><path d='M10 9v14M22 9v14M10 16h12' stroke='%23F6A03D' stroke-width='3.4' stroke-linecap='round'/></svg>">
-<link rel="stylesheet" href="assets/css/styles.css?v=202609012220">
+<link rel="stylesheet" href="assets/css/styles.css?v=202609020030">
 </head>
 <body>
 
@@ -22,19 +22,16 @@
 </div>
 
 <header class="topbar">
-  <button class="pill" id="viewBtn" type="button" aria-pressed="false" data-i18n="home"></button>
+  <button class="pill" id="viewBtn" type="button" aria-pressed="false" data-i18n="home" data-box></button>
   <!-- The site's name, tracked wide like the label on an astronomical plate and
        centred over the whole bar. The map has its own Constellation on the outer
        ring, so this shows with the airlock. -->
   <div class="gate-top" lang="en">Constellation</div>
   <div class="topbar-right">
     <button class="pill" id="devBtn" type="button" aria-expanded="false" aria-controls="devices"
-            data-i18n="projectsHardware"></button>
+            data-i18n="projectsHardware" data-box></button>
     <div class="lang-pick" data-site-lang>
-      <button class="pill lang-btn" type="button" aria-haspopup="listbox" aria-expanded="false">
-        <span class="lang-now"></span>
-        <svg class="lang-caret" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1.2 5 4.8 9 1.2"/></svg>
-      </button>
+      <button class="pill lang-btn" type="button" aria-haspopup="listbox" aria-expanded="false" data-box></button>
       <ul class="lang-menu" role="listbox" hidden>
         <li role="option" data-lang="en" tabindex="-1">English</li>
         <li role="option" data-lang="tr" tabindex="-1">T&uuml;rk&ccedil;e</li>
@@ -42,10 +39,8 @@
         <li role="option" data-lang="de" tabindex="-1">Deutsch</li>
       </ul>
     </div>
-    <button class="theme-btn" type="button" data-theme-toggle aria-label="Switch between light and dark">
-    <svg class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path class="icon-moon" d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/><g class="icon-sun"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.2v2.1M12 19.7v2.1M4.1 4.1l1.5 1.5M18.4 18.4l1.5 1.5M2.2 12h2.1M19.7 12h2.1M4.1 19.9l1.5-1.5M18.4 5.6l1.5-1.5"/></g></svg>
-      <span class="theme-label"></span>
-    </button>
+    <button class="pill theme-btn" type="button" data-theme-toggle
+            aria-label="Switch between light and dark" data-box></button>
   </div>
 </header>
 
@@ -72,7 +67,7 @@
 
 <!-- The signature holds the bottom-left of both faces. -->
 <div class="signature">
-  <h1 class="gate-mark"><span>Hero Dev</span></h1>
+  <h1 class="gate-mark" data-box="Hero Dev"></h1>
 </div>
 
 <!-- Credits for the ASCII the airlock is drawn from, so they keep it company. -->
@@ -85,6 +80,6 @@
   <p class="gate-insp-note" data-i18n="vibecoded"></p>
 </div>
 
-<script src="assets/js/app.js?v=202609012220"></script>
+<script src="assets/js/app.js?v=202609020030"></script>
 </body>
 </html>

@@ -235,26 +235,8 @@ body:not(.on-saturn) .gate-insp{ display:none; }
   body.on-saturn .signature{ bottom:auto; top:calc(var(--bar-h) + .8rem); }
   body:not(.on-saturn) .signature{ display:none; }
 }
-/* The mark is one of the corner controls, so it is set to their size and its
-   padding is in em - it grows with them rather than on its own. */
-.gate-mark{
-  margin:0; padding:.4em 1em; flex:none;
-  display:grid; place-items:center;
-  font-family:var(--font-head); font-weight:500;
-  font-size:var(--chrome-font); line-height:1.25;
-  white-space:nowrap;
-  background:#43301F;
-  border-radius:var(--radius-pill);
-  box-shadow:var(--shadow-sm);
-}
-/* Inside out: the tile takes the ink the letter used to be drawn in, and the
-   letter takes the warm gradient the tile used to be. The letter needs its own
-   element for that - a gradient can only be clipped to text it is painted on. */
-.gate-mark span{
-  background:linear-gradient(140deg, var(--amber-soft), var(--orange));
-  -webkit-background-clip:text; background-clip:text;
-  color:transparent;
-}
+/* The mark is one of the corner boxes; app.js draws it. */
+.gate-mark{ margin:0; font-size:var(--chrome-font); }
 
 /* ------------------------------------------------------------ chrome */
 
@@ -301,22 +283,7 @@ body.on-saturn .topbar::before{ display:none; }
   color:var(--brown); pointer-events:none;
 }
 body:not(.on-saturn) .topbar .gate-top{ display:none; }
-/* Colour, ground and border come from the shared control rule below - only the
-   shape of this one differs, because it carries an icon beside its word. */
-.theme-btn{
-  display:flex; align-items:center; gap:.5rem;
-  padding:.5rem .95rem;
-  cursor:pointer;
-  transition:border-color .18s var(--ease);
-}
-.theme-btn:hover{ border-color:var(--amber); }
-/* Classic pair: a moon while the page is light (click to go dark), a sun while
-   it is dark. Only one is in the DOM flow at a time. */
-/* The icon takes the button's own ink: on the amber tile dark turns over, an
-   amber glyph would be an amber glyph on amber. */
-.theme-icon{ width:17px; height:17px; color:inherit; flex:none; }
-:root:not([data-theme="dark"]) .icon-sun{ display:none; }
-:root[data-theme="dark"] .icon-moon{ display:none; }
+/* The theme switch is a box like the others now; its word is Dark or Light. */
 
 
 
@@ -329,41 +296,32 @@ body:not(.on-saturn) .topbar .gate-top{ display:none; }
   transition:transform .56s var(--ease);
 }
 
-/* The two faces, Language and the theme switch are the same control in four
-   guises: one size, one padding, one shape, so the row reads as a set - and the
-   set wears the signature's own tile, a deep brown slab with warm type on it, so
-   the chrome in the corners is plainly one family. */
-.pill, .topbar .theme-btn{
-  font-family:var(--font-head);
-  font-weight:500;
-  font-size:var(--chrome-font);
-  line-height:1.25;
-  padding:.4em 1em;
-  color:var(--amber-soft);
-  background:#43301F;
-  border:1px solid transparent;
-  border-radius:var(--radius-pill);
-  box-shadow:var(--shadow-sm);
+/* Every box on the page is the same object: characters on a grid, drawn in
+   app.js, wearing the planet's own type and ink on the page's own ground. The
+   frame IS the border - there is no CSS one, no radius and no shadow behind it. */
+.ascii-box, .pill, .gate-mark, .node, .dev-card{
+  font-family:var(--font-mono);
+  font-weight:400;
+  white-space:pre;
+  line-height:1;
+  letter-spacing:0;
+  color:var(--terra);
+  background:none;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+  padding:0;
 }
-/* Light stands the controls in deep brown against the warm ground; dark turns
-   them over, because a brown slab on a near-black ground is a hole rather than a
-   button. Whichever way round, the chosen face is the other one of the pair, so
-   it still reads at a glance. */
 :root[data-theme="dark"] .pill,
-:root[data-theme="dark"] .topbar .theme-btn{
-  color:#43301F;
-  background:linear-gradient(140deg, var(--amber-soft), var(--orange));
-}
+:root[data-theme="dark"] .gate-mark,
+:root[data-theme="dark"] .node,
+:root[data-theme="dark"] .dev-card{ color:var(--orange); }
 /* Pressing anything says so: the same lift and lightening on every control, so
    the ones that do not latch still answer the click. */
-.pill, .topbar .theme-btn{ transition:border-color .18s var(--ease), filter .12s var(--ease), transform .12s var(--ease); }
-.pill:active, .topbar .theme-btn:active{ transform:translateY(1px); filter:brightness(1.22); }
-.pill{
-  display:inline-block; letter-spacing:0;
-  cursor:pointer;
-  transition:border-color .18s var(--ease), background .18s var(--ease);
-}
-.pill:hover{ border-color:var(--amber); }
+.pill{ font-size:var(--chrome-font); transition:filter .12s var(--ease), transform .12s var(--ease); }
+.pill:active{ transform:translateY(1px); filter:brightness(1.25); }
+.pill{ display:inline-block; cursor:pointer; }
+.pill:hover{ color:var(--amber); }
 /* No latched colour on the two face switches: which face you are looking at is
    the whole screen, and a button that changed colour to tell you so read as a
    toggle stuck down. The press feedback above is the answer they give. */
@@ -416,10 +374,9 @@ body:not(.on-saturn) .topbar .gate-top{ display:none; }
 .map-nodes{ position:absolute; inset:0; pointer-events:none; }
 
 /* Grouping rings. Drawn first, so the connectors and the cards sit on top. */
-.ring{ fill:var(--glass); stroke:var(--ink-thin); stroke-width:2; }
+.ring{ fill:none; stroke:var(--ink-thin); stroke-width:2; }
 .outer-ring{ fill:none; stroke:var(--ink-thin); stroke-width:2.4; }
-/* fill-opacity 1 here because the group already fades everything inside it */
-.group-ring{ fill:var(--sand); fill-opacity:1; stroke:var(--ink-thin); stroke-width:2.4; }
+.group-ring{ fill:none; stroke:var(--ink-thin); stroke-width:2.4; }
 /* Ring names wear the wordmark's treatment - the label on an astronomical
    plate: small caps-height serif, tracked wide. layoutRings() solves the
    ellipse for whatever width the text ends up needing, so the extra tracking
@@ -440,15 +397,11 @@ body:not(.on-saturn) .topbar .gate-top{ display:none; }
 
 /* Nodes are placed by percentage on the same 1200x840 grid the lines use,
    so the two stay locked together at any width. */
+/* A card is a drawn box: app.js writes the frame and everything inside it, and
+   all that is left here is where it sits, that it can be dragged, and how big a
+   character is. The ground behind it is the page's own, so the connectors stop
+   at the frame instead of running through the letters. */
 .node{
-  --w: 15.73cqw;          /* 195 of the 1240 the layout was solved at */
-  /* Height is pinned too, not left to the text. Line wrapping does not scale
-     perfectly linearly - at a small map a description that fitted one line at
-     full size can take two, and a taller card grows the ring until it bursts
-     the canvas (measured: ry 411 -> 435). Fixed proportions, content centred. */
-  height:8.23cqw;
-  display:flex; flex-direction:column; justify-content:center;
-  overflow:hidden;
   position:absolute;
   transform:translate(-50%, -50%);
   pointer-events:auto;
@@ -456,62 +409,20 @@ body:not(.on-saturn) .topbar .gate-top{ display:none; }
   touch-action:none;      /* let a finger drag the card instead of the page */
   user-select:none;
   -webkit-user-drag:none;
-  width:var(--w);
-  padding:.97cqw 1.23cqw;
-  text-align:center;
-  background:var(--cream-2);
-  border:1px solid var(--line-strong);
-  border-radius:1.29cqw;
-  box-shadow:var(--shadow-sm);
-  transition:transform .2s var(--ease), box-shadow .2s var(--ease), border-color .2s var(--ease);
+  font-size:1.04cqw;
+  background:var(--ground);
+  transition:transform .2s var(--ease), color .2s var(--ease);
 }
-a.node:hover{ transform:translate(-50%, -50%) scale(1.05); box-shadow:var(--shadow); border-color:var(--amber); }
+a.node:hover{ transform:translate(-50%, -50%) scale(1.05); color:var(--amber); }
 
 /* While a card is held, and on the way home. The inline transform the drag
    writes beats the :hover rule above, so the card does not also grow. */
-.node.dragging{
-  cursor:grabbing;
-  z-index:5;
-  box-shadow:var(--shadow-lg);
-  border-color:var(--amber);
-}
+.node.dragging{ cursor:grabbing; z-index:5; color:var(--amber); }
 /* Slight overshoot on the way back - that is the whole "fluid" of it. */
 .node.returning{ transition:transform .62s cubic-bezier(.34, 1.42, .5, 1); }
-/* Repo names have no spaces to break at, so a long one either widens its card
-   past the width set for it or gets snapped mid-word. Slightly tighter type
-   fits the longest name here (`pixel_pomo_art_kit`) on one line; the break rule
-   stays as the backstop for anything longer. */
-.node-title{
-  font-family:var(--font-head); font-weight:500;
-  font-size:1.21cqw; letter-spacing:-.01em;
-  overflow-wrap:anywhere;
-}
-.node-desc{ display:block; margin-top:.32cqw; font-size:.98cqw; line-height:1.35; color:var(--brown-mid); }
-.node-meta{ display:flex; justify-content:center; gap:.4cqw; margin-top:.5cqw; flex-wrap:wrap; }
-.tag{
-  /* Georgia sets wider than the sans this used to be, and three badges stopped
-     fitting one row on pixel-pomo-web - which the pinned card height then
-     clipped. A notch smaller and they fit again. */
-  font-size:.7cqw; letter-spacing:.02em; text-transform:uppercase;
-  padding:.18cqw .48cqw; border-radius:var(--radius-pill);
-  background:var(--sand); color:var(--brown-mid);
-}
-.tag.lock{ background:var(--sand-deep); }
-.tag.live{ background:linear-gradient(140deg, var(--amber-soft), var(--orange)); color:#43301F; }
-
-.node.me{
-  --w: 17.74cqw;
-  height:8.55cqw;
-  padding:1.81cqw 1.29cqw;
-  background:linear-gradient(140deg, var(--amber-soft), var(--orange));
-  border-color:transparent;
-  box-shadow:var(--shadow-lg);
-  color:#43301F;
-}
-/* The hub carries the name the way the wordmark does, tracked wide - it is the
-   plate's title, not another repository label. */
-.node.me .node-title{ font-size:1.66cqw; text-transform:uppercase; letter-spacing:.16em; }
-.node.me .node-desc{ color:#5C4020; }
+/* The hub is the same box in a heavier rule - app.js draws its frame in `=` -
+   and a size up, because it is the plate's title and not another repository. */
+.node.me{ font-size:1.28cqw; }
 
 
 /* ------------------------------------------------------------ list (narrow) */
@@ -532,15 +443,22 @@ a.node:hover{ transform:translate(-50%, -50%) scale(1.05); box-shadow:var(--shad
   .list{ display:block; align-self:stretch; overflow-y:auto;
          width:100%; max-width:22rem; margin-right:auto;
          padding-top:var(--bar-h); }
-  .list .node-title{ font-size:.86rem; }
-  .list .node-desc{ font-size:.74rem; }
-  .list .tag{ font-size:.6rem; padding:.1rem .45rem; }
+  .list .node{ font-size:clamp(6px, 2.15vw, 10px); }
+  /* The group's name over its cards, in the plate label the rings wear. */
+  .branch-head{
+    display:block; font-family:var(--font-mono); font-size:.72rem;
+    text-transform:uppercase; letter-spacing:.16em; color:var(--brown-soft);
+    margin-bottom:.35rem;
+  }
   /* A repo card is an <a>, so a leaf is inline until told otherwise - the first
      one in a group flowed onto the end of the group's heading, and margin-top
      did nothing. */
-  .leaf{ display:block; padding:.4rem .6rem; margin-top:.3rem; }
+  .leaf{ display:block; position:static; transform:none; margin-top:.3rem; }
   .branch{ padding:.5rem .6rem; margin-bottom:.5rem; }
-  .devices, #devBtn{ display:none; }
+  /* Specific enough to beat the panel's own `display:flex`, which is written
+     further down the file - the plain class selector lost to it and the panel
+     stayed on the narrow screen, lying across the list. */
+  .stage .devices, #devBtn{ display:none; }
   /* No panel here, so no rail to keep clear of it - the page boots with the rail
      open, and without this the list stayed pushed off an empty column. */
   .stage{ padding-right:0; }
@@ -556,10 +474,9 @@ a.node:hover{ transform:translate(-50%, -50%) scale(1.05); box-shadow:var(--shad
   width:360px;   /* = DEV_W in app.js; the rail and room test read from that */
   display:flex; flex-direction:column;
   padding:.6rem .5rem .5rem;
-  background:var(--cream-2);
-  border:1px solid var(--line-strong);
-  border-radius:30px;
-  box-shadow:var(--shadow);
+  background:none;
+  border:0;
+  box-shadow:none;
 }
 /* An author `display` beats the UA's `[hidden]{display:none}`. */
 .devices[hidden], .pill[hidden]{ display:none; }
@@ -573,8 +490,9 @@ a.node:hover{ transform:translate(-50%, -50%) scale(1.05); box-shadow:var(--shad
 .gliding .map{ transition:width .56s var(--ease), height .56s var(--ease); }
 
 .dev-head{
-  font-size:.74rem; letter-spacing:.06em; text-transform:uppercase;
-  color:var(--brown-soft); text-align:center; margin-bottom:.3rem;
+  font-family:var(--font-mono);
+  font-size:.74rem; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--brown-soft); text-align:center; margin-bottom:.4rem;
 }
 
 /* The little map: three boxes the connector engine can drag and spring back. */
@@ -585,45 +503,33 @@ a.node:hover{ transform:translate(-50%, -50%) scale(1.05); box-shadow:var(--shad
    reached through the same parent or it is painted with no fill - a shape that
    is there in the DOM and invisible on the screen. */
 .dev-lines .trunk-head{ fill:var(--ink-thin); stroke:none; }
-/* Same frame as the boxes, so a link reads as part of the same set. */
+/* The same ink and face as the boxes it runs between, a size up from where it
+   was - it is the only prose in the panel and it was the hardest thing to read. */
 .dev-label{
   position:absolute;
   transform:translate(-50%, -50%);
-  padding:.14rem .42rem;
-  font-size:.62rem; line-height:1.25; text-align:center; white-space:nowrap;
-  color:var(--brown-mid);
-  background:var(--cream);
-  border:1px solid var(--line-strong);
-  border-radius:var(--radius-pill);
+  padding:0 .3rem;
+  font-family:var(--font-mono);
+  font-size:.7rem; line-height:1.25; text-align:center; white-space:nowrap;
+  color:var(--terra);
+  background:var(--ground);
   pointer-events:none;
 }
+:root[data-theme="dark"] .dev-label{ color:var(--orange); }
 .dev-nodes{ position:absolute; inset:0; }
 
+/* Drawn like the cards on the map: the frame is characters, so the width is
+   however many the widest spec line needs rather than a share of the panel. */
 .dev-card{
   position:absolute;
   transform:translate(-50%, -50%);
-  /* Narrow enough (as a share of the wider panel) that the phone sits clear out
-     to the right and the left side has room for a centred label, while the pixel
-     width stays close to the old one so the boxes don't grow tall enough to
-     overflow. The box is a triangle now, not a stack; spaceCards shares out the
-     height. */
-  width:50%;
-  display:flex; flex-direction:column;
-  padding:.34rem .5rem;
-  background:var(--cream);
-  border:1px solid var(--line-strong);
-  border-radius:18px;
-  box-shadow:var(--shadow-sm);
+  font-size:clamp(6px, .58vw, 9.4px);
+  background:var(--ground);
   pointer-events:auto;
   cursor:grab; touch-action:none; user-select:none;
 }
-.dev-card.dragging{ cursor:grabbing; z-index:5; box-shadow:var(--shadow); border-color:var(--amber); }
+.dev-card.dragging{ cursor:grabbing; z-index:5; color:var(--amber); }
 .dev-card.returning{ transition:transform .62s cubic-bezier(.34, 1.42, .5, 1); }
-.dev-name{ font-size:.8rem; line-height:1.2; }
-.dev-sub{ font-size:.66rem; color:var(--brown-soft); margin-bottom:.16rem; }
-/* Tight leading, not a smaller face: the specs have to give the link labels
-   room to sit between the boxes without losing legible type. */
-.dev-spec{ font-size:.7rem; line-height:1.15; color:var(--brown-mid); }
 
 /* ------------------------------------------------------- language picker */
 
