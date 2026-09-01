@@ -576,6 +576,17 @@ function redrawLines() {
       const x = edge.elbow ? ca.x : (ca.x + cb.x) / 2;
       edge.label.style.left = (x + (edge.labelDx || 0)) / w * 100 + '%';
       edge.label.style.top = (y + (edge.labelDy || 0)) / h * 100 + '%';
+      /* The upright between the two words is the run the label sits on, so it
+         is that character that has to land on the line - not the label's own
+         middle, which is off to one side of it because the words differ in
+         length. The face is mono, so the offset is a share of the width. */
+      const text = edge.label.textContent;
+      const bar = text.indexOf('|');
+      let nudge = 0;
+      if (bar >= 0 && text.length) {
+        nudge = (0.5 - (bar + 0.5) / text.length) * edge.label.getBoundingClientRect().width;
+      }
+      edge.label.style.transform = 'translate(calc(-50% + ' + nudge.toFixed(1) + 'px), -50%)';
     }
   }
   for (const [host, routes] of asciiRoutes) paintLines(host.querySelector('.dev-lines'), routes);
@@ -607,36 +618,49 @@ function paintMap() {
   }
 
   for (const ring of RINGS) {
-    let rect;
-    if (ring.full) {
-      // The outer frame is the map's own edge, so its top line rises to the row
-      // the controls stand on rather than to whatever the topmost card reaches.
-      rect = g.box({ x: 0, y: 0 }, { x: (g.cols - 1) * g.cw, y: (g.rows - 1) * g.ch });
-    } else {
-      let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity;
-      for (const el of ring.els) {
-        const q = local(el);
-        l = Math.min(l, q.l); t = Math.min(t, q.t); r = Math.max(r, q.r); b = Math.max(b, q.b);
-      }
-      if (!Number.isFinite(l)) continue;
-      const padX = ring.pad * g.cw, padY = ring.pad * g.ch;
-      rect = g.box({ x: l - padX, y: t - padY }, { x: r + padX, y: b + padY });
+    let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity;
+    for (const el of ring.els) {
+      const q = local(el);
+      l = Math.min(l, q.l); t = Math.min(t, q.t); r = Math.max(r, q.r); b = Math.max(b, q.b);
     }
+    if (!Number.isFinite(l)) continue;
+    const padX = ring.pad * g.cw, padY = ring.pad * g.ch;
+    let top = t - padY, bottom = b + padY;
+    if (ring.full) {
+      /* The outer frame reaches up to the row the controls stand on and down to
+         just above the signature, and its sides stay with its cards: taken all
+         the way to the map's own edge it ran through the Home button in one
+         corner and the signature in the other. */
+      const bar = document.querySelector('.topbar');
+      if (bar) top = Math.max(0, bar.getBoundingClientRect().bottom - box.top + 2);
+      const sig = document.querySelector('.signature');
+      if (sig) {
+        const above = sig.getBoundingClientRect().top - box.top - 8;
+        if (above > top) bottom = Math.min(bottom, above);
+      }
+    }
+    const rect = g.box({ x: l - padX, y: top }, { x: r + padX, y: bottom });
     // Under the top line and over the bottom one, rather than written into
     // them: the name is set in the page's own serif and the badges in its mono,
     // and neither fits in a character cell.
     const mid = (rect.c0 + rect.c1 + 1) / 2 * g.cw;
     // Clear of the line rather than across it, so it is measured: the two are
     // set in different faces at different sizes, and neither is a cell tall.
-    const put = (el, lineRow, below) => {
+    const put = (el, lineRow, on) => {
       if (!el) return;
       el.style.left = mid + 'px';
       const h = el.getBoundingClientRect().height || g.ch;
-      el.style.top = (below ? (lineRow + 1) * g.ch + h / 2 + 1
-                            : lineRow * g.ch - h / 2 - 1) + 'px';
+      // On the line, or clear above it. The name is engraved into its line - the
+      // band between a raised top line and the topmost card is not a name tall -
+      // and it carries the ground with it, so the dashes stop either side.
+      el.style.top = (on ? lineRow * g.ch + g.ch / 2
+                         : lineRow * g.ch - h / 2 - 1) + 'px';
     };
     put(ring.nameEl, rect.r0, true);
-    put(ring.badgeEl, rect.r1, false);
+    // Engraved into the bottom line for the same reason the name is into the
+    // top one: with the frame pulled up clear of the signature, the band under
+    // the lowest card is not a line of badges tall.
+    put(ring.badgeEl, rect.r1, true);
   }
   g.flush();
 }

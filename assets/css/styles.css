@@ -385,9 +385,13 @@ body:not(.on-saturn) .topbar .gate-top{ display:none; }
   transform:translate(-50%, -50%);
   line-height:1;
   white-space:nowrap; pointer-events:none;
-  color:var(--terra);
 }
-:root[data-theme="dark"] .ring-name,
+/* A name is set and inked the way the name over the airlock is; the badges are
+   a card's badges, so they keep the ink the boxes are drawn in. */
+/* Engraved into its line: the ground travels with the name, so the dashes stop
+   either side of it instead of running behind the letters. */
+.ring-name{ color:var(--brown); background:var(--ground); padding:0 .55em; }
+.ring-badge{ color:var(--terra); background:var(--ground); padding:0 .5em; }
 :root[data-theme="dark"] .ring-badge{ color:var(--orange); }
 .ring-name{
   font-family:var(--font-head); font-weight:500;
@@ -491,14 +495,14 @@ a.node:hover{ color:var(--amber); }
 .gliding .stage{ transition:padding-right .56s var(--ease); }
 .gliding .map{ transition:width .56s var(--ease), height .56s var(--ease); }
 
-/* The panel's name, set like the group ring on the map - same face, same
-   tracking, same ink as the boxes it stands over. */
+/* The panel's name is a frame's name like the two on the map: the same serif,
+   the same tracking, the same ink as the name over the airlock. */
 .dev-head{
-  font-family:var(--font-mono);
-  font-size:.86rem; letter-spacing:.16em; text-transform:uppercase;
-  color:var(--terra); text-align:center; margin-bottom:.5rem;
+  font-family:var(--font-head); font-weight:500;
+  font-size:clamp(.68rem, 1.1vw, .92rem);
+  letter-spacing:.28em; padding-left:.28em; text-transform:uppercase;
+  color:var(--brown); text-align:center; margin-bottom:.6rem;
 }
-:root[data-theme="dark"] .dev-head{ color:var(--orange); }
 
 /* The little map: three boxes the connector engine can drag and spring back. */
 .dev-stage{ position:relative; flex:1; min-height:0; }
@@ -518,13 +522,15 @@ a.node:hover{ color:var(--amber); }
   position:absolute;
   transform:translate(-50%, -50%);
   padding:0 .3rem;
+  /* Same face and same size as the grid it sits on, so the upright between the
+     words is indistinguishable from the run it lands on. */
   font-family:var(--font-mono);
-  font-size:.88rem; line-height:1.25; text-align:center; white-space:nowrap;
-  color:var(--terra);
+  font-size:clamp(9px, 1vw, 15px); line-height:1.25;
+  text-align:center; white-space:nowrap;
+  color:var(--brown);
   background:var(--ground);
   pointer-events:none;
 }
-:root[data-theme="dark"] .dev-label{ color:var(--orange); }
 .dev-nodes{ position:absolute; inset:0; }
 
 /* Drawn like the cards on the map: the frame is characters, so the width is
