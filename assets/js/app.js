@@ -280,6 +280,63 @@ function initTheme() {
   }
 }
 
+/* --------------------------------------------------------------- connectors */
+
+/* The runs between the machines are drawn like everything else on the panel:
+   characters on a grid. Each route arrives as a list of corner points in the
+   panel's own pixels; the segments between them are laid down cell by cell,
+   with a `+` where two meet and an arrowhead at whichever end asked for one.
+   Rebuilt whole on every frame - the grid is a few hundred cells, and a card
+   being dragged moves its ends every frame anyway. */
+function paintLines(pre, routes) {
+  if (!pre) return;
+  const w = pre.clientWidth, h = pre.clientHeight;
+  if (!w || !h) return;
+  const probe = document.createElement('span');
+  probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre';
+  probe.textContent = '0'.repeat(40);
+  pre.appendChild(probe);
+  const pb = probe.getBoundingClientRect();
+  const cw = pb.width / 40, chh = pb.height;
+  probe.remove();
+  if (!cw || !chh) return;
+
+  const cols = Math.max(1, Math.floor(w / cw)), rows = Math.max(1, Math.floor(h / chh));
+  const grid = [];
+  for (let r = 0; r < rows; r++) grid.push(new Array(cols).fill(' '));
+  const put = (c, r, ch) => {
+    if (r < 0 || r >= rows || c < 0 || c >= cols) return;
+    // A crossing is a crossing: never let a straight overwrite a corner.
+    if (ch === '-' && (grid[r][c] === '|' || grid[r][c] === '+')) { grid[r][c] = '+'; return; }
+    if (ch === '|' && (grid[r][c] === '-' || grid[r][c] === '+')) { grid[r][c] = '+'; return; }
+    grid[r][c] = ch;
+  };
+  const cell = (pt) => ({ c: Math.round(pt.x / cw), r: Math.round(pt.y / chh) });
+
+  for (const route of routes) {
+    const pts = route.points.map(cell);
+    for (let i = 0; i < pts.length - 1; i++) {
+      const from = pts[i], to = pts[i + 1];
+      if (from.c === to.c) {
+        const step = to.r > from.r ? 1 : -1;
+        for (let r = from.r; r !== to.r + step; r += step) put(from.c, r, '|');
+      } else {
+        const step = to.c > from.c ? 1 : -1;
+        for (let c = from.c; c !== to.c + step; c += step) put(c, from.r, '-');
+      }
+      if (i) put(from.c, from.r, '+');
+    }
+    // Heads point the way the last (or first) segment runs.
+    const head = (at, from) => {
+      if (at.c === from.c) put(at.c, at.r, at.r > from.r ? 'v' : '^');
+      else put(at.c, at.r, at.c > from.c ? '>' : '<');
+    };
+    if (route.head && pts.length > 1) head(pts[pts.length - 1], pts[pts.length - 2]);
+    if (route.head2 && pts.length > 1) head(pts[0], pts[1]);
+  }
+  pre.textContent = grid.map((r) => r.join('').replace(/\s+$/, '')).join('\n');
+}
+
 /* ------------------------------------------------------------------- boxes */
 
 /* Every box on the page is drawn the way the planet is: characters on a grid.
@@ -338,8 +395,8 @@ function asciiBox(lines, cols, { rows = 0, rule = '-' } = {}) {
 
 /* ------------------------------------------------------------------ nodes */
 
-const NODE_COLS = 26, NODE_ROWS = 6;   // inside the frame, in characters
-const HUB_COLS = 24;
+const NODE_COLS = 28, NODE_ROWS = 6;   // inside the frame, in characters
+const HUB_COLS = 26;
 
 /* Fills a node body. Used by both renderers, so a card looks the same in the
    map and in the list. */
@@ -448,6 +505,9 @@ function fitMap() {
 }
 
 function redrawLines() {
+  // Routes for the panel, gathered as they are worked out and drawn in one pass
+  // at the end - they share a grid, so they cannot be written one at a time.
+  const asciiRoutes = new Map();
   for (const edge of EDGES) {
     const host = edge.host || mapEl;
     if (!host || host.hidden || !host.isConnected) continue;
@@ -481,6 +541,37 @@ function redrawLines() {
         ` L ${u(backX + dy * wing, backY - dx * wing)} Z`);
       return { x: backX / sx, y: backY / sy };
     };
+
+    /* The panel's runs are characters rather than strokes: the same route, in
+       the same order, handed to the raster instead of to a path. */
+    if (edge.ascii) {
+      const rb = edge.b.getBoundingClientRect();
+      const ra = edge.a.getBoundingClientRect();
+      const px = (pt) => ({ x: pt.x * sx, y: pt.y * sy });
+      let points;
+      if (edge.elbow) {
+        const bhw = (rb.width / box.width) * w / 2;
+        const ahh = (ra.height / box.height) * h / 2;
+        const up = cb.y < ca.y;
+        points = [{ x: ca.x, y: ca.y + (up ? -ahh : ahh) },
+                  { x: ca.x, y: cb.y },
+                  { x: cb.x + bhw, y: cb.y }];
+      } else {
+        points = [edge.head2 ? a : ca, edge.head ? b : cb];
+      }
+      if (!asciiRoutes.has(edge.host)) asciiRoutes.set(edge.host, []);
+      asciiRoutes.get(edge.host).push({ points: points.map(px), head: !!edge.head, head2: !!edge.head2 });
+      if (edge.label) {
+        const gap = edge.elbow
+          ? (cb.y < ca.y ? [rb.bottom, ra.top] : [ra.bottom, rb.top])
+          : (ra.bottom <= rb.top ? [ra.bottom, rb.top] : [rb.bottom, ra.top]);
+        const y = ((gap[0] + gap[1]) / 2 - box.top) / box.height * h;
+        const x = edge.elbow ? ca.x : (ca.x + cb.x) / 2;
+        edge.label.style.left = (x + (edge.labelDx || 0)) / w * 100 + '%';
+        edge.label.style.top = (y + (edge.labelDy || 0)) / h * 100 + '%';
+      }
+      continue;
+    }
 
     if (edge.elbow) {
       /* A right-angle route instead of a diagonal: `edge.a` (the phone) leaves
@@ -529,6 +620,7 @@ function redrawLines() {
       edge.label.style.top = (y + (edge.labelDy || 0)) / h * 100 + '%';
     }
   }
+  for (const [host, routes] of asciiRoutes) paintLines(host.querySelector('.dev-lines'), routes);
 }
 
 /* ------------------------------------------------------------------ rings */
@@ -1089,13 +1181,6 @@ function renderDevices() {
     if (EDGES[i].host === stageOld) EDGES.splice(i, 1);
   }
   box.textContent = '';
-  const NS = 'http://www.w3.org/2000/svg';
-  const svgEl = (tag, cls) => {
-    const el = document.createElementNS(NS, tag);
-    if (cls) el.setAttribute('class', cls);
-    return el;
-  };
-
   const head = document.createElement('div');
   head.className = 'dev-head';
   head.textContent = t('hardware');
@@ -1103,11 +1188,9 @@ function renderDevices() {
 
   const stage = document.createElement('div');
   stage.className = 'dev-stage';
-  const lines = svgEl('svg', 'dev-lines');
-  lines.setAttribute('viewBox', `0 0 ${DW} ${DH}`);
-  lines.setAttribute('preserveAspectRatio', 'none');
-  const ink = svgEl('g', 'ink');
-  lines.appendChild(ink);
+  const lines = document.createElement('pre');
+  lines.className = 'dev-lines';
+  lines.setAttribute('aria-hidden', 'true');
   const nodes = document.createElement('div');
   nodes.className = 'dev-nodes';
   stage.append(lines, nodes);
@@ -1131,28 +1214,28 @@ function renderDevices() {
     const specs = padBlock(item.specs.map(
       (line) => line.replace('(integrated)', '(' + t('integrated') + ')')));
     const lines = [...wrapText(item.name, DEV_COLS), ...wrapText(sub, DEV_COLS), '', ...specs];
-    card.textContent = asciiBox(lines, DEV_COLS);
+    // As wide as its own longest line and no wider - the phone's specs are short
+    // and a shared width left it half empty - plus a space either side, so the
+    // text is not up against the frame.
+    const cols = Math.min(DEV_COLS, lines.reduce((n, l) => Math.max(n, l.length), 0)) + 2;
+    card.textContent = asciiBox(lines, cols);
     nodes.appendChild(card);
     makeDraggable(card);
     made[item.key] = card;
   }
 
   for (const link of LINKS) {
-    const path = svgEl('path', 'trunk');
-    ink.appendChild(path);
     // A shape of its own rather than a marker - see redrawLines for why.
     // `both` puts a head on each end; `arrow` only on the `to` end.
-    const head = (link.arrow || link.both) ? svgEl('path', 'trunk-head') : null;
-    if (head) ink.appendChild(head);
-    const head2 = link.both ? svgEl('path', 'trunk-head') : null;
-    if (head2) ink.appendChild(head2);
+    const head = !!(link.arrow || link.both);
+    const head2 = !!link.both;
     // The label is HTML, not SVG text, so it can wear the same frame the boxes
     // do. redrawLines() moves it with the line.
     const label = document.createElement('span');
     label.className = 'dev-label';
     label.textContent = link.label;
     nodes.appendChild(label);
-    EDGES.push({ a: made[link.from], b: made[link.to], path, head, head2, label,
+    EDGES.push({ a: made[link.from], b: made[link.to], ascii: true, head, head2, label,
                  elbow: link.elbow, host: stage, w: DW, h: DH,
                  labelDx: link.dx || 0, labelDy: link.dy || 0 });
   }

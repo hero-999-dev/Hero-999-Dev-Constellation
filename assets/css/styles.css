@@ -435,7 +435,7 @@ body:not(.on-saturn) .topbar .gate-top{ display:none; }
   touch-action:none;      /* let a finger drag the card instead of the page */
   user-select:none;
   -webkit-user-drag:none;
-  font-size:1.04cqw;
+  font-size:1.12cqw;
   background:var(--ground);
   transition:transform .2s var(--ease), color .2s var(--ease);
 }
@@ -448,7 +448,7 @@ a.node:hover{ transform:translate(-50%, -50%) scale(1.05); color:var(--amber); }
 .node.returning{ transition:transform .62s cubic-bezier(.34, 1.42, .5, 1); }
 /* The hub is the same box in a heavier rule - app.js draws its frame in `=` -
    and a size up, because it is the plate's title and not another repository. */
-.node.me{ font-size:1.28cqw; }
+.node.me{ font-size:1.36cqw; }
 
 
 /* ------------------------------------------------------------ list (narrow) */
@@ -526,12 +526,16 @@ a.node:hover{ transform:translate(-50%, -50%) scale(1.05); color:var(--amber); }
 
 /* The little map: three boxes the connector engine can drag and spring back. */
 .dev-stage{ position:relative; flex:1; min-height:0; }
-.dev-lines{ position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
-.dev-lines path{ fill:none; stroke:var(--ink-thin); stroke-width:.7; }
-/* `.dev-lines path` above is the more specific selector, so the head has to be
-   reached through the same parent or it is painted with no fill - a shape that
-   is there in the DOM and invisible on the screen. */
-.dev-lines .trunk-head{ fill:var(--ink-thin); stroke:none; }
+/* The runs between the machines, drawn character by character by paintLines()
+   into a grid laid over the panel. Same face, ink and leading as the boxes it
+   joins; it takes no clicks, so a card can be dragged straight through it. */
+.dev-lines{
+  position:absolute; inset:0; margin:0; overflow:hidden;
+  font-family:var(--font-mono); font-size:clamp(8px, .8vw, 12px); line-height:1;
+  white-space:pre; pointer-events:none; user-select:none;
+  color:var(--terra);
+}
+:root[data-theme="dark"] .dev-lines{ color:var(--orange); }
 /* The same ink and face as the boxes it runs between, a size up from where it
    was - it is the only prose in the panel and it was the hardest thing to read. */
 .dev-label{
