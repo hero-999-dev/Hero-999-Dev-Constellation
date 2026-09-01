@@ -1231,8 +1231,8 @@ function fillStars(el) {
    Like the planet, this ignores "reduce motion": a frozen gate reads as broken,
    and nothing here flashes or fills the screen. */
 const SHOT_RAMP = '.,-~:;=!*#';   // the planet's ramp, faint tail to bright head
-const SHOT_TAIL = 22;             // cells of trail behind the head
-const SHOT_FRAMES = 64;           // frames to cross, at the planet's own ~14fps
+const SHOT_TAIL = 14;             // cells of trail behind the head
+const SHOT_FRAMES = 32;           // frames to cross, at the planet's own ~14fps
 
 function shootStars(el) {
   if (!el) return;
