@@ -1267,7 +1267,7 @@ const ROCKET_BURN = [
   ['  ( )  ', '   )   ', '   (   '],
 ];
 const ROCKET_WAIT = 10000;   // before the first appearance
-const ROCKET_SPEED = 2.4;    // pixels per 60fps frame - it never slows or backs up
+const ROCKET_SPEED = 3.5;    // pixels per 60fps frame - it never slows or backs up
 const ROCKET_RATE = 1.0;     // degrees of heading it can change in one frame
 const ROCKET_CAP = 60;       // degrees it may aim off its current line, at most
 
@@ -1328,7 +1328,7 @@ function flyRocket(el) {
     return a;
   };
 
-  let at = null, head = 0, wander = null;
+  let at = null, head = 0, wander = null, orbit = 0;
   let legs = 0, legsWanted = 0, leaving = false, away = false, backAt = 0, stayUntil = 0;
   let born = 0, puff = 0, lastPuff = 0, lastT = 0;
 
@@ -1342,10 +1342,11 @@ function flyRocket(el) {
     head = Math.atan2(H / 2 - at.y, W / 2 - at.x);
     wander = pickFar(W, H, at);
     legs = 0;
-    legsWanted = 2 + Math.floor(Math.random() * 3);
-    // A visit is a few legs OR a couple of minutes, whichever runs out first -
-    // circling the planet can eat a leg without ever finishing it.
-    stayUntil = performance.now() + 60000 + Math.random() * 60000;
+    legsWanted = 1 + Math.floor(Math.random() * 2);
+    // A visit is a leg or two OR twenty seconds, whichever runs out first -
+    // circling the planet can eat a leg without ever finishing it. It is a
+    // thing crossing the sky, like the streaks are; it does not move in.
+    stayUntil = performance.now() + 14000 + Math.random() * 10000;
     leaving = false;
     away = false;
     pre.style.opacity = '1';
@@ -1395,17 +1396,20 @@ function flyRocket(el) {
       if (n < 1.4) {
         hard = true;
         /* Round the planet, not out of it: inside its reach the rocket aims
-           along the tangent - whichever way round is nearer the line it is
-           already on - leaning a little outward so the loop opens out and it
-           leaves rather than orbiting for ever. */
+           along the tangent, leaning a little out of the turn so the loop opens
+           and it leaves rather than orbiting for ever. Which way round is
+           decided once, on the way in, and held: picking the nearer tangent
+           every frame flipped it back and forth over the midpoint and the
+           rocket stood there shaking its head instead of flying. */
         const out = Math.atan2(at.y - cy, at.x - cx);
-        const left = out + Math.PI / 2, right = out - Math.PI / 2;
-        const gap = (a) => Math.abs(wrap(a - head));
-        const tang = gap(left) < gap(right) ? left : right;
-        // Leaning out of the turn opens the loop; on the way out it leans harder,
-        // so the rocket spirals clear of the planet instead of circling it.
+        if (!orbit) {
+          const gap = (a) => Math.abs(wrap(a - head));
+          orbit = gap(out + Math.PI / 2) < gap(out - Math.PI / 2) ? 1 : -1;
+        }
         const openOut = (leaving ? 34 : 14) * Math.PI / 180;
-        want = tang + (tang === left ? -1 : 1) * openOut;
+        want = out + orbit * (Math.PI / 2 - openOut);
+      } else {
+        orbit = 0;
       }
     }
     const margin = 70;
@@ -1430,7 +1434,7 @@ function flyRocket(el) {
     // Well clear of the window on its way out: gone, for half a minute or so.
     if (at.x < -200 || at.x > W + 200 || at.y < -200 || at.y > H + 200) {
       away = true;
-      backAt = now + 25000 + Math.random() * 35000;
+      backAt = now + 20000 + Math.random() * 25000;
       pre.style.opacity = '0';
       return;
     }
