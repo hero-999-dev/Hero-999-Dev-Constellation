@@ -972,6 +972,9 @@ function glide(change) {
   const step = () => {
     redrawLines();
     paintMap();
+    // The panel's box is the map's frame; solved once at the end of the glide,
+    // it slid in at whatever width it had before and jumped when it landed.
+    paintDevFrame();
     if (performance.now() < until) requestAnimationFrame(step);
     else wrap.classList.remove('gliding');
   };
@@ -1069,11 +1072,18 @@ function paintDevFrame() {
   panel.style.bottom = (hb.bottom - (siteRule.bottom + siteRule.ch * 1.5)) + 'px';
 
   frame.style.fontSize = siteRule.font;
-  frame.textContent = '';
   const g = gridFor(frame);
   if (!g) return;
-  g.box({ x: 0, y: 0 }, { x: (g.cols - 1) * g.cw, y: (g.rows - 1) * g.ch });
-  g.flush();
+  // Cut again only when the grid itself changed: this runs on every frame of a
+  // crossing, and rewriting the same rectangle sixty times a second is work for
+  // nothing.
+  const sig = g.cols + 'x' + g.rows + '@' + siteRule.font;
+  if (frame.dataset.sig !== sig) {
+    frame.dataset.sig = sig;
+    frame.textContent = '';
+    g.box({ x: 0, y: 0 }, { x: (g.cols - 1) * g.cw, y: (g.rows - 1) * g.ch });
+    g.flush();
+  }
   // The name is engraved into the top rule, the way the map's names are.
   const head = panel.querySelector('.dev-head');
   if (head) {
@@ -1238,6 +1248,11 @@ function showView(name) {
   gate.inert = !saturn;
   wrap.inert = saturn;
   document.getElementById('viewBtn')?.setAttribute('aria-pressed', String(saturn));
+  /* Before the slide, not after it: the panel's box is worked out in layout
+     pixels, so it is as true on the face that is leaving as on the one arriving
+     - and set now, the panel crosses at the size it will land at instead of
+     changing width once it gets there. */
+  paintDevFrame();
   // The map measures itself in viewport coordinates, and it is mid-slide right
   // now; let it come to rest first.
   if (!saturn) setTimeout(settle, GLIDE_MS + 40);
