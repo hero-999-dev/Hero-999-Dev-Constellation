@@ -175,19 +175,25 @@ body.boot .gate, body.boot .wrap{ transition:none; }
    the credits, and only the one pointing at the face you are not on is up. */
 .edge{
   position:fixed; z-index:22;
-  top:calc(var(--bar-h) + .7rem);
-  bottom:calc(var(--corner) + var(--insp-h, 5.6rem) + .7rem);
+  /* The same inset top and bottom, so the arrow sits on the middle of the
+     window rather than the middle of what is left over. It is the larger of the
+     two clearances, which is the one that has to hold: under the switch up top,
+     over the credits down in the corner. */
+  --edge-inset:max(calc(var(--bar-h) + .7rem), calc(var(--corner) + var(--insp-h, 5.6rem) + .7rem));
+  top:var(--edge-inset); bottom:var(--edge-inset);
   width:2.6rem;
   display:grid; place-items:center;
   padding:0; border:0; background:none;
-  font-family:var(--font-mono); font-weight:700;
-  font-size:1.7rem; line-height:1;
-  color:var(--terra); opacity:.4;
+  /* The planet's own ink, weight and halo, at the planet's own size - it is the
+     same sky. Nothing dimmed: a faded 700 read as neither. */
+  font-family:var(--font-mono); font-weight:400;
+  font-size:clamp(8px, 1.75vw, 18px); line-height:1;
+  color:var(--terra); text-shadow:0 0 14px rgba(122,84,48,.22);
   cursor:pointer;
-  transition:opacity .18s var(--ease), color .18s var(--ease);
+  transition:color .18s var(--ease);
 }
-:root[data-theme="dark"] .edge{ color:var(--orange); }
-.edge:hover, .edge:focus-visible{ opacity:1; color:var(--amber); }
+:root[data-theme="dark"] .edge{ color:var(--orange); text-shadow:0 0 16px rgba(232,129,60,.3); }
+.edge:hover, .edge:focus-visible{ color:var(--amber); }
 .edge-right{ right:0; }
 .edge-left{ left:0; }
 body.on-saturn .edge-left{ display:none; }
