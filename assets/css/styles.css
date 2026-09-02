@@ -552,7 +552,7 @@ a.node:hover{ color:var(--amber); }
   margin:0; padding:0;
   list-style:none;
   font-family:var(--font-mono); font-size:var(--chrome-font); font-weight:700;
-  line-height:1.15; white-space:pre;
+  line-height:1.15;
   color:var(--terra);
   background:var(--ground);
   /* Hinged on the corner under the button it belongs to. */
@@ -563,7 +563,7 @@ a.node:hover{ color:var(--amber); }
 .lang-menu[hidden]{ display:none; }
 .lang-menu:not(.in){ transform:translateY(-.4rem) scale(.95); opacity:0; }
 .lang-menu li{
-  padding:0; cursor:pointer; color:inherit;
+  padding:0; cursor:pointer; color:inherit; white-space:pre;
   transition:color .14s var(--ease);
 }
 .lang-menu li:hover{ color:var(--amber); }
