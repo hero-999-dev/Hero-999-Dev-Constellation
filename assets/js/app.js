@@ -276,8 +276,9 @@ function paintChrome() {
 
 function initTheme() {
   const saved = localStorage.getItem('hdh-theme');
-  const system = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  applyTheme(saved === 'dark' || saved === 'light' ? saved : system);
+  // Dark unless the visitor has said otherwise - most people prefer it, and the
+  // planet burns against the black better than it sits on the amber.
+  applyTheme(saved === 'dark' || saved === 'light' ? saved : 'dark');
   for (const btn of document.querySelectorAll('[data-theme-toggle]')) {
     btn.addEventListener('click', () =>
       applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark')
@@ -486,35 +487,6 @@ function place(el, item) {
 const EDGES = [];
 const RINGS = [];
 
-function centreOf(el, box, w = W, h = H) {
-  const r = el.getBoundingClientRect();
-  return {
-    x: ((r.left + r.width / 2 - box.left) / box.width) * w,
-    y: ((r.top + r.height / 2 - box.top) / box.height) * h,
-  };
-}
-
-/* Where the line from `from` meets this box's edge. A line that runs to the
-   centre disappears under the card - which is fine for a plain connector, and
-   no good at all for an arrowhead: it would be drawn where nothing can see it. */
-function edgeOf(el, box, w, h, from) {
-  const c = centreOf(el, box, w, h);
-  const r = el.getBoundingClientRect();
-  const dx = from.x - c.x, dy = from.y - c.y;
-  if (!dx && !dy) return c;
-  const hw = (r.width / box.width) * w / 2;
-  const hh = (r.height / box.height) * h / 2;
-  const t = Math.min(Math.abs(dx) > 1e-6 ? hw / Math.abs(dx) : Infinity,
-                     Math.abs(dy) > 1e-6 ? hh / Math.abs(dy) : Infinity);
-  return { x: c.x + dx * t, y: c.y + dy * t };
-}
-
-/* CSS cannot fit a fixed-ratio box into a box of a different ratio without
-   distorting it: with `height:100%` plus `aspect-ratio`, `max-width` clamps the
-   width and the ratio is dropped rather than the height reduced. Measured at
-   1920x1080: the map came out 1240x1006 instead of 1240x868, which stretched the
-   rings (they scale with the viewBox) while the cards did not (they are sized in
-   cqw, off the width). So the fit is computed here instead. */
 function fitMap() {
   const stage = mapEl.parentElement;
   // clientWidth INCLUDES padding, and the stage is padded to leave rails for the
@@ -537,53 +509,66 @@ function fitMap() {
 }
 
 function redrawLines() {
-  /* Only the panel has runs to draw now - the map paints its own grid. Routes
-     are gathered as they are worked out and drawn in one pass at the end,
-     because they share a grid and cannot be written one at a time. */
+  /* Only the panel has runs to draw - the map paints its own grid. Everything
+     here is worked out in the panel's own pixels, from the boxes' real rects:
+     the boxes are as wide as their text now, so a route solved in some fixed
+     coordinate space was right on one screen and through a box on the next.
+     Routes are gathered and drawn in one pass at the end, because they share a
+     grid and cannot be written one at a time. */
   const asciiRoutes = new Map();
+  const CLEAR = 7;                       // px kept between a head and a box
   for (const edge of EDGES) {
     if (!edge.ascii) continue;
     const host = edge.host;
     if (!host || host.hidden || !host.isConnected) continue;
     const box = host.getBoundingClientRect();
     if (!box.width || !box.height) continue;   // hidden on narrow screens
-    const w = edge.w || W, h = edge.h || H;
-    const sx = box.width / w, sy = box.height / h;
-    const ca = centreOf(edge.a, box, w, h);
-    const cb = centreOf(edge.b, box, w, h);
-    // An end with a head stops at the box edge; a head on the centre would hide
-    // under the card.
-    const a = edge.head2 ? edgeOf(edge.a, box, w, h, cb) : ca;
-    const b = edge.head ? edgeOf(edge.b, box, w, h, ca) : cb;
-    const ra = edge.a.getBoundingClientRect(), rb = edge.b.getBoundingClientRect();
-    const px = (pt) => ({ x: pt.x * sx, y: pt.y * sy });
+    const rect = (el) => {
+      const q = el.getBoundingClientRect();
+      return { l: q.left - box.left, r: q.right - box.left,
+               t: q.top - box.top, b: q.bottom - box.top,
+               cx: q.left + q.width / 2 - box.left, cy: q.top + q.height / 2 - box.top };
+    };
+    const a = rect(edge.a), b = rect(edge.b);
+    let points, labelAt;
 
-    /* The elbow leaves the phone from its top or bottom, runs to the height of
-       the laptop, then turns once and goes in at the laptop's right side. */
-    let points;
     if (edge.elbow) {
-      const bhw = (rb.width / box.width) * w / 2;
-      const ahh = (ra.height / box.height) * h / 2;
-      const up = cb.y < ca.y;
-      points = [{ x: ca.x, y: ca.y + (up ? -ahh : ahh) },
-                { x: ca.x, y: cb.y },
-                { x: cb.x + bhw, y: cb.y }];
+      /* The phone leaves by its top or bottom, runs to the laptop's height and
+         turns once into the laptop's right side. The upright has to clear the
+         laptop, which is as wide as its longest spec line - where it does not,
+         the route jogs sideways in the clear band between the two boxes first,
+         rather than running down through the box. */
+      const up = b.cy < a.cy;
+      const start = { x: a.cx, y: up ? a.t - CLEAR : a.b + CLEAR };
+      const legX = Math.max(a.cx, b.r + CLEAR * 3);
+      const door = { x: b.r + CLEAR, y: b.cy };
+      if (legX > a.cx + 1) {
+        const band = (start.y + (up ? b.b : b.t)) / 2;
+        points = [start, { x: a.cx, y: band }, { x: legX, y: band },
+                  { x: legX, y: b.cy }, door];
+      } else {
+        points = [start, { x: a.cx, y: b.cy }, door];
+      }
+      // On the upright, centred in the clear band between the two boxes.
+      const g0 = up ? b.b : a.b, g1 = up ? a.t : b.t;
+      labelAt = { x: legX, y: (g0 + g1) / 2 };
     } else {
-      points = [a, b];
+      /* Straight between two boxes one above the other, a head at each end.
+         Both ends stop clear of their box: a head drawn on the edge lands on
+         the box's own ground and is not there at all. */
+      const upper = a.cy <= b.cy ? a : b, lower = a.cy <= b.cy ? b : a;
+      const x = (upper.cx + lower.cx) / 2;
+      points = [{ x, y: (a.cy <= b.cy ? upper.b : lower.t) + (a.cy <= b.cy ? CLEAR : -CLEAR) },
+                { x, y: (a.cy <= b.cy ? lower.t : upper.b) + (a.cy <= b.cy ? -CLEAR : CLEAR) }];
+      labelAt = { x, y: (upper.b + lower.t) / 2 };
     }
+
     if (!asciiRoutes.has(host)) asciiRoutes.set(host, []);
-    asciiRoutes.get(host).push({ points: points.map(px), head: !!edge.head, head2: !!edge.head2 });
+    asciiRoutes.get(host).push({ points, head: !!edge.head, head2: !!edge.head2 });
 
     if (edge.label) {
-      // Centred in the clear band between the two boxes, not at the midpoint of
-      // the run - which climbs onto the taller box once they differ.
-      const gap = edge.elbow
-        ? (cb.y < ca.y ? [rb.bottom, ra.top] : [ra.bottom, rb.top])
-        : (ra.bottom <= rb.top ? [ra.bottom, rb.top] : [rb.bottom, ra.top]);
-      const y = ((gap[0] + gap[1]) / 2 - box.top) / box.height * h;
-      const x = edge.elbow ? ca.x : (ca.x + cb.x) / 2;
-      edge.label.style.left = (x + (edge.labelDx || 0)) / w * 100 + '%';
-      edge.label.style.top = (y + (edge.labelDy || 0)) / h * 100 + '%';
+      edge.label.style.left = (labelAt.x + (edge.labelDx || 0)) + 'px';
+      edge.label.style.top = (labelAt.y + (edge.labelDy || 0)) + 'px';
     }
   }
   for (const [host, routes] of asciiRoutes) paintLines(host.querySelector('.dev-lines'), routes);
