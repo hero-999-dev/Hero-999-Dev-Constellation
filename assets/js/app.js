@@ -1279,24 +1279,77 @@ function flyRocket(el) {
   el.appendChild(pre);
 
   // What it is chasing: the pointer while the pointer is moving, otherwise a
-  // point of its own, changed once it gets there.
+  // place of its own, changed once it gets there.
   let aim = null, aimAt = -1e9;
   addEventListener('pointermove', (event) => {
     aim = { x: event.clientX, y: event.clientY };
     aimAt = performance.now();
   }, { passive: true });
 
-  const pickWander = (W, H) => {
+  // The planet as the ellipse it is, in page pixels.
+  const planet = () => {
     const ink = inkBox();
-    for (let i = 0; i < 60; i++) {
-      const q = { x: 60 + Math.random() * (W - 120), y: 60 + Math.random() * (H - 120) };
-      if (!ink || q.x < ink.x0 || q.x > ink.x1 || q.y < ink.y0 || q.y > ink.y1) return q;
+    if (!ink) return null;
+    return { cx: (ink.x0 + ink.x1) / 2, cy: (ink.y0 + ink.y1) / 2,
+             hw: Math.max(1, (ink.x1 - ink.x0) / 2), hh: Math.max(1, (ink.y1 - ink.y0) / 2) };
+  };
+  const howFarIn = (p, e) => Math.hypot((p.x - e.cx) / e.hw, (p.y - e.cy) / e.hh);
+
+  /* The farthest place it can find that it can also get to without flying over
+     the planet - so a leg is a journey rather than a hop, and the course it sets
+     goes round Saturn to begin with rather than being pulled off one. Where the
+     planet leaves nowhere to go, the farthest place wins anyway. */
+  const pickFar = (W, H, from) => {
+    const e = planet();
+    let best = null, bestScore = -1e9;
+    for (let i = 0; i < 90; i++) {
+      const q = { x: 50 + Math.random() * (W - 100), y: 50 + Math.random() * (H - 100) };
+      const d = from ? Math.hypot(q.x - from.x, q.y - from.y) : 1;
+      // How much of the way there is spent over the planet, and whether the
+      // place itself is on it. A long clear run wins; where the planet leaves
+      // nowhere clear, the run that grazes it least does.
+      let over = 0, tot = 0;
+      if (e && from) {
+        for (let t = 0; t <= 1.0001; t += 0.05) {
+          tot++;
+          const px = from.x + (q.x - from.x) * t, py = from.y + (q.y - from.y) * t;
+          if (howFarIn({ x: px, y: py }, e) < 1.12) over++;
+        }
+      }
+      const score = d * (1 - (tot ? over / tot : 0)) - (e && howFarIn(q, e) < 1.15 ? 400 : 0);
+      if (score > bestScore) { bestScore = score; best = q; }
     }
-    return { x: W / 2, y: 70 };
+    return best || { x: W / 2, y: 70 };
   };
 
-  let at = null, vx = 0, vy = 0, wander = null;
+  const wrap = (a) => {
+    while (a > Math.PI) a -= 2 * Math.PI;
+    while (a < -Math.PI) a += 2 * Math.PI;
+    return a;
+  };
+
+  let at = null, head = 0, wander = null;
+  let legs = 0, legsWanted = 0, leaving = false, away = false, backAt = 0, stayUntil = 0;
   let born = 0, puff = 0, lastPuff = 0, lastT = 0;
+
+  const enter = (W, H) => {
+    // In off one of the four sides, pointed into the window.
+    const side = Math.floor(Math.random() * 4);
+    if (side === 0) at = { x: Math.random() * W, y: -80 };
+    else if (side === 1) at = { x: Math.random() * W, y: H + 80 };
+    else if (side === 2) at = { x: -80, y: Math.random() * H };
+    else at = { x: W + 80, y: Math.random() * H };
+    head = Math.atan2(H / 2 - at.y, W / 2 - at.x);
+    wander = pickFar(W, H, at);
+    legs = 0;
+    legsWanted = 2 + Math.floor(Math.random() * 3);
+    // A visit is a few legs OR a couple of minutes, whichever runs out first -
+    // circling the planet can eat a leg without ever finishing it.
+    stayUntil = performance.now() + 60000 + Math.random() * 60000;
+    leaving = false;
+    away = false;
+    pre.style.opacity = '1';
+  };
 
   const step = (now) => {
     if (!pre.isConnected) return;
@@ -1305,11 +1358,10 @@ function flyRocket(el) {
     if (!W || !H) return;
     if (!born) born = now;
     if (now - born < ROCKET_WAIT) return;
-    if (!at) {
-      at = { x: -70, y: H * (0.25 + Math.random() * 0.5) };
-      vx = ROCKET_SPEED; vy = 0;
-      wander = pickWander(W, H);
-      pre.style.opacity = '1';
+    if (!at) enter(W, H);
+    if (away) {
+      if (now >= backAt) enter(W, H);
+      return;                                  // out of sight, and out of mind
     }
     // Time in 60fps frames, capped so a tab coming back does not teleport it.
     const dt = Math.min(3, (now - (lastT || now)) / 16.67);
@@ -1321,44 +1373,67 @@ function flyRocket(el) {
     }
 
     const chasing = aim && now - aimAt < 4000;
-    if (!chasing && (!wander || Math.hypot(wander.x - at.x, wander.y - at.y) < 80)) {
-      wander = pickWander(W, H);
+    if (chasing) { leaving = false; }
+    else if (!leaving && (!wander || Math.hypot(wander.x - at.x, wander.y - at.y) < 90)) {
+      // Arrived. A few legs to a journey, then it puts its nose down and goes.
+      if (++legs >= legsWanted) leaving = true;
+      else wander = pickFar(W, H, at);
+    } else if (!chasing && !leaving && now > stayUntil) {
+      leaving = true;
     }
-    const goal = chasing ? aim : wander;
 
-    /* Where it would like to be pointing. Saturn overrides it at close range -
-       straight out of the planet's ink, treated as the ellipse it is - and the
-       window's edge overrides that, back towards the middle. */
-    let want = Math.atan2(goal.y - at.y, goal.x - at.x);
-    const ink = inkBox();
-    if (ink) {
-      const cx = (ink.x0 + ink.x1) / 2, cy = (ink.y0 + ink.y1) / 2;
-      const hw = Math.max(1, (ink.x1 - ink.x0) / 2), hh = Math.max(1, (ink.y1 - ink.y0) / 2);
-      const nx = (at.x - cx) / hw, ny = (at.y - cy) / hh;
-      if (Math.hypot(nx, ny) < 1.25) want = Math.atan2(at.y - cy, at.x - cx);
+    /* Where it would like to be pointing. Straight on if it is leaving; Saturn
+       overrides that at close range, and the window's edge overrides Saturn -
+       but only while it is staying. */
+    let want = leaving ? head : Math.atan2((chasing ? aim : wander).y - at.y,
+                                           (chasing ? aim : wander).x - at.x);
+    let hard = false;                     // close to the planet: it may turn harder
+    const e = planet();
+    if (e) {
+      const cx = e.cx, cy = e.cy;
+      const n = howFarIn(at, e);
+      if (n < 1.4) {
+        hard = true;
+        /* Round the planet, not out of it: inside its reach the rocket aims
+           along the tangent - whichever way round is nearer the line it is
+           already on - leaning a little outward so the loop opens out and it
+           leaves rather than orbiting for ever. */
+        const out = Math.atan2(at.y - cy, at.x - cx);
+        const left = out + Math.PI / 2, right = out - Math.PI / 2;
+        const gap = (a) => Math.abs(wrap(a - head));
+        const tang = gap(left) < gap(right) ? left : right;
+        // Leaning out of the turn opens the loop; on the way out it leans harder,
+        // so the rocket spirals clear of the planet instead of circling it.
+        const openOut = (leaving ? 34 : 14) * Math.PI / 180;
+        want = tang + (tang === left ? -1 : 1) * openOut;
+      }
     }
     const margin = 70;
-    if (at.x < margin || at.x > W - margin || at.y < margin || at.y > H - margin) {
+    if (!leaving && (at.x < margin || at.x > W - margin || at.y < margin || at.y > H - margin)) {
       want = Math.atan2(H / 2 - at.y, W / 2 - at.x);
     }
 
     /* It flies: the speed is constant and only the heading changes, so it never
-       stops, never backs up and never slides sideways. It may aim at most 60
+       stops, never backs up and never slides sideways. It may aim at most sixty
        degrees off the line it is on - anything sharper it comes round to in an
        arc - and it can only swing a degree of that per frame. */
-    let head = Math.atan2(vy, vx);
-    let off = want - head;
-    while (off > Math.PI) off -= 2 * Math.PI;
-    while (off < -Math.PI) off += 2 * Math.PI;
+    let off = wrap(want - head);
     const cap = ROCKET_CAP * Math.PI / 180;
-    if (off > cap) off = cap;
-    if (off < -cap) off = -cap;
-    const rate = ROCKET_RATE * Math.PI / 180 * dt;
+    off = Math.max(-cap, Math.min(cap, off));
+    // A degree a frame in open sky; near the planet it may pull harder, or it
+    // would be over Saturn before it had finished turning away.
+    const rate = (hard ? 2.6 : ROCKET_RATE) * Math.PI / 180 * dt;
     head += Math.max(-rate, Math.min(rate, off));
-    vx = Math.cos(head) * ROCKET_SPEED;
-    vy = Math.sin(head) * ROCKET_SPEED;
-    at.x += vx * dt;
-    at.y += vy * dt;
+    at.x += Math.cos(head) * ROCKET_SPEED * dt;
+    at.y += Math.sin(head) * ROCKET_SPEED * dt;
+
+    // Well clear of the window on its way out: gone, for half a minute or so.
+    if (at.x < -200 || at.x > W + 200 || at.y < -200 || at.y > H + 200) {
+      away = true;
+      backAt = now + 25000 + Math.random() * 35000;
+      pre.style.opacity = '0';
+      return;
+    }
 
     // The art points up, so the heading is turned a quarter on; the rotation is
     // about the rocket's own middle, which is where its nose swings from.
