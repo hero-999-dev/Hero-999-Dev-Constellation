@@ -556,8 +556,6 @@ function redrawLines() {
      Routes are gathered and drawn in one pass at the end, because they share a
      grid and cannot be written one at a time. */
   const asciiRoutes = new Map();
-  // Just enough that a head is not drawn on the box's own ground - the raster
-  // rounds to a whole cell anyway, so this only has to break the tie.
   const CLEAR = 2;
   for (const edge of EDGES) {
     if (!edge.ascii) continue;
@@ -572,6 +570,17 @@ function redrawLines() {
                cx: q.left + q.width / 2 - box.left, cy: q.top + q.height / 2 - box.top };
     };
     const a = rect(edge.a), b = rect(edge.b);
+    /* An end is snapped to the last whole cell outside its box, not to a couple
+       of pixels off it. A cell's ink fills the cell, and the raster rounds to
+       the nearest one, so `edge + 2px` was as likely to round back onto the box
+       as off it - and the box's ground is painted over the runs, which is what
+       ate the head above the Acer. Snapped this way an end is always clear, and
+       never further off than the one cell it needs. */
+    const g = gridFor(host.querySelector('.dev-lines'));
+    const cw = g ? g.cw : 6, ch = g ? g.ch : 10;
+    const above = (y) => (Math.floor(y / ch) - 1) * ch;
+    const below = (y) => Math.ceil(y / ch) * ch;
+    const rightOf = (x) => Math.ceil(x / cw) * cw;
     let points, labelAt;
 
     if (edge.elbow) {
@@ -581,9 +590,9 @@ function redrawLines() {
          the route jogs sideways in the clear band between the two boxes first,
          rather than running down through the box. */
       const up = b.cy < a.cy;
-      const start = { x: a.cx, y: up ? a.t - CLEAR : a.b + CLEAR };
+      const start = { x: a.cx, y: up ? above(a.t) : below(a.b) };
       const legX = Math.max(a.cx, b.r + CLEAR * 3);
-      const door = { x: b.r + CLEAR, y: b.cy };
+      const door = { x: rightOf(b.r), y: b.cy };
       if (legX > a.cx + 1) {
         const band = (start.y + (up ? b.b : b.t)) / 2;
         points = [start, { x: a.cx, y: band }, { x: legX, y: band },
@@ -600,8 +609,9 @@ function redrawLines() {
          the box's own ground and is not there at all. */
       const upper = a.cy <= b.cy ? a : b, lower = a.cy <= b.cy ? b : a;
       const x = (upper.cx + lower.cx) / 2;
-      points = [{ x, y: (a.cy <= b.cy ? upper.b : lower.t) + (a.cy <= b.cy ? CLEAR : -CLEAR) },
-                { x, y: (a.cy <= b.cy ? lower.t : upper.b) + (a.cy <= b.cy ? -CLEAR : CLEAR) }];
+      const first = a.cy <= b.cy ? below(upper.b) : above(lower.t);
+      const last = a.cy <= b.cy ? above(lower.t) : below(upper.b);
+      points = [{ x, y: first }, { x, y: last }];
       labelAt = { x, y: (upper.b + lower.t) / 2 };
     }
 
@@ -1039,29 +1049,37 @@ function renderDevices() {
   stage.append(lines, nodes);
   box.appendChild(stage);
 
-  const made = {};
-  for (const item of DEVICES) {
-    if (!item.name) continue;
-    const card = document.createElement('div');
-    card.className = 'dev-card';
-    card.style.left = item.at.x + '%';
-    card.style.top = item.at.y + '%';
-    // Width is however many characters the widest line needs - the elbows and
-    // the triangle measure the real rect, so they follow it.
-    // spaceCards centres the three by height; a box can ask to ride a few px off
-    // that (the phone reads better a touch below the go/acer midline).
-    if (item.nudge) card.dataset.nudge = item.nudge;
+  /* The text first, then the widths, then the cards: a box is as wide as its own
+     longest line - the phone's specs are short and a shared width left it half
+     empty - but boxes that name the same width class are cut to the widest of
+     them. The two laptops sit one above the other, so a single character
+     between them shows twice: once in the frames, and again in where their
+     arrowheads land, because a head is rounded to the grid from the box's own
+     edge. */
+  const drafts = DEVICES.filter((item) => item.name).map((item) => {
     // A category ahead of the year translates; a model number does not. Specs
     // are model names and numbers except for the one English word inside them.
     const sub = item.subKey ? t(item.subKey) + ' · ' + item.sub : item.sub;
     const specs = padBlock(item.specs.map(
       (line) => line.replace('(integrated)', '(' + t('integrated') + ')')));
     const lines = [...wrapText(item.name, DEV_COLS), ...wrapText(sub, DEV_COLS), '', ...specs];
-    // As wide as its own longest line and no wider - the phone's specs are short
-    // and a shared width left it half empty - plus a space either side, so the
-    // text is not up against the frame.
+    // Plus a space either side, so the text is not up against the frame.
     const cols = Math.min(DEV_COLS, lines.reduce((n, l) => Math.max(n, l.length), 0)) + 2;
-    card.textContent = asciiBox(lines, cols);
+    return { item, lines, cols };
+  });
+  const widest = {};
+  for (const d of drafts) widest[d.item.w] = Math.max(widest[d.item.w] || 0, d.cols);
+
+  const made = {};
+  for (const { item, lines, cols } of drafts) {
+    const card = document.createElement('div');
+    card.className = 'dev-card';
+    card.style.left = item.at.x + '%';
+    card.style.top = item.at.y + '%';
+    // spaceCards centres the three by height; a box can ask to ride a few px off
+    // that (the phone reads better a touch below the go/acer midline).
+    if (item.nudge) card.dataset.nudge = item.nudge;
+    card.textContent = asciiBox(lines, Math.max(cols, widest[item.w] || 0));
     nodes.appendChild(card);
     made[item.key] = card;
   }
