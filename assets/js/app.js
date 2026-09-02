@@ -1234,14 +1234,25 @@ function spinSaturn(pre) {
   requestAnimationFrame(step);
 }
 
-/* A rocket, off the same wall of ASCII the planet came from and drawn in the
-   planet's own ink. Two things move: the exhaust burns, cycling three frames the
-   way the shooting stars step their ramp, and the whole thing flies a route with
-   corners in it - in off one edge, two to four turns inside the window, out at
-   another - leaning into whichever way it is going, because the art points up.
-   The waypoints are picked clear of the planet's ink, so it goes round Saturn
-   rather than through it. First crossing ten seconds in, then it is away for a
-   while before it shows up somewhere else. */
+/* A rocket, off the same wall of ASCII the planet came from and drawn at the
+   planet's own size and in its own ink. It is not carried along a path: it
+   chases. There is a point it wants to be at - the pointer while the pointer is
+   moving, one of its own choosing when it is not - and every frame it turns a
+   little towards that point and moves at whatever speed it has built up. So the
+   nose leads, the body swings round after it, and it arrives in a curve rather
+   than jumping from place to place. Saturn pushes it away, so it goes round the
+   planet. First appearance ten seconds in; it flies from then on.
+
+     .        .        .
+    .'.      .'.      .'.
+    |o|      |o|      |o|
+   .'o'.    .'o'.    .'o'.
+   |.-.|    |.-.|    |.-.|
+   '   '    '   '    '   '
+    ( )      )        ( )
+     )      ( )        )
+    ( )      )         (
+*/
 const ROCKET_BODY = [
   '   .   ',
   "  .'.  ",
@@ -1255,73 +1266,103 @@ const ROCKET_BURN = [
   ['   )   ', '  ( )  ', '   )   '],
   ['  ( )  ', '   )   ', '   (   '],
 ];
+const ROCKET_WAIT = 10000;   // before the first appearance
+const ROCKET_SPEED = 2.7;    // pixels per 60fps frame
+const ROCKET_TURN = 0.17;    // how hard it can pull towards where it is going
 
 function flyRocket(el) {
   if (!el) return;
   const pre = document.createElement('pre');
   pre.className = 'gate-rocket';
+  pre.textContent = ROCKET_BODY.concat(ROCKET_BURN[0]).join('\n');
   el.appendChild(pre);
 
-  // The burn runs the whole time; it costs one string join every ninth frame.
-  let puff = 0, last = 0;
-  const burn = (now) => {
+  // What it is chasing: the pointer while the pointer is moving, otherwise a
+  // point of its own, changed once it gets there.
+  let aim = null, aimAt = -1e9;
+  addEventListener('pointermove', (event) => {
+    aim = { x: event.clientX, y: event.clientY };
+    aimAt = performance.now();
+  }, { passive: true });
+
+  const pickWander = (W, H) => {
+    const ink = inkBox();
+    for (let i = 0; i < 60; i++) {
+      const q = { x: 60 + Math.random() * (W - 120), y: 60 + Math.random() * (H - 120) };
+      if (!ink || q.x < ink.x0 || q.x > ink.x1 || q.y < ink.y0 || q.y > ink.y1) return q;
+    }
+    return { x: W / 2, y: 70 };
+  };
+
+  let at = null, vx = 0, vy = 0, wander = null;
+  let born = 0, puff = 0, lastPuff = 0, lastT = 0;
+
+  const step = (now) => {
     if (!pre.isConnected) return;
-    if (now - last >= 130) {
-      last = now;
+    requestAnimationFrame(step);
+    const W = el.clientWidth, H = el.clientHeight;
+    if (!W || !H) return;
+    if (!born) born = now;
+    if (now - born < ROCKET_WAIT) return;
+    if (!at) {
+      at = { x: -70, y: H * (0.25 + Math.random() * 0.5) };
+      vx = ROCKET_SPEED; vy = 0;
+      wander = pickWander(W, H);
+      pre.style.opacity = '1';
+    }
+    // Time in 60fps frames, capped so a tab coming back does not teleport it.
+    const dt = Math.min(3, (now - (lastT || now)) / 16.67);
+    lastT = now;
+
+    if (now - lastPuff >= 130) {
+      lastPuff = now;
       pre.textContent = ROCKET_BODY.concat(ROCKET_BURN[puff++ % ROCKET_BURN.length]).join('\n');
     }
-    requestAnimationFrame(burn);
-  };
-  requestAnimationFrame(burn);
 
-  const cross = () => {
-    if (!el.isConnected) return;
-    const W = el.clientWidth, H = el.clientHeight;
-    if (!W || !H) { setTimeout(cross, 4000); return; }
+    const chasing = aim && now - aimAt < 4000;
+    if (!chasing && (!wander || Math.hypot(wander.x - at.x, wander.y - at.y) < 80)) {
+      wander = pickWander(W, H);
+    }
+    const goal = chasing ? aim : wander;
 
+    // Turn towards it: the difference between the speed it wants and the speed
+    // it has, capped, is what it can pull this frame.
+    const dx = goal.x - at.x, dy = goal.y - at.y;
+    const d = Math.hypot(dx, dy) || 1;
+    let ax = (dx / d) * ROCKET_SPEED - vx;
+    let ay = (dy / d) * ROCKET_SPEED - vy;
+    const pull = Math.hypot(ax, ay) || 1;
+    ax = ax / pull * ROCKET_TURN;
+    ay = ay / pull * ROCKET_TURN;
+
+    // Saturn is solid. Near its ink, a push straight out of it - treated as an
+    // ellipse, which is what it is.
     const ink = inkBox();
-    const clear = (p) => !ink || p.x < ink.x0 || p.x > ink.x1 || p.y < ink.y0 || p.y > ink.y1;
-    // Off one of the four sides, far enough out that the whole rocket is gone.
-    const offEdge = () => {
-      const side = Math.floor(Math.random() * 4);
-      if (side === 0) return { x: Math.random() * W, y: -140 };
-      if (side === 1) return { x: Math.random() * W, y: H + 140 };
-      if (side === 2) return { x: -140, y: Math.random() * H };
-      return { x: W + 140, y: Math.random() * H };
-    };
-    // A turn inside the window, in open sky.
-    const waypoint = () => {
-      for (let i = 0; i < 60; i++) {
-        const p = { x: 50 + Math.random() * (W - 100), y: 50 + Math.random() * (H - 100) };
-        if (clear(p)) return p;
+    if (ink) {
+      const cx = (ink.x0 + ink.x1) / 2, cy = (ink.y0 + ink.y1) / 2;
+      const hw = Math.max(1, (ink.x1 - ink.x0) / 2), hh = Math.max(1, (ink.y1 - ink.y0) / 2);
+      const nx = (at.x - cx) / hw, ny = (at.y - cy) / hh;
+      const n = Math.hypot(nx, ny);
+      if (n < 1.35) {
+        const push = (1.35 - n) * 4.5;
+        ax += (nx / (n || 1)) * push * ROCKET_TURN;
+        ay += (ny / (n || 1)) * push * ROCKET_TURN;
       }
-      return { x: 60, y: 60 };
-    };
+    }
 
-    const pts = [offEdge()];
-    const turns = 2 + Math.floor(Math.random() * 3);
-    for (let i = 0; i < turns; i++) pts.push(waypoint());
-    pts.push(offEdge());
+    vx += ax * dt; vy += ay * dt;
+    const speed = Math.hypot(vx, vy);
+    if (speed > ROCKET_SPEED) { vx = vx / speed * ROCKET_SPEED; vy = vy / speed * ROCKET_SPEED; }
+    at.x = Math.max(-60, Math.min(W + 60, at.x + vx * dt));
+    at.y = Math.max(-60, Math.min(H + 60, at.y + vy * dt));
 
-    // It leans the way it is going: the art points up, so the heading is turned
-    // a quarter turn on. Rotation is applied about the rocket's own middle -
-    // transforms read right to left, so the rotate lands before the move.
-    const lean = (a, b) => Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI + 90;
-    const frames = pts.map((p, i) => {
-      const j = Math.min(i, pts.length - 2);
-      const head = lean(pts[j], pts[j + 1]);
-      return {
-        offset: i / (pts.length - 1),
-        opacity: (i === 0 || i === pts.length - 1) ? 0 : 1,
-        transform: 'translate(calc(' + p.x.toFixed(0) + 'px - 50%), calc(' +
-                   p.y.toFixed(0) + 'px - 50%)) rotate(' + head.toFixed(1) + 'deg)',
-      };
-    });
-
-    const run = pre.animate(frames, { duration: 30000 + Math.random() * 20000, easing: 'linear' });
-    run.onfinish = () => setTimeout(cross, 14000 + Math.random() * 26000);
+    // The art points up, so the heading is turned a quarter on; the rotation is
+    // about the rocket's own middle, which is where its nose swings from.
+    const head = Math.atan2(vy, vx) * 180 / Math.PI + 90;
+    pre.style.transform = 'translate(calc(' + at.x.toFixed(0) + 'px - 50%), calc(' +
+      at.y.toFixed(0) + 'px - 50%)) rotate(' + head.toFixed(1) + 'deg)';
   };
-  setTimeout(cross, 10000);
+  requestAnimationFrame(step);
 }
 
 /* Dozens of faint asterisks scattered behind the gate - the deep-space ground

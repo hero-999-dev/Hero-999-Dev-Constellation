@@ -200,10 +200,11 @@ body.on-saturn .wrap{ transform:translateX(100%); }
    edge and out at another, then away for a while before it shows up elsewhere. */
 .gate-rocket{
   position:absolute; top:0; left:0; margin:0;
-  font-family:var(--font-mono); font-size:clamp(8px, 1.2vw, 15px); line-height:1;
-  white-space:pre; user-select:none; pointer-events:none; opacity:0;
-  /* The planet's own ink and halo - it came off the same wall of ASCII. */
+  /* The planet's own size, ink and halo - it came off the same wall of ASCII. */
+  font-family:var(--font-mono); font-size:clamp(8px, 1.75vw, 18px); line-height:1;
+  white-space:pre; user-select:none; pointer-events:none;
   color:var(--terra); text-shadow:0 0 14px rgba(122,84,48,.22);
+  opacity:0; transition:opacity 2.4s var(--ease);
 }
 :root[data-theme="dark"] .gate-rocket{ color:var(--orange); text-shadow:0 0 16px rgba(232,129,60,.3); }
 /* A scatter of faint asterisks behind everything - the deep-space ground the
