@@ -249,7 +249,7 @@ function applyTheme(mode) {
   document.documentElement.dataset.theme = mode;
   localStorage.setItem('hdh-theme', mode);
   document.querySelector('meta[name="theme-color"]')
-    ?.setAttribute('content', mode === 'dark' ? '#1A1411' : '#F3E2C4');
+    ?.setAttribute('content', mode === 'dark' ? '#1A1411' : '#EEDAB6');
   paintChrome();
 }
 

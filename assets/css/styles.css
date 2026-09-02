@@ -49,11 +49,12 @@
   --line-accent: rgba(246,160,61,.38);
   --grad-warm:   #FFF7E9;
   --glass:       rgba(255,255,255,.6);
-  --header-bg:   rgba(243,226,196,.78);
-  /* One ground under both faces of the page - the warmer, dimmer light the
-     airlock was given, so crossing between the map and the planet does not
-     change the colour of the room. Cards keep --cream and read as panels on it. */
-  --ground:      #F3E2C4;
+  --header-bg:   rgba(238,218,182,.78);
+  /* One ground under both faces of the page, and a warm one: blue pulled out of
+     it and the brightness down, so the light half is a lamp rather than a
+     window. The filter over the top of everything does the rest - see
+     body::after. */
+  --ground:      #EEDAB6;
   /* One size for every control in the corners, the signature included, and it
      grows a little with the window rather than holding one pixel size. */
   --chrome-font: clamp(.82rem, .2vw + .76rem, .98rem);
@@ -120,6 +121,22 @@ body{
   background:var(--ground);
   -webkit-font-smoothing:antialiased;
 }
+
+/* A warm filter laid over the whole page in light - the f.lux idea, done as a
+   sheet of amber multiplied over everything rather than as a colour picked for
+   each thing. It takes the blue out of the ground, the ink and the type at once
+   and pulls the brightness down with it, which is what makes a bright screen
+   easy to sit in front of. Dark is already a dim warm room and gets none of it.
+   It takes no clicks, so nothing underneath notices it is there. */
+body::after{
+  content:"";
+  position:fixed; inset:0; z-index:9999;
+  pointer-events:none;
+  background:#FF7A24;
+  opacity:.085;
+  mix-blend-mode:multiply;
+}
+:root[data-theme="dark"] body::after{ display:none; }
 
 h1,h2,h3{ font-family:var(--font-head); font-weight:500; line-height:1.2; margin:0; letter-spacing:0; }
 p{ margin:0 0 1em; }
