@@ -543,27 +543,35 @@ a.node:hover{ color:var(--amber); }
    joins; it takes no clicks, so a card can be dragged straight through it. */
 .dev-lines{
   position:absolute; inset:0; margin:0; overflow:hidden;
-  font-family:var(--font-mono); font-size:clamp(9px, 1vw, 15px); font-weight:700; line-height:1;
+  font-family:var(--font-mono); font-size:clamp(8px, min(1vw, 1.75vh), 15px); font-weight:700; line-height:1;
   white-space:pre; pointer-events:none; user-select:none;
   color:var(--terra);
 }
 :root[data-theme="dark"] .dev-lines{ color:var(--orange); }
 /* The same ink and face as the boxes it runs between, a size up from where it
    was - it is the only prose in the panel and it was the hardest thing to read. */
+/* The label is a point on the run, not a box across it: it has no width of its
+   own and the two words hang off either side, each carrying the ground so the
+   run stops at them. What is left between the words is the run itself, which is
+   the upright the label used to have to draw and line up by hand. */
 .dev-label{
-  position:absolute;
+  position:absolute; width:0; height:0;
   transform:translate(-50%, -50%);
-  padding:0 .3rem;
-  /* Same face, size and ink as the grid it sits on, so the upright between the
-     words is indistinguishable from the run it lands on. */
   font-family:var(--font-mono);
-  font-size:clamp(9px, 1vw, 15px); line-height:1.25;
-  text-align:center; white-space:nowrap;
+  font-size:clamp(8px, min(1vw, 1.75vh), 15px); line-height:1.25;
+  white-space:nowrap;
   color:var(--terra);
-  background:var(--ground);
   pointer-events:none;
 }
 :root[data-theme="dark"] .dev-label{ color:var(--orange); }
+.dev-word{
+  position:absolute; top:-.62em;
+  background:var(--ground);
+  padding:0 .1rem;
+}
+.dev-word.l{ right:.42em; }
+.dev-word.r{ left:.42em; }
+
 .dev-nodes{ position:absolute; inset:0; }
 
 /* Drawn like the cards on the map: the frame is characters, so the width is
@@ -571,7 +579,10 @@ a.node:hover{ color:var(--amber); }
 .dev-card{
   position:absolute;
   transform:translate(-50%, -50%);
-  font-size:clamp(9px, 1vw, 15px);
+  /* The panel is as tall as the window lets it be, and three boxes have to fit
+     in it with their labels: the type follows the shorter side, so a short
+     window gets smaller boxes rather than boxes that spill out of the panel. */
+  font-size:clamp(8px, min(1vw, 1.75vh), 15px);
   background:var(--ground);
   pointer-events:none;
   user-select:none;

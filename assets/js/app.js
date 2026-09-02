@@ -584,17 +584,6 @@ function redrawLines() {
       const x = edge.elbow ? ca.x : (ca.x + cb.x) / 2;
       edge.label.style.left = (x + (edge.labelDx || 0)) / w * 100 + '%';
       edge.label.style.top = (y + (edge.labelDy || 0)) / h * 100 + '%';
-      /* The upright between the two words is the run the label sits on, so it
-         is that character that has to land on the line - not the label's own
-         middle, which is off to one side of it because the words differ in
-         length. The face is mono, so the offset is a share of the width. */
-      const text = edge.label.textContent;
-      const bar = text.indexOf('|');
-      let nudge = 0;
-      if (bar >= 0 && text.length) {
-        nudge = (0.5 - (bar + 0.5) / text.length) * edge.label.getBoundingClientRect().width;
-      }
-      edge.label.style.transform = 'translate(calc(-50% + ' + nudge.toFixed(1) + 'px), -50%)';
     }
   }
   for (const [host, routes] of asciiRoutes) paintLines(host.querySelector('.dev-lines'), routes);
@@ -1052,9 +1041,20 @@ function renderDevices() {
     const head2 = !!link.both;
     // The label is HTML, not SVG text, so it can wear the same frame the boxes
     // do. redrawLines() moves it with the line.
+    /* Two words with a gap between them, not one string with a bar in it. The
+       label is anchored ON the run and the words are hung either side of that
+       point, so what shows between them is the run's own upright - the label
+       does not have to draw one, or be nudged until its own lines up. */
     const label = document.createElement('span');
     label.className = 'dev-label';
-    label.textContent = link.label;
+    const parts = link.label.split('|');
+    const left = document.createElement('span');
+    left.className = 'dev-word l';
+    left.textContent = parts[0];
+    const right = document.createElement('span');
+    right.className = 'dev-word r';
+    right.textContent = parts[1] || '';
+    label.append(left, right);
     nodes.appendChild(label);
     EDGES.push({ a: made[link.from], b: made[link.to], ascii: true, head, head2, label,
                  elbow: link.elbow, host: stage, w: DW, h: DH,
@@ -1090,8 +1090,10 @@ function spaceCards() {
   if (!height || cards.length < 2) return;
   const tall = cards.map(c => c.offsetHeight);
   const total = tall.reduce((a, b) => a + b, 0);
-  const label = stage.querySelector('.dev-label');
-  const need = ((label ? label.offsetHeight : 0) + DEV_LABEL_AIR) * (cards.length - 1);
+  // The label itself is a point with no height now; the room a label needs is
+  // the height of one of its words.
+  const word = stage.querySelector('.dev-word');
+  const need = ((word ? word.offsetHeight : 0) + DEV_LABEL_AIR) * (cards.length - 1);
   const edge = Math.max(0, Math.min(DEV_EDGE, (height - total - need) / 2));
   const free = height - total - edge * 2;
   if (free < 0) return;                      // too short to space; leave the fallback
