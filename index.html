@@ -8,9 +8,13 @@
 <meta name="theme-color" content="#1A1411">
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%2343301F'/><path d='M10 9v14M22 9v14M10 16h12' stroke='%23F6A03D' stroke-width='3.4' stroke-linecap='round'/></svg>">
-<link rel="stylesheet" href="assets/css/styles.css?v=202609030010">
+<link rel="stylesheet" href="assets/css/styles.css?v=202609030430">
 </head>
-<body>
+<!-- The airlock is the face the page opens on, so the markup says so: without
+     it the first paint is the map, and the switch to the airlock then plays as a
+     slide the moment the script runs. `boot` holds the crossing animation off
+     until the first frame has been painted. -->
+<body class="on-saturn boot">
 
 <!-- Two faces of one page: the airlock, where the planet turns, and the map of
      everything. The frame around them is shared - the switch between the faces,
@@ -79,11 +83,17 @@
 
 </main>
 
+<!-- The side of the screen is the way across. The arrow is what says so: it
+     stands on the edge you can press, between the switch above it and the
+     credits below, and only the one pointing somewhere is up. -->
+<button class="edge edge-right" id="edgeRight" type="button" data-i18n-label="projectsHardware">&gt;</button>
+<button class="edge edge-left" id="edgeLeft" type="button" data-i18n-label="home">&lt;</button>
+
 <!-- The signature holds the bottom-left of both faces. -->
 <div class="signature">
   <h1 class="gate-mark" data-box="Hero Dev"></h1>
 </div>
 
-<script src="assets/js/app.js?v=202609030010"></script>
+<script src="assets/js/app.js?v=202609030430"></script>
 </body>
 </html>

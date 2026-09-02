@@ -167,6 +167,34 @@ a{ color:inherit; text-decoration:none; }
 }
 body.on-saturn .gate{ transform:translateX(0); }
 body.on-saturn .wrap{ transform:translateX(100%); }
+/* The first paint is a position, not a move: the class comes off after a frame
+   and the crossing is live from then on. */
+body.boot .gate, body.boot .wrap{ transition:none; }
+/* A strip down each side of the window that crosses to the other face, with an
+   arrow standing in it to say so. It runs from under the switch to just over
+   the credits, and only the one pointing at the face you are not on is up. */
+.edge{
+  position:fixed; z-index:22;
+  top:calc(var(--bar-h) + .7rem);
+  bottom:calc(var(--corner) + var(--insp-h, 5.6rem) + .7rem);
+  width:2.6rem;
+  display:grid; place-items:center;
+  padding:0; border:0; background:none;
+  font-family:var(--font-mono); font-weight:700;
+  font-size:1.7rem; line-height:1;
+  color:var(--terra); opacity:.4;
+  cursor:pointer;
+  transition:opacity .18s var(--ease), color .18s var(--ease);
+}
+:root[data-theme="dark"] .edge{ color:var(--orange); }
+.edge:hover, .edge:focus-visible{ opacity:1; color:var(--amber); }
+.edge-right{ right:0; }
+.edge-left{ left:0; }
+body.on-saturn .edge-left{ display:none; }
+body:not(.on-saturn) .edge-right{ display:none; }
+/* No room for a strip beside the column on a phone; the switch is up top. */
+@media (max-width: 720px){ .edge{ display:none; } }
+
 /* The signature: the same identity the airlock used to wear in its top-left,
    holding the bottom-left of both faces now. */
 .signature{
@@ -439,9 +467,6 @@ body:not(.on-saturn) .topbar .gate-top{ display:none; }
 .ring-link{ pointer-events:auto; cursor:pointer; }
 .ring-link:hover{ color:var(--amber); }
 
-:root[data-theme="dark"] .lang-menu{ border-color:var(--orange); }
-:root[data-theme="dark"] .lang-menu li{ color:var(--orange); }
-
 /* Nodes are placed by percentage on the same 1200x840 grid the lines use,
    so the two stay locked together at any width. */
 /* A card is a drawn box: app.js writes the frame and everything inside it, and
@@ -501,6 +526,50 @@ a.node:hover{ color:var(--amber); }
      open, and without this the list stayed pushed off an empty column. */
   .stage{ padding-right:0; }
 }
+
+/* ------------------------------------------------------- language picker */
+
+/* Not a <select>: that one hands its drop-down to the platform, and no amount of
+   `color-scheme` makes the list belong to this page. Button plus list, so the
+   menu is ours to paint. */
+.lang-pick{ position:relative; }
+.lang-btn{ display:flex; align-items:center; gap:.45rem; }
+.lang-caret{
+  width:9px; height:6px; flex:none;
+  fill:none; stroke:currentColor; stroke-width:1.4;
+  stroke-linecap:round; stroke-linejoin:round;
+  opacity:.75;
+  transition:transform .18s var(--ease);
+}
+.lang-btn[aria-expanded="true"] .lang-caret{ transform:rotate(180deg); }
+
+/* Drawn like every other box on the page: app.js writes the rules and the
+   uprights into the rows themselves, so all this carries is the face, the
+   weight and the ground - the same as the button it hangs from, which is why
+   they line up and why the list is never the wider of the two. */
+.lang-menu{
+  position:absolute; top:calc(100% + .25rem); right:0; z-index:30;
+  margin:0; padding:0;
+  list-style:none;
+  font-family:var(--font-mono); font-size:var(--chrome-font); font-weight:700;
+  line-height:1.15; white-space:pre;
+  color:var(--terra);
+  background:var(--ground);
+  /* Hinged on the corner under the button it belongs to. */
+  transform-origin:top right;
+  transition:transform .24s var(--ease), opacity .18s var(--ease);
+}
+:root[data-theme="dark"] .lang-menu{ color:var(--orange); }
+.lang-menu[hidden]{ display:none; }
+.lang-menu:not(.in){ transform:translateY(-.4rem) scale(.95); opacity:0; }
+.lang-menu li{
+  padding:0; cursor:pointer; color:inherit;
+  transition:color .14s var(--ease);
+}
+.lang-menu li:hover{ color:var(--amber); }
+/* The two rules are the box, not a choice. */
+.lang-rule{ cursor:default; }
+.lang-rule:hover{ color:inherit; }
 
 /* ------------------------------------------------------------- hardware */
 
@@ -588,44 +657,3 @@ a.node:hover{ color:var(--amber); }
   user-select:none;
 }
 
-/* ------------------------------------------------------- language picker */
-
-/* Not a <select>: that one hands its drop-down to the platform, and no amount of
-   `color-scheme` makes the list belong to this page. Button plus list, so the
-   menu is ours to paint. */
-.lang-pick{ position:relative; }
-.lang-btn{ display:flex; align-items:center; gap:.45rem; }
-.lang-caret{
-  width:9px; height:6px; flex:none;
-  fill:none; stroke:currentColor; stroke-width:1.4;
-  stroke-linecap:round; stroke-linejoin:round;
-  opacity:.75;
-  transition:transform .18s var(--ease);
-}
-.lang-btn[aria-expanded="true"] .lang-caret{ transform:rotate(180deg); }
-
-.lang-menu{
-  position:absolute; top:calc(100% + .3rem); right:0; z-index:30;
-  min-width:100%;
-  margin:0; padding:.3rem .1rem;
-  list-style:none;
-  font-family:var(--font-mono);
-  background:var(--ground);
-  border:1px solid var(--terra);
-  border-radius:0;
-  box-shadow:none;
-  /* Hinged on the corner under the button it belongs to. */
-  transform-origin:top right;
-  transition:transform .24s var(--ease), opacity .18s var(--ease);
-}
-.lang-menu[hidden]{ display:none; }
-.lang-menu:not(.in){ transform:translateY(-.4rem) scale(.95); opacity:0; }
-.lang-menu li{
-  padding:.2rem .7rem .2rem .3rem;
-  font-size:var(--chrome-font); white-space:nowrap; cursor:pointer;
-  color:var(--terra);
-}
-/* A caret marks the one in use, the way a menu in a terminal would. */
-.lang-menu li::before{ content:"  "; white-space:pre; }
-.lang-menu li[aria-selected="true"]::before{ content:"> "; }
-.lang-menu li:hover{ color:var(--amber); }

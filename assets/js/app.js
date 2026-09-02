@@ -187,6 +187,7 @@ function applyLang(code) {
       opt.setAttribute('aria-selected', String(opt.dataset.lang === LANG));
     }
   }
+  paintLangMenu();   // before the button: it is measured against these names
   paintChrome();
   applyTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
   if (document.getElementById('mapNodes')) rebuildMap();
@@ -261,13 +262,52 @@ function chromeLabel(el) {
     return document.documentElement.dataset.theme === 'dark' ? t('light') : t('dark');
   }
   if (el.matches('.lang-btn')) {
-    const chosen = el.closest('[data-site-lang]')?.querySelector('[data-lang="' + LANG + '"]');
-    return (chosen ? chosen.textContent : LANG) + ' v';
+    const pick = el.closest('[data-site-lang]');
+    const names = [...(pick ? pick.querySelectorAll('[data-lang]') : [])].map(langName);
+    const chosen = pick?.querySelector('[data-lang="' + LANG + '"]');
+    const wide = names.reduce((n, t) => Math.max(n, t.length), 0);
+    // Padded to the longest name, so the list below can never be the wider box.
+    return (chosen ? langName(chosen) : LANG).padEnd(wide) + ' v';
   }
   return el.dataset.i18n ? t(el.dataset.i18n) : (el.dataset.box || '');
 }
 
+/* The language names are the markup's; the rows are drawn round them. Kept on
+   the element so the frame can be redrawn without eating the name. */
+const langName = (li) => (li.dataset.name || (li.dataset.name = li.textContent.trim()));
+
+/* The list is a drawn box like the rest: a rule top and bottom, an upright at
+   each end of every row, and a caret against the language in use. Every row is
+   the same number of characters, which is what keeps the uprights in a line. */
+function paintLangMenu() {
+  for (const pick of document.querySelectorAll('[data-site-lang]')) {
+    const menu = pick.querySelector('.lang-menu');
+    if (!menu) continue;
+    const items = [...menu.querySelectorAll('[data-lang]')];
+    if (!items.length) continue;
+    const wide = items.reduce((n, li) => Math.max(n, langName(li).length), 0) + 2;
+    const rule = '-'.repeat(wide + 2);
+    for (const old of menu.querySelectorAll('.lang-rule')) old.remove();
+    for (const li of items) {
+      const mark = li.getAttribute('aria-selected') === 'true' ? '> ' : '  ';
+      li.textContent = '| ' + (mark + langName(li)).padEnd(wide) + ' |';
+    }
+    const edge = (text) => {
+      const li = document.createElement('li');
+      li.className = 'lang-rule';
+      li.setAttribute('aria-hidden', 'true');
+      li.textContent = text;
+      return li;
+    };
+    menu.prepend(edge('.' + rule + '.'));
+    menu.append(edge("'" + rule + "'"));
+  }
+}
+
 function paintChrome() {
+  for (const el of document.querySelectorAll('[data-i18n-label]')) {
+    el.setAttribute('aria-label', t(el.dataset.i18nLabel));
+  }
   for (const el of document.querySelectorAll('[data-box]')) {
     const label = chromeLabel(el);
     el.textContent = asciiBox([label], label.length + 2);
@@ -516,7 +556,9 @@ function redrawLines() {
      Routes are gathered and drawn in one pass at the end, because they share a
      grid and cannot be written one at a time. */
   const asciiRoutes = new Map();
-  const CLEAR = 7;                       // px kept between a head and a box
+  // Just enough that a head is not drawn on the box's own ground - the raster
+  // rounds to a whole cell anyway, so this only has to break the tie.
+  const CLEAR = 2;
   for (const edge of EDGES) {
     if (!edge.ascii) continue;
     const host = edge.host;
@@ -732,6 +774,11 @@ const measureBar = () => {
   if (!bar) return;
   const h = Math.round(bar.getBoundingClientRect().height);
   if (h) document.documentElement.style.setProperty('--bar-h', h + 'px');
+  // The credits are set from the window, so how much of the right-hand side they
+  // take changes with it; the edge strip has to stop above whatever they are.
+  const insp = document.querySelector('.gate-insp');
+  const ih = insp ? Math.round(insp.getBoundingClientRect().height) : 0;
+  if (ih) document.documentElement.style.setProperty('--insp-h', ih + 'px');
 };
 
 const settle = () => {
@@ -1684,10 +1731,18 @@ function initSaturn() {
   shootStars(document.getElementById('gateStars'));   // in the starfield, behind the planet
   flyRocket(document.getElementById('gateStars'));
   spinSaturn(document.getElementById('saturn'));
+  // Home goes home. It was a toggle, so pressing it from the home page took you
+  // away from it - a button named for a place should always land on that place.
   const btn = document.getElementById('viewBtn');
-  if (btn) btn.addEventListener('click', () => {
-    showView(document.body.classList.contains('on-saturn') ? 'map' : 'saturn');
+  if (btn) btn.addEventListener('click', () => showView('saturn'));
+  // The two edges do what the two buttons do; the right-hand one brings the
+  // rail with it, as its button does.
+  document.getElementById('edgeRight')?.addEventListener('click', () => {
+    showView('map');
+    const panel = document.getElementById('devices');
+    if (panel && (panel.hidden || !panel.classList.contains('in'))) setRail(true);
   });
+  document.getElementById('edgeLeft')?.addEventListener('click', () => showView('saturn'));
 }
 
 initTheme();
@@ -1697,6 +1752,9 @@ initLang();   // after the theme, because it repaints the switch labels
    map is laid out all the same, off to the right, so it is ready when it is
    called for and the hardware rail is already out beside it. */
 showView('saturn');
+// The markup already has the page on this face; let one frame paint it there
+// before the crossing animation is allowed to run.
+requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.remove('boot')));
 measureBar();   // before anything measures itself against the bar
 renderMap();
 renderList();
