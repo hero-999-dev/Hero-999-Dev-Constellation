@@ -1052,9 +1052,14 @@ function paintDevFrame() {
   if (!panel || !frame || !host || panel.hidden || !siteRule) return;
   const hb = host.getBoundingClientRect();
   const btn = document.getElementById('devBtn');
-  const bb = btn && !btn.hidden ? btn.getBoundingClientRect() : null;
-  const left = bb ? bb.left : panel.getBoundingClientRect().left;
-  panel.style.left = (left - hb.left) + 'px';
+  /* Sideways, in layout pixels rather than screen ones. The face this panel
+     belongs to is slid off to the right while the planet is up, and the bar it
+     is being lined up with is fixed and does not travel with it - measured on
+     screen, the offset came out to whatever the slide was, and the panel was
+     dragged back over the planet by it. Where a box sits in the layout is the
+     same on both faces, which is what `left` wants. */
+  const layoutX = (el) => { let x = 0; for (let n = el; n; n = n.offsetParent) x += n.offsetLeft; return x; };
+  if (btn && !btn.hidden) panel.style.left = (layoutX(btn) - layoutX(host)) + 'px';
   panel.style.width = 'auto';
   panel.style.top = (siteRule.top - hb.top) + 'px';
   /* The bottom rule is a cell tall like any other row, so the box has to hold
