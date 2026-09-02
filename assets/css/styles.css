@@ -586,7 +586,9 @@ a.node:hover{ color:var(--amber); }
   transition:transform .56s var(--ease), opacity .38s var(--ease);
   width:430px;   /* = DEV_W in app.js; the rail and room test read from that */
   display:flex; flex-direction:column;
-  padding:.6rem .5rem .5rem;
+  /* No padding of its own: the frame is drawn on this box, so the air inside it
+     belongs to the stage. */
+  padding:0;
   background:none;
   border:0;
   box-shadow:none;
@@ -605,14 +607,30 @@ a.node:hover{ color:var(--amber); }
 /* The panel's name is a frame's name like the two on the map: the same serif,
    the same tracking, the same ink as the name over the airlock. */
 .dev-head{
+  /* Engraved into the frame's top rule, the way the map's names are: the ground
+     travels with it, so the dashes stop either side of the word. */
+  position:absolute; z-index:2;
+  transform:translate(-50%, -50%);
+  white-space:nowrap; margin:0;
+  background:var(--ground); padding:0 .55em;
   font-family:var(--font-head); font-weight:500;
   font-size:clamp(.68rem, 1.1vw, .92rem);
-  letter-spacing:.28em; padding-left:.28em; text-transform:uppercase;
-  color:var(--brown); text-align:center; margin-bottom:.6rem;
+  letter-spacing:.28em; text-transform:uppercase;
+  color:var(--brown); line-height:1;
 }
 
+/* The panel's own frame: one rectangle at the edges of the box, drawn in the
+   ink the boxes inside it are. */
+.dev-frame{
+  position:absolute; inset:0; margin:0; overflow:hidden;
+  font-family:var(--font-mono); font-weight:700; line-height:1;
+  white-space:pre; pointer-events:none; user-select:none;
+  color:var(--terra);
+}
+:root[data-theme="dark"] .dev-frame{ color:var(--orange); }
+
 /* The little map: three boxes the connector engine can drag and spring back. */
-.dev-stage{ position:relative; flex:1; min-height:0; }
+.dev-stage{ position:relative; flex:1; min-height:0; margin:.6rem .5rem .5rem; }
 /* The runs between the machines, drawn character by character by paintLines()
    into a grid laid over the panel. Same face, ink and leading as the boxes it
    joins; it takes no clicks, so a card can be dragged straight through it. */

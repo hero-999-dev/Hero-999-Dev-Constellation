@@ -625,6 +625,11 @@ function redrawLines() {
   }
   for (const [host, routes] of asciiRoutes) paintLines(host.querySelector('.dev-lines'), routes);
 }
+/* Where the map's outer frame drew its top and bottom rules, in page pixels,
+   and how tall a cell was when it did. The hardware frame is set to these, so
+   the two stand at the same height and run the same length. */
+let siteRule = null;
+
 function paintMap() {
   if (!linesEl || !mapEl) return;
   const box = mapEl.getBoundingClientRect();
@@ -674,6 +679,11 @@ function paintMap() {
       }
     }
     const rect = g.box({ x: l - padX, y: top }, { x: r + padX, y: bottom });
+    if (ring.full) {
+      const pre = linesEl.getBoundingClientRect();
+      siteRule = { top: pre.top + rect.r0 * g.ch, bottom: pre.top + rect.r1 * g.ch,
+                   ch: g.ch, font: getComputedStyle(linesEl).fontSize };
+    }
     // Under the top line and over the bottom one, rather than written into
     // them: the name is set in the page's own serif and the badges in its mono,
     // and neither fits in a character cell.
@@ -795,6 +805,9 @@ const settle = () => {
   measureBar();
   if (!mapEl) return;
   fitMap(); spaceCards(); capSidePanels(); redrawLines(); paintMap();
+  // The frame sets the panel's own box, so the cards are spaced and the runs
+  // solved again against the box it ends up with.
+  paintDevFrame(); spaceCards(); redrawLines();
 };
 addEventListener('resize', settle);
 // Web fonts and the scrollbar appearing both move things after first paint.
@@ -1026,6 +1039,44 @@ const DEV_W = 430;
 const DEV_RAIL = DEV_W + 20;
 const DEV_COLS = 30;   // inside the frame, in characters
 
+/* The hardware panel wears a frame like the map's, and it is the panel's own
+   box: the panel is set to the height the map's outer frame drew itself at, so
+   the two line up and are the same length, and its left side is stood under the
+   button that opens it rather than further out than it. One cell means the same
+   thing in both grids - the frame is given the map's own type size - so the
+   rules land on the same pixels rather than a cell either side of them. */
+function paintDevFrame() {
+  const panel = document.getElementById('devices');
+  const frame = panel && panel.querySelector('.dev-frame');
+  const host = panel && panel.offsetParent;
+  if (!panel || !frame || !host || panel.hidden || !siteRule) return;
+  const hb = host.getBoundingClientRect();
+  const btn = document.getElementById('devBtn');
+  const bb = btn && !btn.hidden ? btn.getBoundingClientRect() : null;
+  const left = bb ? bb.left : panel.getBoundingClientRect().left;
+  panel.style.left = (left - hb.left) + 'px';
+  panel.style.width = 'auto';
+  panel.style.top = (siteRule.top - hb.top) + 'px';
+  /* The bottom rule is a cell tall like any other row, so the box has to hold
+     it - and half a cell over, because the grid takes whole rows and a box
+     exactly 52 cells deep can measure as 51. The slack is under the last rule,
+     where nothing is drawn. */
+  panel.style.bottom = (hb.bottom - (siteRule.bottom + siteRule.ch * 1.5)) + 'px';
+
+  frame.style.fontSize = siteRule.font;
+  frame.textContent = '';
+  const g = gridFor(frame);
+  if (!g) return;
+  g.box({ x: 0, y: 0 }, { x: (g.cols - 1) * g.cw, y: (g.rows - 1) * g.ch });
+  g.flush();
+  // The name is engraved into the top rule, the way the map's names are.
+  const head = panel.querySelector('.dev-head');
+  if (head) {
+    head.style.left = (g.cols * g.cw / 2) + 'px';
+    head.style.top = (g.ch / 2) + 'px';
+  }
+}
+
 function renderDevices() {
   const box = document.getElementById('devices');
   if (!box) return;
@@ -1034,6 +1085,12 @@ function renderDevices() {
     if (EDGES[i].host === stageOld) EDGES.splice(i, 1);
   }
   box.textContent = '';
+  // First, so everything else is drawn over it.
+  const frame = document.createElement('pre');
+  frame.className = 'dev-frame';
+  frame.setAttribute('aria-hidden', 'true');
+  box.appendChild(frame);
+
   const head = document.createElement('div');
   head.className = 'dev-head';
   head.textContent = t('hardware');
