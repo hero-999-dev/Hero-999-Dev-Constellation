@@ -316,8 +316,9 @@ body:not(.on-saturn) .topbar .gate-top{ display:none; }
    frame IS the border - there is no CSS one, no radius and no shadow behind it. */
 .ascii-box, .pill, .gate-mark, .node, .dev-card{
   font-family:var(--font-mono);
-  font-weight:400;
-  /* see .node / .dev-card below: the drawn boxes are set bold */
+  /* Bold throughout - the cards, the machines, the controls in the corners and
+     the mark: one hand, one weight. */
+  font-weight:700;
   white-space:pre;
   line-height:1;
   letter-spacing:0;
@@ -437,7 +438,6 @@ body:not(.on-saturn) .topbar .gate-top{ display:none; }
   user-select:none;
   -webkit-user-drag:none;
   font-size:1.34cqw;
-  font-weight:700;
   background:var(--ground);
   transition:transform .2s var(--ease), color .2s var(--ease);
 }
@@ -555,7 +555,6 @@ a.node:hover{ color:var(--amber); }
   position:absolute;
   transform:translate(-50%, -50%);
   font-size:clamp(9px, 1vw, 15px);
-  font-weight:700;
   background:var(--ground);
   pointer-events:none;
   user-select:none;
