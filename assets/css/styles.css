@@ -200,8 +200,9 @@ body.on-saturn .wrap{ transform:translateX(100%); }
    edge and out at another, then away for a while before it shows up elsewhere. */
 .gate-rocket{
   position:absolute; top:0; left:0; margin:0;
-  /* The planet's own size, ink and halo - it came off the same wall of ASCII. */
-  font-family:var(--font-mono); font-size:clamp(8px, 1.75vw, 18px); line-height:1;
+  /* The planet's ink and halo - it came off the same wall of ASCII - at a size
+     that reads as something crossing the sky rather than a second Saturn. */
+  font-family:var(--font-mono); font-size:clamp(6px, 1vw, 11px); line-height:1;
   white-space:pre; user-select:none; pointer-events:none;
   color:var(--terra); text-shadow:0 0 14px rgba(122,84,48,.22);
   opacity:0; transition:opacity 2.4s var(--ease);

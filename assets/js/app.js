@@ -1267,8 +1267,9 @@ const ROCKET_BURN = [
   ['  ( )  ', '   )   ', '   (   '],
 ];
 const ROCKET_WAIT = 10000;   // before the first appearance
-const ROCKET_SPEED = 2.7;    // pixels per 60fps frame
-const ROCKET_TURN = 0.17;    // how hard it can pull towards where it is going
+const ROCKET_SPEED = 2.4;    // pixels per 60fps frame - it never slows or backs up
+const ROCKET_RATE = 1.0;     // degrees of heading it can change in one frame
+const ROCKET_CAP = 60;       // degrees it may aim off its current line, at most
 
 function flyRocket(el) {
   if (!el) return;
@@ -1325,42 +1326,45 @@ function flyRocket(el) {
     }
     const goal = chasing ? aim : wander;
 
-    // Turn towards it: the difference between the speed it wants and the speed
-    // it has, capped, is what it can pull this frame.
-    const dx = goal.x - at.x, dy = goal.y - at.y;
-    const d = Math.hypot(dx, dy) || 1;
-    let ax = (dx / d) * ROCKET_SPEED - vx;
-    let ay = (dy / d) * ROCKET_SPEED - vy;
-    const pull = Math.hypot(ax, ay) || 1;
-    ax = ax / pull * ROCKET_TURN;
-    ay = ay / pull * ROCKET_TURN;
-
-    // Saturn is solid. Near its ink, a push straight out of it - treated as an
-    // ellipse, which is what it is.
+    /* Where it would like to be pointing. Saturn overrides it at close range -
+       straight out of the planet's ink, treated as the ellipse it is - and the
+       window's edge overrides that, back towards the middle. */
+    let want = Math.atan2(goal.y - at.y, goal.x - at.x);
     const ink = inkBox();
     if (ink) {
       const cx = (ink.x0 + ink.x1) / 2, cy = (ink.y0 + ink.y1) / 2;
       const hw = Math.max(1, (ink.x1 - ink.x0) / 2), hh = Math.max(1, (ink.y1 - ink.y0) / 2);
       const nx = (at.x - cx) / hw, ny = (at.y - cy) / hh;
-      const n = Math.hypot(nx, ny);
-      if (n < 1.35) {
-        const push = (1.35 - n) * 4.5;
-        ax += (nx / (n || 1)) * push * ROCKET_TURN;
-        ay += (ny / (n || 1)) * push * ROCKET_TURN;
-      }
+      if (Math.hypot(nx, ny) < 1.25) want = Math.atan2(at.y - cy, at.x - cx);
+    }
+    const margin = 70;
+    if (at.x < margin || at.x > W - margin || at.y < margin || at.y > H - margin) {
+      want = Math.atan2(H / 2 - at.y, W / 2 - at.x);
     }
 
-    vx += ax * dt; vy += ay * dt;
-    const speed = Math.hypot(vx, vy);
-    if (speed > ROCKET_SPEED) { vx = vx / speed * ROCKET_SPEED; vy = vy / speed * ROCKET_SPEED; }
-    at.x = Math.max(-60, Math.min(W + 60, at.x + vx * dt));
-    at.y = Math.max(-60, Math.min(H + 60, at.y + vy * dt));
+    /* It flies: the speed is constant and only the heading changes, so it never
+       stops, never backs up and never slides sideways. It may aim at most 60
+       degrees off the line it is on - anything sharper it comes round to in an
+       arc - and it can only swing a degree of that per frame. */
+    let head = Math.atan2(vy, vx);
+    let off = want - head;
+    while (off > Math.PI) off -= 2 * Math.PI;
+    while (off < -Math.PI) off += 2 * Math.PI;
+    const cap = ROCKET_CAP * Math.PI / 180;
+    if (off > cap) off = cap;
+    if (off < -cap) off = -cap;
+    const rate = ROCKET_RATE * Math.PI / 180 * dt;
+    head += Math.max(-rate, Math.min(rate, off));
+    vx = Math.cos(head) * ROCKET_SPEED;
+    vy = Math.sin(head) * ROCKET_SPEED;
+    at.x += vx * dt;
+    at.y += vy * dt;
 
     // The art points up, so the heading is turned a quarter on; the rotation is
     // about the rocket's own middle, which is where its nose swings from.
-    const head = Math.atan2(vy, vx) * 180 / Math.PI + 90;
+    const lean = head * 180 / Math.PI + 90;
     pre.style.transform = 'translate(calc(' + at.x.toFixed(0) + 'px - 50%), calc(' +
-      at.y.toFixed(0) + 'px - 50%)) rotate(' + head.toFixed(1) + 'deg)';
+      at.y.toFixed(0) + 'px - 50%)) rotate(' + lean.toFixed(1) + 'deg)';
   };
   requestAnimationFrame(step);
 }
@@ -1555,9 +1559,10 @@ function initSaturn() {
 initTheme();
 initLang();   // after the theme, because it repaints the switch labels
 
-/* The map is the face the page opens on, with the hardware beside it: the rail
-   is out from the start, so projects and machines are on screen together. */
-showView('map');
+/* The airlock is the face the page opens on - the planet is the front door. The
+   map is laid out all the same, off to the right, so it is ready when it is
+   called for and the hardware rail is already out beside it. */
+showView('saturn');
 measureBar();   // before anything measures itself against the bar
 renderMap();
 renderList();
