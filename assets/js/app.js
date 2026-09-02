@@ -24,6 +24,10 @@ const GH = (repo) => `https://github.com/${OWNER}/${repo}`;
  * touching the inner one) and a generous pad on the outer ring. Measured: the
  * inner ring reaches 0.909 of the outer at its worst point - inside, with room
  * to see. Move a card and that number moves; check it before shipping.
+ *
+ * The three in the column are 148 apart rather than 110: a card is about 129 of
+ * these units tall now that it is a drawn box, so at 110 each one's ground was
+ * covering the bottom rule of the one above it.
  */
 const ME = { id: 'me', title: 'Hero Dev', desc: OWNER, href: `https://github.com/${OWNER}`,
              x: 600, y: 420 };
@@ -41,7 +45,7 @@ const BRANCHES = [
         title: 'pixel_pomo',
         desc: 'dPomo',
         repo: 'pixel_pomo', lang: 'Dart', private: true,
-        x: 240, y: 310,
+        x: 240, y: 272,
       },
       {
         title: 'pixel-pomo-web',
@@ -54,7 +58,7 @@ const BRANCHES = [
         title: 'pixel_pomo_art_kit',
         desc: 'dKit',
         repo: 'pixel_pomo_art_kit', lang: 'Python', private: false,
-        x: 240, y: 530,
+        x: 240, y: 568,
       },
     ],
   },
@@ -1339,14 +1343,16 @@ function flyRocket(el) {
     else if (side === 1) at = { x: Math.random() * W, y: H + 80 };
     else if (side === 2) at = { x: -80, y: Math.random() * H };
     else at = { x: W + 80, y: Math.random() * H };
-    head = Math.atan2(H / 2 - at.y, W / 2 - at.x);
+    // Pointed at the first place it is going, not at the middle of the window -
+    // the middle of the window is the planet.
     wander = pickFar(W, H, at);
+    head = Math.atan2(wander.y - at.y, wander.x - at.x);
     legs = 0;
     legsWanted = 1 + Math.floor(Math.random() * 2);
-    // A visit is a leg or two OR a dozen seconds, whichever runs out first -
-    // circling the planet can eat a leg without ever finishing it. It is a
-    // thing crossing the sky, like the streaks are: seen briefly and seldom.
-    stayUntil = performance.now() + 10000 + Math.random() * 6000;
+    // A visit is a leg or two OR five seconds, whichever runs out first, and the
+    // way out is the nearest edge - so it is on screen for something under ten
+    // seconds all told. It is a thing crossing the sky, like the streaks are.
+    stayUntil = performance.now() + 3000 + Math.random() * 2000;
     leaving = false;
     away = false;
     pre.style.opacity = '1';
@@ -1376,7 +1382,16 @@ function flyRocket(el) {
     /* The visit is over when its time is up, whatever it happens to be chasing -
        a pointer that keeps moving used to hold it here for ever - and once it
        has turned for the door nothing calls it back. */
-    const chasing = !leaving && aim && now - aimAt < 4000;
+    /* A pointer sitting on the planet is not a place it can get to: chasing it
+       had the rocket sliding round the rim until its time ran out, which looked
+       like it was stuck on Saturn. It ignores an aim it cannot reach and carries
+       on with its own errands. */
+    const eNow = planet();
+    const reachable = !aim || !eNow || howFarIn(aim, eNow) > 1.12;
+    const chasing = !leaving && reachable && aim && now - aimAt < 4000;
+    // On the way out it opens the throttle: the planet can stand between it and
+    // the nearest edge, and a slow exit keeps it on screen past its welcome.
+    const speed = ROCKET_SPEED * (leaving ? 1.6 : 1);
     if (!leaving && now > stayUntil) leaving = true;
     else if (!leaving && !chasing && (!wander || Math.hypot(wander.x - at.x, wander.y - at.y) < 90)) {
       // Arrived. A leg or two to a visit, then it puts its nose down and goes.
@@ -1387,22 +1402,35 @@ function flyRocket(el) {
     /* Where it would like to be pointing. Straight on if it is leaving; Saturn
        overrides that at close range, and the window's edge overrides Saturn -
        but only while it is staying. */
-    let want = leaving ? head : Math.atan2((chasing ? aim : wander).y - at.y,
-                                           (chasing ? aim : wander).x - at.x);
+    let want;
+    if (leaving) {
+      // Out by the nearest edge - the shortest way off the screen from here.
+      const outs = [{ x: at.x, y: -160 }, { x: at.x, y: H + 160 },
+                    { x: -160, y: at.y }, { x: W + 160, y: at.y }];
+      let door = outs[0], best = 1e9;
+      for (const o of outs) {
+        const d = Math.hypot(o.x - at.x, o.y - at.y);
+        if (d < best) { best = d; door = o; }
+      }
+      want = Math.atan2(door.y - at.y, door.x - at.x);
+    } else {
+      const goal = chasing ? aim : wander;
+      want = Math.atan2(goal.y - at.y, goal.x - at.x);
+    }
     /* Off the planet whatever the two of them are sized at: the keep-out is the
        planet's own ellipse plus a hair, and the rocket turns when the point it
        will be at in a third of a second is inside it - not when it already is,
        by which time it is too late. So it flies close to the rim on a window
        the planet fills, and anywhere it likes on one it does not. */
     let hard = false;                     // near the planet: it may turn harder
-    const e = planet();
+    const e = eNow;
     if (e) {
       const cx = e.cx, cy = e.cy;
       const reach = 1.08;
       // Far enough ahead that it can finish the turn: at four degrees a frame a
       // quarter turn costs about eighty pixels, so it looks a hundred and forty.
-      const soon = { x: at.x + Math.cos(head) * ROCKET_SPEED * 40,
-                     y: at.y + Math.sin(head) * ROCKET_SPEED * 40 };
+      const soon = { x: at.x + Math.cos(head) * speed * 40,
+                     y: at.y + Math.sin(head) * speed * 40 };
       if (howFarIn(at, e) < reach || howFarIn(soon, e) < reach) {
         hard = true;
         /* Round the planet, not out of it: inside its reach the rocket aims
@@ -1438,8 +1466,8 @@ function flyRocket(el) {
     // or it would be over Saturn before it had finished turning away.
     const rate = (hard ? 4 : ROCKET_RATE) * Math.PI / 180 * dt;
     head += Math.max(-rate, Math.min(rate, off));
-    at.x += Math.cos(head) * ROCKET_SPEED * dt;
-    at.y += Math.sin(head) * ROCKET_SPEED * dt;
+    at.x += Math.cos(head) * speed * dt;
+    at.y += Math.sin(head) * speed * dt;
 
     /* The steering is what makes it go round; this is what makes it certain.
        Whatever the window and the planet are sized at, and whatever it was
