@@ -677,11 +677,22 @@ function redrawLines() {
     if (!host || host.hidden || !host.isConnected) continue;
     const box = host.getBoundingClientRect();
     if (!box.width || !box.height) continue;   // hidden on narrow screens
+    /* The cell first, because the boxes are read against it. Both the box and
+       the panel it sits in are measured off the screen, and while the panel is
+       sliding those two numbers are a fraction of a pixel out of step with each
+       other from one frame to the next - not enough to see on a box, but enough
+       to send an edge across a cell boundary and back, which had the heads on
+       the runs jumping a row on every frame of an opening. The boxes stand on
+       whole cells (spaceCards), so reading them to the nearest one is both the
+       truth and steady. */
+    const cell = cellSize(host.querySelector('.dev-lines'));
+    const cw = cell ? cell.cw : 6, ch = cell ? cell.ch : 10;
     const rect = (el) => {
       const q = el.getBoundingClientRect();
-      return { l: q.left - box.left, r: q.right - box.left,
-               t: q.top - box.top, b: q.bottom - box.top,
-               cx: q.left + q.width / 2 - box.left, cy: q.top + q.height / 2 - box.top };
+      const onGrid = (v, step) => Math.round(v / step) * step;
+      const l = onGrid(q.left - box.left, cw), r = onGrid(q.right - box.left, cw);
+      const t = onGrid(q.top - box.top, ch), b = onGrid(q.bottom - box.top, ch);
+      return { l, r, t, b, cx: (l + r) / 2, cy: (t + b) / 2 };
     };
     const a = rect(edge.a), b = rect(edge.b);
     /* An end is snapped to the last whole cell outside its box, not to a couple
@@ -690,8 +701,6 @@ function redrawLines() {
        as off it - and the box's ground is painted over the runs, which is what
        ate the head above the Acer. Snapped this way an end is always clear, and
        never further off than the one cell it needs. */
-    const g = gridFor(host.querySelector('.dev-lines'));
-    const cw = g ? g.cw : 6, ch = g ? g.ch : 10;
     /* A head sits in the cell against the box it points at - the same on all four
        sides, which is what makes the three of them read as one hand. The boxes
        stand on whole cells (spaceCards puts them there), so "the cell against the
