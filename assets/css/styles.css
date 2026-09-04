@@ -42,7 +42,14 @@
      ship with the constellation. */
   --font-head:  "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
   --font-body:  var(--font-head);
-  --font-mono:  ui-monospace, "SF Mono", "SFMono-Regular", "Cascadia Mono", Menlo, Consolas, monospace;
+  /* Named faces before the generics, and every one of them chosen for covering
+     Latin Extended - the boxes on this page are drawn character by character, so
+     ONE glyph coming from a fallback face is one cell of a different width, and
+     the frame steps sideways from there down. That is what the Turkish and
+     Polish pages looked like on a phone whose `ui-monospace` stops at ASCII. */
+  --font-mono:  "Cascadia Mono", Consolas, "SF Mono", "SFMono-Regular", Menlo,
+                "Noto Sans Mono", "Roboto Mono", "Droid Sans Mono", "DejaVu Sans Mono",
+                "Liberation Mono", ui-monospace, monospace;
 
   --line:        rgba(201,102,58,.13);
   --line-strong: rgba(201,102,58,.26);
@@ -305,14 +312,14 @@ body:not(.on-saturn) .edge-right{ display:none; }
      down to about a third of the map's - set any larger and the rings run off
      both edges, which reads as a planet you are standing on rather than one far
      off. Bold, because a 400 weight at six pixels is half a glyph. */
-  .gate-saturn{ left:50%; transform:translate(-50%, -50%); opacity:.3;
+  .gate-saturn{ left:50%; transform:translate(-50%, -50%); opacity:.38;
                 font-size:clamp(5px, 1.7vw, 9px); font-weight:700; }
   /* No halo on the phone. A 16px glow around a six-pixel character is wider than
      the character, so in dark the rows ran into each other and the planet came
      out as a smudge - the light half stayed crisp because its shadow is fainter
      and its ink sits harder on the ground. Same picture in both now: the glyphs
      ordered in their rows, and the ink lifted to make up for the halo it lost. */
-  :root[data-theme="dark"] .gate-saturn{ text-shadow:none; opacity:.44; }
+  :root[data-theme="dark"] .gate-saturn{ text-shadow:none; opacity:.54; }
 }
 /* The mark is one of the corner boxes; app.js draws it. It is a link to the
    owner's page, so the corner takes clicks again - the block around it does not,
@@ -549,6 +556,13 @@ a.node:hover{ color:var(--amber); }
      less the gap between the columns and the air at either edge, and a couple of
      pixels of slack so a rounded cell cannot push a card over its column. */
   .list .node{ font-size:clamp(7px, 2.33vw, 12px); }
+  /* Nothing on this screen is painted on a plate. The sky is the ground here, so
+     the cards, the machines and the words on the runs are drawn ON it - a frame
+     and its letters, with the stars and the planet showing through the spaces
+     between them. (Up on the map a card's ground is what stops the connectors
+     running through its letters; there is no map down here, so nothing needs
+     one.) */
+  .list .node, .dev-card, .dev-word{ background:none; }
   /* The group's name over its cards, set the way the site's own name is over the
      airlock: the page's serif, tracked the same .28em, in the type colour rather
      than the faint one, and at the cards' own size. It is the one heading on the
@@ -711,7 +725,10 @@ a.node:hover{ color:var(--amber); }
   background:var(--ground);
   padding:0 .1rem;
 }
-.dev-word.l{ right:.42em; }
+/* The near word sits closer to the run than the far one: it is the one the eye
+   follows down to the head, and at .42 either side the pair read as two labels
+   rather than one written across the line. */
+.dev-word.l{ right:.24em; }
 .dev-word.r{ left:.42em; }
 
 .dev-nodes{ position:absolute; inset:0; }
@@ -789,11 +806,14 @@ a.node:hover{ color:var(--amber); }
     top:var(--bar-h); bottom:0;
   }
   .devices:not(.in){ transform:translateY(100%); opacity:1; }
-  /* The machines' page and the projects' page ride up together when the machines
-     are asked for from the sky - both live in the same box - so the cards were
-     showing underneath on the way up. The list stands down while the machines
-     are the page on show. */
-  body.on-hw .list{ visibility:hidden; }
+  /* The machines' page and the projects' page live in the one box, so asking for
+     the machines from the sky brings both up together and the cards were showing
+     underneath on the way. The list is put below the bottom edge while the
+     machines are the page on show - and it comes back up from there, so leaving
+     them is the same move as arriving anywhere else. Down is instant (nothing to
+     watch, the machines are coming up over it); up is the crossing. */
+  .list{ transition:transform .56s var(--ease); }
+  body.on-hw .list{ transform:translateY(100%); visibility:hidden; transition:none; }
   /* No frame and no name on the page: the whole screen is the panel here, so a
      rectangle drawn round the edge of it is a rectangle round the screen, and the
      word over it names a page you pressed a button called Hardware to get to.

@@ -462,6 +462,22 @@ function wrapText(text, cols) {
   return out;
 }
 
+/* Badges break between badges, never inside one. wrapText breaks on spaces, and
+   a badge is two words in most languages - Herkese açık, Na żywo, Öffentlich -
+   so a row that did not fit came apart in the middle of a word and left `[Na`
+   over `żywo]`. English never showed it: its three badges fit one row. */
+function packBadges(badges, cols) {
+  const out = [];
+  let line = '';
+  for (const badge of badges) {
+    if (!line) line = badge;
+    else if (line.length + 1 + badge.length <= cols) line += ' ' + badge;
+    else { out.push(line); line = badge; }
+  }
+  if (line) out.push(line);
+  return out;
+}
+
 /* Pad a group to its own widest line, so the frame centres the block while the
    lines inside it stay left-aligned with each other - what a spec list wants. */
 const padBlock = (lines) => {
@@ -507,7 +523,7 @@ function fillNode(el, item) {
   if (item.live) badges.push('[' + t('live') + ']');
   const lines = wrapText(item.title, cols);
   if (item.desc) lines.push('', ...wrapText(t(item.desc), cols));
-  if (badges.length) lines.push('', ...wrapText(badges.join(' '), cols));
+  if (badges.length) lines.push('', ...packBadges(badges, cols));
   el.textContent = asciiBox(lines, cols, hub ? {} : { rows: NODE_ROWS });
 }
 
