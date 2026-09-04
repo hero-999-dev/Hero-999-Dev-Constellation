@@ -215,13 +215,13 @@ body:not(.on-saturn) .edge-right{ display:none; }
    block keeps its proportions instead of holding one pixel size on every screen.
    They credit the ASCII the airlock is drawn from, so they are shown with it;
    the map's right-hand side belongs to the hardware rail. */
-/* Lifted by one line of the corner type: the signature opposite is a drawn box
-   and its word is the MIDDLE of three rows, so with the two boxes' bottom edges
-   level the word sat a whole line above the credits' last line. Level is what
-   the eye reads across the bottom of the page, so it is the two lines of type
-   that are lined up, not the boxes they sit in. */
+/* Lifted by half a line of the corner type: the signature opposite is a drawn
+   box whose word is the MIDDLE of three rows, so with the two bottom edges level
+   the word sat a line above the credits' last line - and lifted the whole line,
+   the credits then sat above the box's bottom rule. Half is where the last line
+   of the credits reads level with the rule the signature stands on. */
 .gate-insp{
-  position:absolute; right:var(--corner); bottom:calc(var(--corner) + var(--chrome-font)); z-index:21;
+  position:absolute; right:var(--corner); bottom:calc(var(--corner) + var(--chrome-font) * .5); z-index:21;
   display:flex; flex-direction:column; align-items:flex-end; text-align:right;
   font-size:clamp(9px, .78vw, 13px); gap:.4em;
 }
@@ -234,7 +234,9 @@ body:not(.on-saturn) .edge-right{ display:none; }
   text-decoration:none; border-bottom:1px solid var(--line-strong); padding-bottom:1px;
   transition:color .18s var(--ease), border-color .18s var(--ease);
 }
-.gate-insp a:hover{ color:var(--terra); border-color:var(--terra); }
+/* Amber under the pointer, the way every other thing you can press on this page
+   answers - the credits were the one place that lit a different colour. */
+.gate-insp a:hover{ color:var(--amber); border-color:var(--amber); }
 /* The credit line under the log - quieter than the links, and not one of them. */
 .gate-insp-note{
   margin:.8em 0 0; font-family:var(--font-mono); font-size:.86em;
@@ -558,14 +560,19 @@ a.node:hover{ color:var(--amber); }
     color:var(--brown);
     margin:.2rem 0 .5rem; text-align:center;
   }
+  /* A name that stands for a repository is a link, the way the ring names are up
+     on the map - and it answers the pointer the way everything else here does. */
+  a.branch-head{ cursor:pointer; transition:color .14s var(--ease); }
+  a.branch-head:hover{ color:var(--amber); }
+  a.branch-head:active{ filter:brightness(1.25); }
+  /* No padding of its own: the group is a column, and its name has to start at
+     the same height as the name over the column beside it. */
+  .branch{ padding:0; margin-bottom:.5rem; }
   /* A repo card is an <a>, so a leaf is inline until told otherwise - the first
      one in a group flowed onto the end of the group's heading, and margin-top
      did nothing. Shrunk to its own drawn box, so the auto margins can centre it. */
   .leaf{ display:block; position:static; transform:none;
          width:max-content; margin:.3rem auto 0; }
-  /* No side padding: the group is a column of its own now, and a card is as wide
-     as the column - pinched in either side it hung out of its own box. */
-  .branch{ padding:.5rem 0; margin-bottom:.5rem; }
   /* The combined pill is the wide screen's: down here the projects and the
      machines are two pages and take a pill each - see the phone block at the
      end of the file. */
@@ -740,8 +747,12 @@ a.node:hover{ color:var(--amber); }
    rather than over the planet. */
 @media (max-width: 860px){
   .gate, body.on-saturn .gate{ transform:none; }
-  .gate{ visibility:hidden; }
-  body.on-saturn .gate{ visibility:visible; }
+  /* The sky is not a face down here, it is the ground every face stands on: the
+     planet keeps turning, the streaks keep falling and the ship keeps crossing
+     behind all three pages, and pressing a button moves only what is in front of
+     them. What DOES belong to the home page is the credits - they name the ASCII
+     the planet is drawn from, and on the pages the column wants the room. */
+  body:not(.on-saturn) .gate-insp{ visibility:hidden; }
 
   .wrap, body.on-saturn .wrap{ transform:translateY(100%); }
   /* The whole width down here: the gutter either side is a wide screen's
@@ -769,13 +780,13 @@ a.node:hover{ color:var(--amber); }
      the screen, up from below like the projects and over them. Its own ground,
      because the list is still laid out behind it. No display here on purpose -
      the panel is hidden until it is first asked for, and [hidden] has to win. */
-  /* Up against the bar and down to the bottom edge: the list is still laid out
-     behind this, and any gap at either end is a strip of it showing through -
-     its scrollbar above, the top of a card below. */
+  /* Up against the bar and down to the bottom edge. No ground of its own: the
+     list behind it is stood down while this is the page on show (below), so
+     there is nothing to cover - and a sheet of ground here would take the sky
+     out with it. */
   .stage .devices{
     left:0; right:0; width:auto;
     top:var(--bar-h); bottom:0;
-    background:var(--ground);
   }
   .devices:not(.in){ transform:translateY(100%); opacity:1; }
   /* The machines' page and the projects' page ride up together when the machines

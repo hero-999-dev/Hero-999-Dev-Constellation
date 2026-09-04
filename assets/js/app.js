@@ -850,9 +850,24 @@ function renderList() {
   const families = document.createElement('div');
   families.className = 'col';
   list.append(singles, families);
-  // Up on the map the page's own repository is the outer ring; there is no ring
-  // down here, so it leads the list instead.
-  singles.appendChild(leafOf(SELF));
+  /* A name over a column, set the way the names on the map's frames are set. It
+     is a link where it stands for a repository, exactly as the ring names are -
+     the name IS the link, with no box around it.
+     Uppercased by the stylesheet, and `text-transform` follows the element's
+     language: in Turkish the i of Pixel and of Constellation comes back dotted.
+     Both are proper nouns in every locale, so they are written as ones. */
+  const columnName = (text, href) => {
+    const el = document.createElement(href ? 'a' : 'span');
+    el.className = 'branch-head';
+    el.lang = 'en';
+    el.textContent = text;
+    if (href) { el.href = href; el.target = '_blank'; el.rel = 'noopener'; }
+    return el;
+  };
+  /* Up on the map the page's own repository is the outer ring - the name over
+     everything, with no card of its own. Down here it is the name over the
+     column of single repositories, and it carries the same link. */
+  singles.appendChild(columnName(SELF.title, GH(SELF.repo)));
   for (const branch of BRANCHES) {
     if (!branch.children) {
       singles.appendChild(leafOf(branch));
@@ -860,14 +875,9 @@ function renderList() {
     }
     const box = document.createElement('section');
     box.className = 'branch';
-    const head = document.createElement('span');
-    head.className = 'branch-head';
-    head.textContent = branch.ring || branch.title;   // the ring's name is the group's name
-    // Uppercased by the stylesheet, and `text-transform` follows the element's
-    // language: in Turkish the i of Pixel comes back dotted. A proper noun in
-    // every locale, so it is written as one.
-    head.lang = 'en';
-    box.appendChild(head);
+    // The ring's name is the group's name; the group has no repository of its
+    // own, so this one is a name and not a link.
+    box.appendChild(columnName(branch.ring || branch.title));
     for (const child of branch.children) box.appendChild(leafOf(child));
     families.appendChild(box);
   }
@@ -1773,8 +1783,10 @@ function inkBox() {
 
 /* The planet keeps its size when it is off to the left, so "is it on show" is
    the class the switch sets, not a measurement. The sky it turns against is
-   behind both faces now and always on show, so only the planet asks. */
-const planetShowing = () => document.body.classList.contains('on-saturn');
+   behind both faces now and always on show, so only the planet asks.
+   On a phone the planet is part of that sky rather than one of the faces - it
+   stays where it is behind all three pages - so there it is always turning. */
+const planetShowing = () => narrow() || document.body.classList.contains('on-saturn');
 
 const SHOT_RAMP = '.,-~:;=!*#';   // the planet's ramp, faint tail to bright head
 const SHOT_TAIL = 14;             // cells of trail behind the head
