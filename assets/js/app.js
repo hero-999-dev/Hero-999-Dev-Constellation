@@ -428,23 +428,7 @@ function initTheme() {
    here needs: straight runs, a rectangle, and a word written into an edge. The
    cell is measured rather than assumed - the mono face is whatever the system
    gave us, and every box on the page is spaced by it. */
-/* The two pens a grid can be drawn with.
-   ASCII is the page's own hand - a dash and an upright, the same characters the
-   cards' frames are made of. The dash is drawn short of its cell in every mono
-   face, so a run of them reads as a dashed line while a run of uprights reads as
-   a solid one; on the frames that is the look, on a connector it is not.
-   The box-drawing set is made to tile: its pieces meet across the cell edge, so
-   a run comes out as one line whichever way it goes. It is used for the runs in
-   the hardware panel and nowhere else - every mono face on the stack carries the
-   set, because terminals are what these characters were cut for. */
-const ASCII_PEN = { h: '-', v: '|', cross: '+', corner: null };
-const SOLID_PEN = {
-  h: '─', v: '│', cross: '┼',
-  // Which two sides the corner reaches out to, in the order they are asked for.
-  corner: { ur: '└', ru: '└', ul: '┘', lu: '┘', dr: '┌', rd: '┌', dl: '┐', ld: '┐' },
-};
-
-function gridFor(pre, pen = ASCII_PEN) {
+function gridFor(pre) {
   if (!pre) return null;
   const w = pre.clientWidth, h = pre.clientHeight;
   if (!w || !h) return null;
@@ -465,15 +449,11 @@ function gridFor(pre, pen = ASCII_PEN) {
     if (r < 0 || r >= rows || c < 0 || c >= cols) return;
     const was = cells[r][c];
     // A crossing is a crossing: never let a straight overwrite a corner.
-    if (!force && ch === pen.h && (was === pen.v || was === pen.cross)) { cells[r][c] = pen.cross; return; }
-    if (!force && ch === pen.v && (was === pen.h || was === pen.cross)) { cells[r][c] = pen.cross; return; }
+    if (!force && ch === '-' && (was === '|' || was === '+')) { cells[r][c] = '+'; return; }
+    if (!force && ch === '|' && (was === '-' || was === '+')) { cells[r][c] = '+'; return; }
     cells[r][c] = ch;
   };
   const cell = (pt) => ({ c: Math.round(pt.x / cw), r: Math.round(pt.y / chh) });
-
-  // Which way the second cell lies from the first.
-  const side = (from, to) =>
-    from.c === to.c ? (to.r > from.r ? 'd' : 'u') : (to.c > from.c ? 'r' : 'l');
 
   const run = (points, opts = {}) => {
     const pts = points.map(cell);
@@ -481,18 +461,12 @@ function gridFor(pre, pen = ASCII_PEN) {
       const from = pts[i], to = pts[i + 1];
       if (from.c === to.c) {
         const step = to.r > from.r ? 1 : -1;
-        for (let r = from.r; r !== to.r + step; r += step) put(from.c, r, pen.v);
+        for (let r = from.r; r !== to.r + step; r += step) put(from.c, r, '|');
       } else {
         const step = to.c > from.c ? 1 : -1;
-        for (let c = from.c; c !== to.c + step; c += step) put(c, from.r, pen.h);
+        for (let c = from.c; c !== to.c + step; c += step) put(c, from.r, '-');
       }
-      // A turn reaches out to the two sides it came from and goes to. With a pen
-      // that has corners the piece is the corner; with one that has not it is
-      // the crossing, which is what a plus has always stood in for.
-      if (i) {
-        const bend = pen.corner && pen.corner[side(from, pts[i - 1]) + side(from, to)];
-        put(from.c, from.r, bend || pen.cross, !!bend);
-      }
+      if (i) put(from.c, from.r, '+');
     }
     // Heads point the way the last (or first) segment runs.
     const head = (at, from) => {
@@ -529,9 +503,7 @@ function gridFor(pre, pen = ASCII_PEN) {
 }
 
 function paintLines(pre, routes) {
-  // The machines' runs are the one place drawn with the solid pen - see the two
-  // pens above. The frames around them, and the whole map, keep the ASCII hand.
-  const g = gridFor(pre, SOLID_PEN);
+  const g = gridFor(pre);
   if (!g) return;
   for (const route of routes) g.run(route.points, route);
   g.flush();
@@ -1475,8 +1447,14 @@ function spaceCards() {
   const grid = !gliding && cell ? cell : null;
   let y = edge;
   if (grid) {
-    y = Math.floor(edge / grid.ch) * grid.ch;
     gap = Math.floor(gap / grid.ch) * grid.ch;
+    /* What the whole column comes to once the gaps are whole cells, centred in
+       what there is. Started at the top inset instead, every cell the gaps gave
+       up piled at the bottom - the first box stood against the frame's top rule
+       and the last one had an empty band under it. */
+    const stack = total + gap * (cards.length - 1);
+    const slack = Math.max(0, height - stack);
+    y = Math.min(Math.round(slack / 2 / grid.ch), Math.floor(slack / grid.ch)) * grid.ch;
   }
   const stageBox = stage.getBoundingClientRect();
   cards.forEach((card, i) => {
@@ -1488,11 +1466,14 @@ function spaceCards() {
     // of a cell off the grid it was just snapped to.
     card.style.top = (y + tall[i] / 2 + nudge) + 'px';
     if (grid) {
-      // Sideways too, so the head that arrives in a box's side stands the same
-      // distance off it as the ones that arrive at its top and bottom.
+      /* Sideways too, so the head that arrives in a box's side stands the same
+         distance off it as the ones that arrive at its top and bottom - and held
+         inside the stage, because rounding to the nearest column can put a box
+         that was already against the edge over the frame's own rule. */
       const box = card.getBoundingClientRect();
-      const left = Math.round((box.left - stageBox.left) / grid.cw) * grid.cw;
-      card.style.left = (left + box.width / 2) + 'px';
+      const room = Math.floor((stageBox.width - box.width) / grid.cw) * grid.cw;
+      const want = Math.round((box.left - stageBox.left) / grid.cw) * grid.cw;
+      card.style.left = (Math.max(0, Math.min(want, room)) + box.width / 2) + 'px';
     }
     y += tall[i] + gap;
   });
