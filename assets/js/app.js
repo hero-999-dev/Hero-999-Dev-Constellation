@@ -430,7 +430,11 @@ function initTheme() {
    gave us, and every box on the page is spaced by it. */
 function gridFor(pre) {
   if (!pre) return null;
-  const w = pre.clientWidth, h = pre.clientHeight;
+  /* The measured box, not clientWidth: that one comes back as a whole number,
+     and a box set to an exact number of cells then reads a fraction of a cell
+     short - which costs the last column, the one the right-hand rule stands in. */
+  const seen = pre.getBoundingClientRect();
+  const w = seen.width, h = seen.height;
   if (!w || !h) return null;
   const probe = document.createElement('span');
   probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre';
@@ -441,7 +445,11 @@ function gridFor(pre) {
   probe.remove();
   if (!cw || !chh) return null;
 
-  const cols = Math.max(1, Math.floor(w / cw)), rows = Math.max(1, Math.floor(h / chh));
+  /* A hair of tolerance on the division: a box set to a whole number of cells
+     measures back a few thousandths short of one, and a bare floor() then gave
+     up the last column - which is the one the frame's right-hand rule stands
+     in. */
+  const cols = Math.max(1, Math.floor(w / cw + 0.02)), rows = Math.max(1, Math.floor(h / chh + 0.02));
   const cells = [];
   for (let r = 0; r < rows; r++) cells.push(new Array(cols).fill(' '));
 
@@ -1275,7 +1283,16 @@ function paintDevFrame() {
   const lang = document.querySelector('.topbar-right .lang-btn');
   const cell = cellSize(frame);
   if (lang && cell) {
-    const right = layoutX(lang) + lang.offsetWidth - hostX;
+    /* Lined up on the STROKE, not on the box around it. An upright is inked in
+       the middle of its cell, and these two boxes are set in different sizes -
+       the bar's is the corner type, the frame's is the map's - so with their
+       edges level the two lines still stood four pixels apart. Where the bar's
+       last upright is inked is where the frame's right-hand one has to be, and
+       the panel's edge is worked back from that. */
+    const bar = barInk(lang), rule = barInk(frame);
+    const barRight = layoutX(lang) + lang.offsetWidth - hostX;
+    const inkAt = barRight - bar.advance + bar.right;         // the bar's own stroke
+    const right = inkAt + rule.advance - rule.right;          // the panel's edge that puts ours there
     const left = parseFloat(panel.style.left) || 0;
     const cols = Math.max(1, Math.round((right - left) / cell.cw));
     panel.style.left = (right - cols * cell.cw) + 'px';
@@ -1423,6 +1440,18 @@ const DEV_LABEL_AIR = 4;                     // clearance left round a label
 /* The stage's height last time the boxes were shared out. Whether it has moved
    since is what says if the grid can be used - see spaceCards. */
 let devStageH = 0;
+
+/* Where an upright's stroke falls inside its own cell, in the face and size an
+   element is set in: how wide the cell is, and how far the ink reaches from the
+   pen's own starting point. Two boxes drawn in different sizes line up on their
+   strokes, not on their edges - see paintDevFrame. */
+function barInk(el) {
+  const cs = getComputedStyle(el);
+  const pen = (barInk.pen ||= document.createElement('canvas').getContext('2d'));
+  pen.font = cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+  const m = pen.measureText('|');
+  return { advance: m.width, right: m.actualBoundingBoxRight };
+}
 
 /* One cell of the grid the runs are drawn into. The boxes are set against it, so
    that a head standing in the cell beside a box is the same distance off it on
