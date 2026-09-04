@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#1A1411">
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%2343301F'/><path d='M10 9v14M22 9v14M10 16h12' stroke='%23F6A03D' stroke-width='3.4' stroke-linecap='round'/></svg>">
-<link rel="stylesheet" href="assets/css/styles.css?v=202609041218">
+<link rel="stylesheet" href="assets/css/styles.css?v=202609041312">
 </head>
 <!-- The airlock is the face the page opens on, so the markup says so: without
      it the first paint is the map, and the switch to the airlock then plays as a
@@ -54,9 +54,14 @@
        centred over the whole bar. The map has its own Constellation on the outer
        ring, so this shows with the airlock. -->
   <div class="gate-top" lang="en">Constellation</div>
+  <!-- The language holds the right-hand corner and the theme stands one in from
+       it: the menu hangs off the corner it is hinged on, so the box it drops from
+       is the one at the end of the row. -->
   <div class="topbar-right">
     <button class="pill" id="devBtn" type="button" aria-expanded="false" aria-controls="devices"
             data-i18n="projectsHardware" data-box></button>
+    <button class="pill theme-btn" type="button" data-theme-toggle
+            aria-label="Switch between light and dark" data-box></button>
     <div class="lang-pick" data-site-lang>
       <button class="pill lang-btn" type="button" aria-haspopup="listbox" aria-expanded="false" data-box></button>
       <ul class="lang-menu" role="listbox" hidden>
@@ -66,8 +71,6 @@
         <li role="option" data-lang="de" tabindex="-1">Deutsch</li>
       </ul>
     </div>
-    <button class="pill theme-btn" type="button" data-theme-toggle
-            aria-label="Switch between light and dark" data-box></button>
   </div>
 </header>
 
@@ -103,6 +106,6 @@
   <h1 class="gate-mark" data-box="Hero Dev"></h1>
 </div>
 
-<script src="assets/js/app.js?v=202609041218"></script>
+<script src="assets/js/app.js?v=202609041312"></script>
 </body>
 </html>

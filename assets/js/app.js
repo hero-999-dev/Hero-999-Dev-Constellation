@@ -37,31 +37,11 @@ const ME = { id: 'me', title: 'Hero Dev', desc: OWNER, href: `https://github.com
    `desc` and the two category words in `lang` are I18N keys, not text. Keep every
    translation to ONE line: card height is pinned and feeds the ring geometry, so
    a second line is clipped rather than fitted. Check all four after editing. */
+/* Order is the stacked list's order on a phone; on the map it is only the order
+   the cards are drawn in, because every card carries its own place. The one
+   group comes last - it is three rows deep, and ahead of the single cards it was
+   most of the first screen. */
 const BRANCHES = [
-  {
-    ring: 'Pixel Pomo',
-    children: [
-      {
-        title: 'pixel_pomo',
-        desc: 'dPomo',
-        repo: 'pixel_pomo', lang: 'Dart', private: true,
-        x: 240, y: 272,
-      },
-      {
-        title: 'pixel-pomo-web',
-        desc: 'dWeb',
-        repo: 'pixel-pomo-web', lang: 'Flutter', private: false,
-        live: 'https://hero-999-dev.github.io/pixel-pomo-web/',
-        x: 240, y: 420,
-      },
-      {
-        title: 'pixel_pomo_art_kit',
-        desc: 'dKit',
-        repo: 'pixel_pomo_art_kit', lang: 'Python', private: false,
-        x: 240, y: 568,
-      },
-    ],
-  },
   {
     title: 'CubeDeck',
     desc: 'dCube',
@@ -97,6 +77,30 @@ const BRANCHES = [
     desc: 'dClaw',
     repo: 'ClaWus-Claude-Usage-Widget', lang: 'Desktop', private: true,
     x: 765, y: 683,
+  },
+  {
+    ring: 'Pixel Pomo',
+    children: [
+      {
+        title: 'pixel_pomo',
+        desc: 'dPomo',
+        repo: 'pixel_pomo', lang: 'Dart', private: true,
+        x: 240, y: 272,
+      },
+      {
+        title: 'pixel-pomo-web',
+        desc: 'dWeb',
+        repo: 'pixel-pomo-web', lang: 'Flutter', private: false,
+        live: 'https://hero-999-dev.github.io/pixel-pomo-web/',
+        x: 240, y: 420,
+      },
+      {
+        title: 'pixel_pomo_art_kit',
+        desc: 'dKit',
+        repo: 'pixel_pomo_art_kit', lang: 'Python', private: false,
+        x: 240, y: 568,
+      },
+    ],
   },
 ];
 
@@ -843,6 +847,10 @@ function renderList() {
     const head = document.createElement('span');
     head.className = 'branch-head';
     head.textContent = branch.ring || branch.title;   // the ring's name is the group's name
+    // Uppercased by the stylesheet, and `text-transform` follows the element's
+    // language: in Turkish the i of Pixel comes back dotted. A proper noun in
+    // every locale, so it is written as one.
+    head.lang = 'en';
     box.appendChild(head);
     for (const child of branch.children) box.appendChild(leafOf(child));
     list.appendChild(box);
@@ -927,22 +935,26 @@ function rebuildMap() {
    spaceCards() shares out the y and leaves the x alone, so these x values are
    what bends the straight line into a triangle. Array order is top-to-bottom,
    which is why the phone sits between the two laptops. */
+/* `xN` is the same triangle drawn for a phone, where the panel is a page across
+   the whole screen and the boxes are set large enough to read: pulled in from
+   .30/.76 to .36/.68, which is what leaves the laptops' left edge and the
+   phone's right edge each a little air at that size. */
 const DEVICES = [
   {
-    key: 'go', at: { x: 30, y: 12 }, w: '56%',
+    key: 'go', at: { x: 30, y: 12 }, xN: 36, w: '56%',
     name: 'Lenovo Legion Go',
     subKey: 'handheld', sub: '2023',
     specs: ['AMD Ryzen Z1 Extreme · 8C/16T', 'Radeon RDNA 3 (integrated)',
             '16 GB LPDDR5X-7500', '512 GB NVMe', '8.8" 2560×1600', 'Windows 11'],
   },
   {
-    key: 'phone', at: { x: 76, y: 50 }, w: '42%',
+    key: 'phone', at: { x: 76, y: 50 }, xN: 68, w: '42%',
     name: 'Motorola g23',
     subKey: 'phone', sub: '2023',
     specs: ['MediaTek Helio G85', '8 GB RAM · 128 GB', '6.5" 1600×720 90 Hz', 'Android 14'],
   },
   {
-    key: 'acer', at: { x: 30, y: 88 }, w: '56%',
+    key: 'acer', at: { x: 30, y: 88 }, xN: 36, w: '56%',
     name: 'Acer Swift 3',
     sub: 'SF314-511 · 2021',
     specs: ['Intel Core i5-1135G7 · 4C/8T', 'Iris Xe (integrated)',
@@ -1084,30 +1096,33 @@ function paintDevFrame() {
        whole screen rather than a column stood under its own button and cut to
        the height of the map's frame - and there is no map down here to be level
        with, so `siteRule` is never set either. Whatever the branch below wrote
-       is handed back, or a window dragged narrow would keep a rail's box. */
+       is handed back, or a window dragged narrow would keep a rail's box.
+       Nothing is drawn either: the frame round the edge of the screen and the
+       word over it are both off down here. */
     panel.style.left = panel.style.top = panel.style.bottom = panel.style.width = '';
     frame.style.fontSize = '';
-  } else {
-    if (!siteRule) return;
-    const hb = host.getBoundingClientRect();
-    const btn = document.getElementById('devBtn');
-    /* Sideways, in layout pixels rather than screen ones. The face this panel
-       belongs to is slid off to the right while the planet is up, and the bar it
-       is being lined up with is fixed and does not travel with it - measured on
-       screen, the offset came out to whatever the slide was, and the panel was
-       dragged back over the planet by it. Where a box sits in the layout is the
-       same on both faces, which is what `left` wants. */
-    const layoutX = (el) => { let x = 0; for (let n = el; n; n = n.offsetParent) x += n.offsetLeft; return x; };
-    if (btn && !btn.hidden) panel.style.left = (layoutX(btn) - layoutX(host)) + 'px';
-    panel.style.width = 'auto';
-    panel.style.top = (siteRule.top - hb.top) + 'px';
-    /* The bottom rule is a cell tall like any other row, so the box has to hold
-       it - and half a cell over, because the grid takes whole rows and a box
-       exactly 52 cells deep can measure as 51. The slack is under the last rule,
-       where nothing is drawn. */
-    panel.style.bottom = (hb.bottom - (siteRule.bottom + siteRule.ch * 1.5)) + 'px';
-    frame.style.fontSize = siteRule.font;
+    return;
   }
+  if (!siteRule) return;
+  const hb = host.getBoundingClientRect();
+  const btn = document.getElementById('devBtn');
+  /* Sideways, in layout pixels rather than screen ones. The face this panel
+     belongs to is slid off to the right while the planet is up, and the bar it
+     is being lined up with is fixed and does not travel with it - measured on
+     screen, the offset came out to whatever the slide was, and the panel was
+     dragged back over the planet by it. Where a box sits in the layout is the
+     same on both faces, which is what `left` wants. */
+  const layoutX = (el) => { let x = 0; for (let n = el; n; n = n.offsetParent) x += n.offsetLeft; return x; };
+  if (btn && !btn.hidden) panel.style.left = (layoutX(btn) - layoutX(host)) + 'px';
+  panel.style.width = 'auto';
+  panel.style.top = (siteRule.top - hb.top) + 'px';
+  /* The bottom rule is a cell tall like any other row, so the box has to hold
+     it - and half a cell over, because the grid takes whole rows and a box
+     exactly 52 cells deep can measure as 51. The slack is under the last rule,
+     where nothing is drawn. */
+  panel.style.bottom = (hb.bottom - (siteRule.bottom + siteRule.ch * 1.5)) + 'px';
+  frame.style.fontSize = siteRule.font;
+
   const g = gridFor(frame);
   if (!g) return;
   // Cut again only when the grid itself changed: this runs on every frame of a
@@ -1182,7 +1197,7 @@ function renderDevices() {
   for (const { item, lines, cols } of drafts) {
     const card = document.createElement('div');
     card.className = 'dev-card';
-    card.style.left = item.at.x + '%';
+    card.style.left = (narrow() && item.xN != null ? item.xN : item.at.x) + '%';
     card.style.top = item.at.y + '%';
     // spaceCards centres the three by height; a box can ask to ride a few px off
     // that (the phone reads better a touch below the go/acer midline).
@@ -1203,17 +1218,25 @@ function renderDevices() {
        label is anchored ON the run and the words are hung either side of that
        point, so what shows between them is the run's own upright - the label
        does not have to draw one, or be nudged until its own lines up. */
-    const label = document.createElement('span');
-    label.className = 'dev-label';
-    const parts = link.label.split('|');
-    const left = document.createElement('span');
-    left.className = 'dev-word l';
-    left.textContent = parts[0];
-    const right = document.createElement('span');
-    right.className = 'dev-word r';
-    right.textContent = parts[1] || '';
-    label.append(left, right);
-    nodes.appendChild(label);
+    /* On a phone there are two clear bands between the three boxes and three
+       labels wanting them: the straight run's is centred on the middle box and
+       lands across it. All three runs carry the same tailnet, so down there the
+       straight one - the one without an elbow - goes bare and the two that turn
+       keep the word. */
+    let label = null;
+    if (!narrow() || link.elbow) {
+      label = document.createElement('span');
+      label.className = 'dev-label';
+      const parts = link.label.split('|');
+      const left = document.createElement('span');
+      left.className = 'dev-word l';
+      left.textContent = parts[0];
+      const right = document.createElement('span');
+      right.className = 'dev-word r';
+      right.textContent = parts[1] || '';
+      label.append(left, right);
+      nodes.appendChild(label);
+    }
     EDGES.push({ a: made[link.from], b: made[link.to], ascii: true, head, head2, label,
                  elbow: link.elbow, host: stage, w: DW, h: DH,
                  labelDx: link.dx || 0, labelDy: link.dy || 0 });
