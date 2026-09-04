@@ -72,6 +72,11 @@
      holds them - see .ink. Translucent strokes double up where they cross. */
   --ink-thin:   #C9663A;
   --ink-alpha:  .32;
+
+  /* The colour every drawn box is inked in. A variable rather than a rule per
+     theme: written as `[data-theme="dark"] .pill` it outweighed `.pill:hover`,
+     and nothing in the dark half answered the pointer. */
+  --box-ink:    var(--terra);
 }
 
 :root[data-theme="dark"]{
@@ -105,6 +110,8 @@
 
   --ink-thin:   #F6A03D;
   --ink-alpha:  .34;
+
+  --box-ink:    var(--orange);
 }
 
 *,*::before,*::after{ box-sizing:border-box; }
@@ -195,11 +202,12 @@ body.boot .gate, body.boot .wrap{ transition:none; }
      same sky. Nothing dimmed: a faded 700 read as neither. */
   font-family:var(--font-mono); font-weight:400;
   font-size:clamp(8px, 1.75vw, 18px); line-height:1;
-  color:var(--terra); text-shadow:0 0 14px rgba(122,84,48,.22);
+  color:var(--box-ink); text-shadow:0 0 14px rgba(122,84,48,.22);
   cursor:pointer;
   transition:color .18s var(--ease);
 }
-:root[data-theme="dark"] .edge{ color:var(--orange); text-shadow:0 0 16px rgba(232,129,60,.3); }
+/* The halo only - the ink is the variable above, so the hover below still wins. */
+:root[data-theme="dark"] .edge{ text-shadow:0 0 16px rgba(232,129,60,.3); }
 .edge:hover, .edge:focus-visible{ color:var(--amber); }
 .edge-right{ right:0; }
 .edge-left{ left:0; }
@@ -401,17 +409,13 @@ body:not(.on-saturn) .topbar .gate-top{ display:none; }
   white-space:pre;
   line-height:1;
   letter-spacing:0;
-  color:var(--terra);
+  color:var(--box-ink);
   background:none;
   border:0;
   border-radius:0;
   box-shadow:none;
   padding:0;
 }
-:root[data-theme="dark"] .pill,
-:root[data-theme="dark"] .gate-mark,
-:root[data-theme="dark"] .node,
-:root[data-theme="dark"] .dev-card{ color:var(--orange); }
 /* Pressing anything says so: the same lift and lightening on every control, so
    the ones that do not latch still answer the click. */
 /* The bar's own size. It is the corner size everywhere there is room for it;

@@ -684,8 +684,14 @@ function redrawLines() {
        never further off than the one cell it needs. */
     const g = gridFor(host.querySelector('.dev-lines'));
     const cw = g ? g.cw : 6, ch = g ? g.ch : 10;
-    const above = (y) => (Math.floor(y / ch) - 1) * ch;
-    const below = (y) => Math.ceil(y / ch) * ch;
+    /* One clear cell between a box and the head that points at it, at both ends
+       of a run. The boxes stand on whole cells (spaceCards puts them there), so
+       one cell off the edge is the same distance whichever edge it is - measured
+       from the row above and the row below it came out a fraction of a cell
+       different at each end, and the two heads sat at visibly different heights
+       off their boxes. */
+    const above = (y) => (Math.ceil(y / ch) - 2) * ch;
+    const below = (y) => (Math.floor(y / ch) + 1) * ch;
     const rightOf = (x) => Math.ceil(x / cw) * cw;
     let points, labelAt;
 
@@ -1385,13 +1391,29 @@ function renderDevices() {
 const DEV_EDGE = 10;
 const DEV_LABEL_AIR = 4;                     // clearance left round a label
 
+/* The height of one cell of the grid the runs are drawn into. The boxes are set
+   against it, so a head one cell off a box is the same distance off it wherever
+   the box happens to be. */
+function cellHeight(pre) {
+  if (!pre) return 0;
+  const probe = document.createElement('span');
+  probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre';
+  probe.textContent = '0';
+  pre.appendChild(probe);
+  const tall = probe.getBoundingClientRect().height;
+  probe.remove();
+  return tall;
+}
+
 function spaceCards() {
   const stage = document.querySelector('.dev-stage');
   if (!stage) return;
   const height = stage.clientHeight;
   const cards = [...stage.querySelectorAll('.dev-card')];
   if (!height || cards.length < 2) return;
-  const tall = cards.map(c => c.offsetHeight);
+  // The real height, not the rounded one: a box is a whole number of cells and
+  // offsetHeight loses the fraction, which the spacing below then carries.
+  const tall = cards.map(c => c.getBoundingClientRect().height);
   const total = tall.reduce((a, b) => a + b, 0);
   // The label itself is a point with no height now; the room a label needs is
   // the height of one of its words.
@@ -1401,12 +1423,20 @@ function spaceCards() {
   const free = height - total - edge * 2;
   if (free < 0) return;                      // too short to space; leave the fallback
   const gap = free / (cards.length - 1);
+  // Snapped to the grid the runs are drawn into: a box that starts on a whole
+  // cell ends on one too (it is a whole number of lines tall), so every head has
+  // the same clearance from the box it points at - see above() and below().
+  const ch = cellHeight(stage.querySelector('.dev-lines'));
+  const snap = (v) => (ch > 0 ? Math.round(v / ch) * ch : v);
   let y = edge;
   cards.forEach((card, i) => {
     // The nudge shifts only where this card is drawn, not the running cursor, so
     // the boxes below it keep their places and its own gaps trade instead.
     const nudge = parseFloat(card.dataset.nudge) || 0;
-    card.style.top = ((y + tall[i] / 2 + nudge) / height) * 100 + '%';
+    // In pixels, not a share of the stage: a percentage is resolved against a
+    // height that has already been rounded, and the box came to rest a fraction
+    // of a cell off the grid it was just snapped to.
+    card.style.top = (snap(y) + tall[i] / 2 + nudge) + 'px';
     y += tall[i] + gap;
   });
 }
