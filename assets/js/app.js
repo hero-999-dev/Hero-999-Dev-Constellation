@@ -346,16 +346,62 @@ function fitBar() {
   const pills = [...bar.querySelectorAll('.pill')].filter((p) => p.offsetParent);
   if (narrow() && pills.length) {
     const cs = getComputedStyle(bar);
-    const gap = parseFloat(cs.columnGap) || 0;
+    const gaps = (parseFloat(cs.columnGap) || 0) * (pills.length - 1);
     const room = bar.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-    const wide = pills.reduce((n, p) => n + p.getBoundingClientRect().width, 0) + gap * (pills.length - 1);
-    // A hair under, so a rounded cell cannot be the thing that breaks the row.
-    if (room > 0 && wide > room) {
-      const size = parseFloat(getComputedStyle(pills[0]).fontSize) * (room / wide) * 0.985;
+    /* Fitted to the LONGEST language, not the one on show. The size is what
+       decides how tall a three-row box comes out, so fitting it to the current
+       language made the boxes shorter in Polish than in English, and the top and
+       bottom of every box moved when the language changed. One size for all
+       four: it is the widest of them that has to hold.
+       Tried rather than solved, because a character's width is not exactly
+       proportional to the type size - the advance is rounded to the raster, and
+       a size worked out in one step came up a few per cent short. Each pass
+       measures a cell at the size on the element and comes down from there;
+       three is plenty. */
+    let size = parseFloat(getComputedStyle(pills[0]).fontSize);
+    const worst = Math.max(...Object.keys(I18N).map(barCells));
+    for (let pass = 0; pass < 4; pass++) {
+      const cell = cellWidth(bar, pills[0]);
+      const need = worst * cell + gaps;
+      if (!(cell > 0) || !(room > 0) || need <= room) break;
+      size *= (room / need) * 0.99;
       root.style.setProperty('--pill-font', size.toFixed(2) + 'px');
     }
   }
   measureBar();   // the row's height goes with its type size
+}
+
+/* How wide one character comes out in the bar's own face at the size it is
+   currently set in. Measured off a probe rather than off the boxes: every box is
+   a whole number of characters, and what one of them comes out at must not
+   depend on which language is on show - divided out of the boxes, each
+   language's own rounding came with it. */
+function cellWidth(bar, pill) {
+  const face = getComputedStyle(pill);
+  const probe = document.createElement('span');
+  probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre';
+  probe.style.fontFamily = face.fontFamily;
+  probe.style.fontSize = face.fontSize;
+  probe.style.fontWeight = face.fontWeight;
+  probe.textContent = '0'.repeat(40);
+  bar.appendChild(probe);
+  const wide = probe.getBoundingClientRect().width / 40;
+  probe.remove();
+  return wide;
+}
+
+/* How many characters the five boxes come to in one language, frames included.
+   A drawn box is its word plus FOUR: paintChrome() gives asciiBox a column count
+   of word + 2 - a space either side - and the box then puts an upright on each
+   end of that. The language list is the same everywhere, so the language button
+   is the longest name padded plus " v"; the theme button is padded to the longer
+   of its two words - see chromeLabel. */
+function barCells(code) {
+  const T = (key) => (I18N[code] && I18N[code][key]) || I18N.en[key] || key;
+  const words = [T('home'), T('projects'), T('hardware')];
+  words.push(' '.repeat(Math.max(T('dark').length, T('light').length)));
+  words.push(' '.repeat(7 + 2));               // "English"/"Deutsch" + " v"
+  return words.reduce((n, word) => n + word.length + 4, 0);
 }
 
 function initTheme() {
@@ -1012,13 +1058,15 @@ function rebuildMap() {
    spaceCards() shares out the y and leaves the x alone, so these x values are
    what bends the straight line into a triangle. Array order is top-to-bottom,
    which is why the phone sits between the two laptops. */
-/* `xN` is the same triangle drawn for a phone, where the panel is a page across
-   the whole screen and the boxes are set large enough to read: pulled in from
-   .30 to .34, which is what keeps the straight run's label clear of the phone
-   box at that size. The phone keeps its own .76 - see .dev-card in the CSS. */
+/* `at.x` is a card's centre across the panel. The two laptops stand at .34 and
+   the phone at .76: near enough the middle for a 34-character box to keep both
+   its edges inside the panel, and far enough apart that the phone's run has room
+   to turn into a laptop's side rather than arriving along its own upright. The
+   type is set from the panel's own width (see .dev-card), so those two numbers
+   hold at any size the panel is drawn at, on a phone or beside the map. */
 const DEVICES = [
   {
-    key: 'go', at: { x: 30, y: 12 }, xN: 34, w: '56%',
+    key: 'go', at: { x: 34, y: 12 }, w: '56%',
     name: 'Lenovo Legion Go',
     subKey: 'handheld', sub: '2023',
     specs: ['AMD Ryzen Z1 Extreme · 8C/16T', 'Radeon RDNA 3 (integrated)',
@@ -1031,7 +1079,7 @@ const DEVICES = [
     specs: ['MediaTek Helio G85', '8 GB RAM · 128 GB', '6.5" 1600×720 90 Hz', 'Android 14'],
   },
   {
-    key: 'acer', at: { x: 30, y: 88 }, xN: 34, w: '56%',
+    key: 'acer', at: { x: 34, y: 88 }, w: '56%',
     name: 'Acer Swift 3',
     sub: 'SF314-511 · 2021',
     specs: ['Intel Core i5-1135G7 · 4C/8T', 'Iris Xe (integrated)',
@@ -1279,7 +1327,7 @@ function renderDevices() {
   for (const { item, lines, cols } of drafts) {
     const card = document.createElement('div');
     card.className = 'dev-card';
-    card.style.left = (narrow() && item.xN != null ? item.xN : item.at.x) + '%';
+    card.style.left = item.at.x + '%';
     card.style.top = item.at.y + '%';
     // spaceCards centres the three by height; a box can ask to ride a few px off
     // that (the phone reads better a touch below the go/acer midline).

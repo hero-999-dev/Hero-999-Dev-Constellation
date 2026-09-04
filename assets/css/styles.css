@@ -696,14 +696,18 @@ a.node:hover{ color:var(--amber); }
 }
 :root[data-theme="dark"] .dev-frame{ color:var(--orange); }
 
-/* The little map: three boxes the connector engine can drag and spring back. */
-.dev-stage{ position:relative; flex:1; min-height:0; margin:.6rem .5rem .5rem; }
+/* The little map: three boxes the connector engine can drag and spring back.
+   A container, because everything in it is measured against IT rather than
+   against the window: the panel is a fixed width, so type set from vw grew when
+   the window did and the boxes walked out through the frame. */
+.dev-stage{ position:relative; flex:1; min-height:0; margin:.6rem .5rem .5rem;
+            container-type:inline-size; }
 /* The runs between the machines, drawn character by character by paintLines()
    into a grid laid over the panel. Same face, ink and leading as the boxes it
    joins; it takes no clicks, so a card can be dragged straight through it. */
 .dev-lines{
   position:absolute; inset:0; margin:0; overflow:hidden;
-  font-family:var(--font-mono); font-size:clamp(8px, min(1vw, 1.75vh), 15px); font-weight:700; line-height:1;
+  font-family:var(--font-mono); font-size:clamp(8px, min(3.2cqw, 1.75vh), 15px); font-weight:700; line-height:1;
   white-space:pre; pointer-events:none; user-select:none;
   color:var(--terra);
 }
@@ -718,7 +722,7 @@ a.node:hover{ color:var(--amber); }
   position:absolute; width:0; height:0;
   transform:translate(-50%, -50%);
   font-family:var(--font-mono);
-  font-size:clamp(8px, min(1vw, 1.75vh), 15px); line-height:1.25;
+  font-size:clamp(8px, min(3.2cqw, 1.75vh), 15px); line-height:1.25;
   white-space:nowrap;
   color:var(--terra);
   pointer-events:none;
@@ -747,7 +751,7 @@ a.node:hover{ color:var(--amber); }
   /* The panel is as tall as the window lets it be, and three boxes have to fit
      in it with their labels: the type follows the shorter side, so a short
      window gets smaller boxes rather than boxes that spill out of the panel. */
-  font-size:clamp(8px, min(1vw, 1.75vh), 15px);
+  font-size:clamp(8px, min(3.2cqw, 1.75vh), 15px);
   background:var(--ground);
   pointer-events:none;
   user-select:none;
