@@ -684,15 +684,18 @@ function redrawLines() {
        never further off than the one cell it needs. */
     const g = gridFor(host.querySelector('.dev-lines'));
     const cw = g ? g.cw : 6, ch = g ? g.ch : 10;
-    /* One clear cell between a box and the head that points at it, at both ends
-       of a run. The boxes stand on whole cells (spaceCards puts them there), so
-       one cell off the edge is the same distance whichever edge it is - measured
-       from the row above and the row below it came out a fraction of a cell
-       different at each end, and the two heads sat at visibly different heights
-       off their boxes. */
-    const above = (y) => (Math.ceil(y / ch) - 2) * ch;
-    const below = (y) => (Math.floor(y / ch) + 1) * ch;
-    const rightOf = (x) => Math.ceil(x / cw) * cw;
+    /* A head sits in the cell against the box it points at - the same on all four
+       sides, which is what makes the three of them read as one hand. The boxes
+       stand on whole cells (spaceCards puts them there), so "the cell against the
+       edge" is an exact thing: the run ends where the box begins. */
+    /* The hair of slack is what keeps an edge that sits exactly ON a cell from
+       being rounded to the next one: a box snapped to 11 cells measures 11.0004,
+       and a bare ceil() put the head a whole row further out than the one beside
+       it. */
+    const EDGE = 0.02;
+    const above = (y) => (Math.floor(y / ch + EDGE) - 1) * ch;
+    const below = (y) => Math.ceil(y / ch - EDGE) * ch;
+    const rightOf = (x) => Math.ceil(x / cw - EDGE) * cw;
     let points, labelAt;
 
     if (edge.elbow) {
@@ -1129,13 +1132,20 @@ function glide(change) {
   change();
   const until = performance.now() + GLIDE_MS;
   const step = () => {
+    /* The panel's height is being animated under the boxes, so they are shared
+       out again on every frame - left where they were, they held still through
+       the crossing and jumped a cell when it ended. */
+    spaceCards();
     redrawLines();
     paintMap();
     // The panel's box is the map's frame; solved once at the end of the glide,
     // it slid in at whatever width it had before and jumped when it landed.
     paintDevFrame();
     if (performance.now() < until) requestAnimationFrame(step);
-    else wrap.classList.remove('gliding');
+    // Off the grid for the length of the crossing (see spaceCards), so the last
+    // word is a settled one: the class comes off first, then everything is set
+    // against the grid one more time.
+    else { wrap.classList.remove('gliding'); settle(); }
   };
   requestAnimationFrame(step);
 }
@@ -1391,18 +1401,18 @@ function renderDevices() {
 const DEV_EDGE = 10;
 const DEV_LABEL_AIR = 4;                     // clearance left round a label
 
-/* The height of one cell of the grid the runs are drawn into. The boxes are set
-   against it, so a head one cell off a box is the same distance off it wherever
-   the box happens to be. */
-function cellHeight(pre) {
-  if (!pre) return 0;
+/* One cell of the grid the runs are drawn into. The boxes are set against it, so
+   that a head standing in the cell beside a box is the same distance off it on
+   every side and in every box. */
+function cellSize(pre) {
+  if (!pre) return null;
   const probe = document.createElement('span');
   probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre';
-  probe.textContent = '0';
+  probe.textContent = '0'.repeat(40);
   pre.appendChild(probe);
-  const tall = probe.getBoundingClientRect().height;
+  const box = probe.getBoundingClientRect();
   probe.remove();
-  return tall;
+  return box.width && box.height ? { cw: box.width / 40, ch: box.height } : null;
 }
 
 function spaceCards() {
@@ -1422,13 +1432,25 @@ function spaceCards() {
   const edge = Math.max(0, Math.min(DEV_EDGE, (height - total - need) / 2));
   const free = height - total - edge * 2;
   if (free < 0) return;                      // too short to space; leave the fallback
-  const gap = free / (cards.length - 1);
-  // Snapped to the grid the runs are drawn into: a box that starts on a whole
-  // cell ends on one too (it is a whole number of lines tall), so every head has
-  // the same clearance from the box it points at - see above() and below().
-  const ch = cellHeight(stage.querySelector('.dev-lines'));
-  const snap = (v) => (ch > 0 ? Math.round(v / ch) * ch : v);
+  let gap = free / (cards.length - 1);
+  /* Set against the grid the runs are drawn into: a box that starts on a whole
+     cell ends on one too - it is a whole number of lines tall - so every head has
+     the same clearance from the box it points at, on all four sides. The gap
+     between boxes is rounded DOWN to whole cells and the first box's inset with
+     it: rounded to the nearest, the three of them could add up to more than the
+     stage and the last one hung out of the bottom of the panel.
+     Not while the panel is moving, though. Its height is animated, so the boxes
+     are re-spaced on every frame of a crossing, and snapping each one had them
+     stepping a whole cell at a time - see glide(). */
+  const cell = cellSize(stage.querySelector('.dev-lines'));
+  const gliding = document.getElementById('constellation')?.classList.contains('gliding');
+  const grid = !gliding && cell ? cell : null;
   let y = edge;
+  if (grid) {
+    y = Math.floor(edge / grid.ch) * grid.ch;
+    gap = Math.floor(gap / grid.ch) * grid.ch;
+  }
+  const stageBox = stage.getBoundingClientRect();
   cards.forEach((card, i) => {
     // The nudge shifts only where this card is drawn, not the running cursor, so
     // the boxes below it keep their places and its own gaps trade instead.
@@ -1436,7 +1458,14 @@ function spaceCards() {
     // In pixels, not a share of the stage: a percentage is resolved against a
     // height that has already been rounded, and the box came to rest a fraction
     // of a cell off the grid it was just snapped to.
-    card.style.top = (snap(y) + tall[i] / 2 + nudge) + 'px';
+    card.style.top = (y + tall[i] / 2 + nudge) + 'px';
+    if (grid) {
+      // Sideways too, so the head that arrives in a box's side stands the same
+      // distance off it as the ones that arrive at its top and bottom.
+      const box = card.getBoundingClientRect();
+      const left = Math.round((box.left - stageBox.left) / grid.cw) * grid.cw;
+      card.style.left = (left + box.width / 2) + 'px';
+    }
     y += tall[i] + gap;
   });
 }
