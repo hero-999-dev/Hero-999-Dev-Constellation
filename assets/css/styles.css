@@ -198,8 +198,10 @@ body.boot .gate, body.boot .wrap{ transition:none; }
 .edge-left{ left:0; }
 body.on-saturn .edge-left{ display:none; }
 body:not(.on-saturn) .edge-right{ display:none; }
-/* No room for a strip beside the column on a phone; the switch is up top. */
-@media (max-width: 720px){ .edge{ display:none; } }
+/* No room for a strip beside the column on a phone, and nothing sideways to point
+   at either: below the list's own breakpoint the faces cross vertically and every
+   way across stands in the bar. */
+@media (max-width: 860px){ .edge{ display:none; } }
 
 /* The signature: the same identity the airlock used to wear in its top-left,
    holding the bottom-left of both faces now. */
@@ -286,20 +288,17 @@ body:not(.on-saturn) .edge-right{ display:none; }
   color:var(--terra); text-shadow:0 0 14px rgba(122,84,48,.22);
 }
 :root[data-theme="dark"] .gate-shot{ color:var(--orange); text-shadow:0 0 16px rgba(232,129,60,.3); }
-/* Narrow: the planet shrinks and dims so the chrome over it stays legible, and
-   the two corner blocks give up their corners - there is not room for both. */
+/* Narrow: the planet shrinks and dims so the chrome over it stays legible - far
+   off and faint, which is the whole picture on a phone. The two corner blocks
+   keep their corners: at the size they are set from, the signature on the left
+   and the credits on the right take about two thirds of the width between them. */
 @media (max-width: 720px){
-  .gate-saturn{ left:50%; transform:translate(-50%, -50%); opacity:.3; font-size:clamp(7px, 3.4vw, 13px); }
-  .gate-insp{
-    right:auto; left:50%; transform:translateX(-50%);
-    align-items:center; text-align:center;
-    font-size:clamp(10px, 3vw, 13px);
-  }
-  /* The credits take the bottom of the sky on a phone, so the signature crosses
-     to the top of it; on the map the list wants the whole column, and the
-     signature stands down rather than lying across it. */
-  body.on-saturn .signature{ bottom:auto; top:calc(var(--bar-h) + .8rem); }
-  body:not(.on-saturn) .signature{ display:none; }
+  /* Small enough that the whole planet is on the screen with sky around it. The
+     block is 98 characters across, so at a phone's width the size has to come
+     down to about a third of the map's - set any larger and the rings run off
+     both edges, which reads as a planet you are standing on rather than one far
+     off. */
+  .gate-saturn{ left:50%; transform:translate(-50%, -50%); opacity:.3; font-size:clamp(5px, 1.7vw, 9px); }
 }
 /* The mark is one of the corner boxes; app.js draws it. */
 .gate-mark{ margin:0; font-size:var(--chrome-font); }
@@ -317,7 +316,10 @@ body:not(.on-saturn) .edge-right{ display:none; }
   pointer-events:none;
 }
 .topbar > *{ pointer-events:auto; position:relative; z-index:1; }
-.topbar-right{ display:flex; align-items:center; gap:.5rem; }
+.topbar-left, .topbar-right{ display:flex; align-items:center; gap:.5rem; }
+/* The two phone-only pills. On a wide screen the one pill on the right carries
+   both the projects and the machines, and these would be a second way to say it. */
+@media (min-width: 861px){ #projBtn, #hwBtn{ display:none; } }
 
 /* The band and its rule live on a layer of their own so the mask below cannot
    take the switch with them. layoutRings() writes --ring-mask: a hole the shape
@@ -504,32 +506,39 @@ a.node:hover{ color:var(--amber); }
      its resting state, so setting the width alone left the map on screen and the
      list off it at every width. */
   .map{ display:none; }
-  /* Stretched to the stage rather than centred in it, so the column that scrolls
-     is this one and not the document - the page itself never scrolls. The bar is
-     `position: fixed` and the stage starts at y 0 underneath it, which the map
-     wants (the ring runs over the bar, which is masked) and the list does not -
-     without the pad the first row sits behind it. */
+  /* Stretched to the stage rather than sat in the middle of it, so the column
+     that scrolls is this one and not the document - the page itself never
+     scrolls. The bar is `position: fixed` and the stage starts at y 0 underneath
+     it, which the map wants (the ring runs over the bar, which is masked) and the
+     list does not - without the pad the first row sits behind it, and the one at
+     the bottom needs the same clearance from the edge of the screen.
+     The cards ARE the page down here, so the column takes the whole width and
+     each box is centred in it (see .leaf). A 22rem cap and a card set at 2.15vw
+     left a phone with a third of its width in use and type too small to read;
+     the size below fills the screen with the box instead - 32 characters across,
+     which is what a card is. */
   .list{ display:block; align-self:stretch; overflow-y:auto;
-         width:100%; max-width:22rem; margin-right:auto;
-         padding-top:var(--bar-h); }
-  .list .node{ font-size:clamp(6px, 2.15vw, 10px); }
+         width:100%; margin-inline:auto;
+         padding-top:var(--bar-h); padding-bottom:var(--corner); }
+  .list .node{ font-size:clamp(10px, 4.4vw, 16px); }
   /* The group's name over its cards, in the plate label the rings wear. */
   .branch-head{
     display:block; font-family:var(--font-mono); font-size:.72rem;
     text-transform:uppercase; letter-spacing:.16em; color:var(--brown-soft);
-    margin-bottom:.35rem;
+    margin-bottom:.35rem; text-align:center;
   }
   /* A repo card is an <a>, so a leaf is inline until told otherwise - the first
      one in a group flowed onto the end of the group's heading, and margin-top
-     did nothing. */
-  .leaf{ display:block; position:static; transform:none; margin-top:.3rem; }
+     did nothing. Shrunk to its own drawn box, so the auto margins can centre it. */
+  .leaf{ display:block; position:static; transform:none;
+         width:max-content; margin:.3rem auto 0; }
   .branch{ padding:.5rem .6rem; margin-bottom:.5rem; }
-  /* Specific enough to beat the panel's own `display:flex`, which is written
-     further down the file - the plain class selector lost to it and the panel
-     stayed on the narrow screen, lying across the list. */
-  .stage .devices, #devBtn{ display:none; }
-  /* No panel here, so no rail to keep clear of it - the page boots with the rail
-     open, and without this the list stayed pushed off an empty column. */
+  /* The combined pill is the wide screen's: down here the projects and the
+     machines are two pages and take a pill each - see the phone block at the
+     end of the file. */
+  #devBtn{ display:none; }
+  /* No rail here - the machines come up over the list rather than standing in a
+     column beside the map, so the space that was reserved is given back. */
   .stage{ padding-right:0; }
 }
 
@@ -681,3 +690,57 @@ a.node:hover{ color:var(--amber); }
   user-select:none;
 }
 
+/* -------------------------------------------------------------- phone */
+
+/* Three faces on a phone rather than two, and they cross the other way.
+   Home is the face the page opens on: the sky, the planet far off and faint, the
+   ship crossing it. The projects and the machines are each a page of their own
+   that comes up from under the bottom edge over it - on a screen this narrow
+   nothing sits beside anything, so nothing tries to.
+   Sideways is the wide screen's crossing (.gate / .wrap further up); here the sky
+   holds still and the pages ride up over it.
+   The face that has left goes out of PAINT, not just out of view: pushed off with
+   a transform alone it was still being drawn on the phone this was built for, and
+   the cards came up over the planet. visibility is held back by the length of the
+   slide, so the face that is leaving is still there to watch it go. */
+@media (max-width: 860px){
+  .gate, body.on-saturn .gate{ transform:none; }
+  .gate{ visibility:hidden; transition:visibility 0s .56s; }
+  body.on-saturn .gate{ visibility:visible; transition:visibility 0s; }
+
+  .wrap, body.on-saturn .wrap{ transform:translateY(100%); }
+  .wrap{ z-index:2; visibility:hidden;
+         transition:transform .56s var(--ease), visibility 0s .56s; }
+  body:not(.on-saturn) .wrap{ transform:translateY(0); visibility:visible;
+                              transition:transform .56s var(--ease); }
+
+  /* Every way across the page stands in the bar, wrapping to a second row rather
+     than shrinking: five drawn boxes do not fit across a phone in any language.
+     The name goes - the planet is the identity on this screen, and the row the
+     word would take is a row the pages never get back. */
+  .topbar{ flex-wrap:wrap; justify-content:center; row-gap:.32rem; }
+  .topbar .gate-top{ display:none; }
+
+  /* The machines as a page: the whole width, from under the bar to the bottom of
+     the screen, up from below like the projects and over them. Its own ground,
+     because the list is still laid out behind it. No display here on purpose -
+     the panel is hidden until it is first asked for, and [hidden] has to win. */
+  /* Up against the bar, not a hair under it: the list is still laid out behind
+     this and any gap is a strip of it (its scrollbar, usually) showing above the
+     frame. */
+  .stage .devices{
+    left:0; right:0; width:auto;
+    top:var(--bar-h); bottom:var(--corner);
+    background:var(--ground);
+  }
+  .devices:not(.in){ transform:translateY(100%); opacity:1; }
+  /* The frame is drawn to the panel's own box down here rather than level with
+     the map's rules - there is no map - so it needs a size of its own, and the
+     cards' is the one that keeps a cell meaning the same thing in both grids. */
+  .dev-frame{ font-size:clamp(8px, min(1vw, 1.75vh), 15px); }
+
+  /* The two corner blocks belong to the home face: on the pages the column wants
+     the whole screen, so the signature stands down rather than lying across it.
+     The credits live inside the sky, so they cross with it and need no rule. */
+  body:not(.on-saturn) .signature{ display:none; }
+}

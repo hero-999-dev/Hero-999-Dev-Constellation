@@ -221,11 +221,52 @@ measured the wrong box:
   `top: var(--bar-h)` now.
 
 Nothing on the page scrolls, inside a panel or out of it. If the column cannot fit — under
-160px wide, or taller than the window — it stands down rather than spilling. Below 861px the
-map gives way to the stacked list, one column down the left, and the device column is hidden.
+160px wide, or taller than the window — it stands down rather than spilling. Below 861px
+none of that applies: the map gives way to the stacked list and the machines become a page of
+their own, so the rail and the room test both stand aside — see **The phone**.
 
 Measured across 2560x1440, 1920x1080, 1600x900, 1440x900, 1366x768, 1280x720 and 1024x600:
 ratio holds, page never scrolls, both side columns clear the ring, nothing clipped.
+
+## The phone
+
+Below 861px the page is three faces rather than two, and they cross the other way: the sky
+holds still and the pages ride up over it from under the bottom edge.
+
+- **Home** is the face it opens on — the sky, the planet far off and faint, the ship crossing
+  it. The two corner blocks are its own: the identity bottom-left, the ASCII credits
+  bottom-right, both small. On the other two faces the column wants the whole screen.
+- **Projects** is the same cards as the map, stacked top to bottom and centred, each drawn box
+  sized to fill the width. No rings and no connectors — the stack is the grouping.
+- **Hardware** comes up the same way, over the projects, the whole width of the screen.
+
+Every way across stands in the bar, which wraps to two rows: `Home`, `Projects`, `Hardware`,
+then the language and the theme. The one `Projects & Hardware` pill is the wide screen's — it
+opens both at once because there they stand side by side; here they are two pages and take a
+pill each. The name over the bar is dropped: the planet is the identity on this screen, and
+the row the word would take is a row the pages never get back.
+
+What it rests on:
+
+- The face that has left goes out of **paint**, not just out of view. Pushed off with a
+  transform alone it was still being drawn on the phone this was fitted to, and the cards came
+  up over the planet. `visibility` is held back by the length of the slide, so the face that is
+  leaving is still there to watch it go.
+- The panel's box belongs to the **stylesheet** here. On the map it is pinned to the rules the
+  outer frame drew (`siteRule`), and there is no map on a phone — so `paintDevFrame()` hands
+  the inline box back and draws its frame to whatever the CSS gives it. `capSidePanels()`
+  steps aside for the same reason: judged by the 450px rail test the panel was always too
+  narrow, which shut its button and left the machines with no way in at all. And the rail is
+  out from boot only where there is a map — a page that opened itself would be lying over the
+  projects the first time they were asked for.
+- The planet is set smaller than the map's: its block is 98 characters across, so at a phone's
+  width anything larger runs the rings off both edges, which reads as a planet you are
+  standing on rather than one far off.
+
+The machines keep the desktop triangle, fitted to the screen rather than redrawn: the cards
+come out around 8px and the phone box at `at.x: 76%` still lands inside. If that reads too
+small the next step is one column — and `DEVICES` has to be reordered `go`, `acer`, `phone`
+for it, or the straight `go ↔ acer` run passes through the box in the middle.
 
 ## Site language
 

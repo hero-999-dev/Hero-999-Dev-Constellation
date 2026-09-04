@@ -119,6 +119,7 @@ const I18N = {
   en: {
     inspiration: 'Inspiration',
     home: 'Home', projectsHardware: 'Projects & Hardware',
+    projects: 'Projects',
     hardware: 'Hardware', dark: 'Dark', light: 'Light',
     private: 'Private', public: 'Public', live: 'Live',
     Extension: 'Extension', Desktop: 'Desktop',
@@ -133,6 +134,7 @@ const I18N = {
   tr: {
     inspiration: 'İlham',
     home: 'Ana sayfa', projectsHardware: 'Projeler & Donanım',
+    projects: 'Projeler',
     hardware: 'Donanım', dark: 'Koyu', light: 'Açık',
     private: 'Özel', public: 'Herkese açık', live: 'Canlı',   // not 'Açık' - that is the light theme
     Extension: 'Eklenti', Desktop: 'Masaüstü',
@@ -147,6 +149,7 @@ const I18N = {
   pl: {
     inspiration: 'Inspiracje',
     home: 'Strona główna', projectsHardware: 'Projekty i sprzęt',
+    projects: 'Projekty',
     hardware: 'Sprzęt', dark: 'Ciemny', light: 'Jasny',
     private: 'Prywatne', public: 'Publiczne', live: 'Na żywo',
     Extension: 'Rozszerzenie', Desktop: 'Desktop',
@@ -161,6 +164,7 @@ const I18N = {
   de: {
     inspiration: 'Inspiration',
     home: 'Startseite', projectsHardware: 'Projekte & Hardware',
+    projects: 'Projekte',
     hardware: 'Hardware', dark: 'Dunkel', light: 'Hell',
     private: 'Privat', public: 'Öffentlich', live: 'Live',
     Extension: 'Erweiterung', Desktop: 'Desktop',
@@ -845,6 +849,13 @@ function renderList() {
   }
 }
 
+/* The phone. Below this the map gives way to the stacked list, the two faces
+   cross vertically instead of sideways, and the machines are a page of their own
+   rather than a rail beside the map - so several things that are true beside a
+   map are not true here. It has to stay the number the stylesheet uses. */
+const NARROW = 860;
+const narrow = () => matchMedia('(max-width: ' + NARROW + 'px)').matches;
+
 /* Whether there is room for the machines at all. Called from settle(), so it is
    re-judged on every resize the way the map is. */
 function capSidePanels() {
@@ -855,6 +866,11 @@ function capSidePanels() {
   // the column stands down rather than spilling.
   const rigs = document.getElementById('devices');
   if (rigs) {
+    /* No rail to find room for on a phone: the panel is a page there, the width
+       of the screen, and the stylesheet sizes it. Judged by the rail test it was
+       always too narrow, which shut the button and left the machines with no way
+       in at all. */
+    if (narrow()) return;
     const room = wrapBox.width - DEV_RAIL;
     // `hidden` is the toggle's business now, so room is judged on the button:
     // too narrow a rail or too short a window and the panel is not offered at
@@ -1018,16 +1034,26 @@ function setRail(open) {
 }
 
 function initDevices() {
-  const btn = document.getElementById('devBtn');
   const panel = document.getElementById('devices');
-  if (!btn || !panel) return;
-  btn.addEventListener('click', () => {
-    /* One button, one direction: projects and hardware, both open. The rail is
-       not something to switch off again - pressing this on the map you are
-       already looking at should do nothing rather than slide it away. */
+  if (!panel) return;
+  /* One direction: the machines, and the map they belong to. The rail is not
+     something to switch off again - pressing this on the map you are already
+     looking at should do nothing rather than slide it away. Two buttons ask for
+     it: the one pill that carries both on a wide screen, and Hardware's own pill
+     on a phone, where it is a page rather than a rail. */
+  const machines = () => {
     const alreadyOut = !panel.hidden && panel.classList.contains('in');
     showView('map');
     if (!alreadyOut) setRail(true);
+  };
+  for (const id of ['devBtn', 'hwBtn']) {
+    document.getElementById(id)?.addEventListener('click', machines);
+  }
+  /* Projects is the map on its own. On a phone the machines are a page standing
+     over it, so asking for the projects is also asking for that page to go. */
+  document.getElementById('projBtn')?.addEventListener('click', () => {
+    showView('map');
+    if (narrow()) setRail(false);
   });
 }
 
@@ -1052,32 +1078,42 @@ function paintDevFrame() {
   const panel = document.getElementById('devices');
   const frame = panel && panel.querySelector('.dev-frame');
   const host = panel && panel.offsetParent;
-  if (!panel || !frame || !host || panel.hidden || !siteRule) return;
-  const hb = host.getBoundingClientRect();
-  const btn = document.getElementById('devBtn');
-  /* Sideways, in layout pixels rather than screen ones. The face this panel
-     belongs to is slid off to the right while the planet is up, and the bar it
-     is being lined up with is fixed and does not travel with it - measured on
-     screen, the offset came out to whatever the slide was, and the panel was
-     dragged back over the planet by it. Where a box sits in the layout is the
-     same on both faces, which is what `left` wants. */
-  const layoutX = (el) => { let x = 0; for (let n = el; n; n = n.offsetParent) x += n.offsetLeft; return x; };
-  if (btn && !btn.hidden) panel.style.left = (layoutX(btn) - layoutX(host)) + 'px';
-  panel.style.width = 'auto';
-  panel.style.top = (siteRule.top - hb.top) + 'px';
-  /* The bottom rule is a cell tall like any other row, so the box has to hold
-     it - and half a cell over, because the grid takes whole rows and a box
-     exactly 52 cells deep can measure as 51. The slack is under the last rule,
-     where nothing is drawn. */
-  panel.style.bottom = (hb.bottom - (siteRule.bottom + siteRule.ch * 1.5)) + 'px';
-
-  frame.style.fontSize = siteRule.font;
+  if (!panel || !frame || !host || panel.hidden) return;
+  if (narrow()) {
+    /* The stylesheet owns the box on a phone: the panel is a page across the
+       whole screen rather than a column stood under its own button and cut to
+       the height of the map's frame - and there is no map down here to be level
+       with, so `siteRule` is never set either. Whatever the branch below wrote
+       is handed back, or a window dragged narrow would keep a rail's box. */
+    panel.style.left = panel.style.top = panel.style.bottom = panel.style.width = '';
+    frame.style.fontSize = '';
+  } else {
+    if (!siteRule) return;
+    const hb = host.getBoundingClientRect();
+    const btn = document.getElementById('devBtn');
+    /* Sideways, in layout pixels rather than screen ones. The face this panel
+       belongs to is slid off to the right while the planet is up, and the bar it
+       is being lined up with is fixed and does not travel with it - measured on
+       screen, the offset came out to whatever the slide was, and the panel was
+       dragged back over the planet by it. Where a box sits in the layout is the
+       same on both faces, which is what `left` wants. */
+    const layoutX = (el) => { let x = 0; for (let n = el; n; n = n.offsetParent) x += n.offsetLeft; return x; };
+    if (btn && !btn.hidden) panel.style.left = (layoutX(btn) - layoutX(host)) + 'px';
+    panel.style.width = 'auto';
+    panel.style.top = (siteRule.top - hb.top) + 'px';
+    /* The bottom rule is a cell tall like any other row, so the box has to hold
+       it - and half a cell over, because the grid takes whole rows and a box
+       exactly 52 cells deep can measure as 51. The slack is under the last rule,
+       where nothing is drawn. */
+    panel.style.bottom = (hb.bottom - (siteRule.bottom + siteRule.ch * 1.5)) + 'px';
+    frame.style.fontSize = siteRule.font;
+  }
   const g = gridFor(frame);
   if (!g) return;
   // Cut again only when the grid itself changed: this runs on every frame of a
   // crossing, and rewriting the same rectangle sixty times a second is work for
   // nothing.
-  const sig = g.cols + 'x' + g.rows + '@' + siteRule.font;
+  const sig = g.cols + 'x' + g.rows + '@' + getComputedStyle(frame).fontSize;
   if (frame.dataset.sig !== sig) {
     frame.dataset.sig = sig;
     frame.textContent = '';
@@ -1856,4 +1892,8 @@ renderList();
 renderDevices();
 initDevices();
 initSaturn();
-setRail(true);
+/* The rail is a fixture of the map, so it is out from the start - but only where
+   there is a map. On a phone the machines are a page of their own, and a page
+   that opened itself would be lying over the projects the first time they are
+   asked for. */
+if (!narrow()) setRail(true);

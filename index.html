@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#1A1411">
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%2343301F'/><path d='M10 9v14M22 9v14M10 16h12' stroke='%23F6A03D' stroke-width='3.4' stroke-linecap='round'/></svg>">
-<link rel="stylesheet" href="assets/css/styles.css?v=202609031930">
+<link rel="stylesheet" href="assets/css/styles.css?v=202609041218">
 </head>
 <!-- The airlock is the face the page opens on, so the markup says so: without
      it the first paint is the map, and the switch to the airlock then plays as a
@@ -40,7 +40,16 @@
 </div>
 
 <header class="topbar">
-  <button class="pill" id="viewBtn" type="button" aria-pressed="false" data-i18n="home" data-box></button>
+  <!-- Every way across the page stands together up here. On a phone that is three
+       of them: the machines are a page of their own down there, so the projects
+       take a pill of their own beside it. Both are off on a wide screen - there
+       the one Projects & Hardware pill on the right does the work. -->
+  <nav class="topbar-left">
+    <button class="pill" id="viewBtn" type="button" aria-pressed="false" data-i18n="home" data-box></button>
+    <button class="pill" id="projBtn" type="button" data-i18n="projects" data-box></button>
+    <button class="pill" id="hwBtn" type="button" aria-expanded="false" aria-controls="devices"
+            data-i18n="hardware" data-box></button>
+  </nav>
   <!-- The site's name, tracked wide like the label on an astronomical plate and
        centred over the whole bar. The map has its own Constellation on the outer
        ring, so this shows with the airlock. -->
@@ -94,6 +103,6 @@
   <h1 class="gate-mark" data-box="Hero Dev"></h1>
 </div>
 
-<script src="assets/js/app.js?v=202609031930"></script>
+<script src="assets/js/app.js?v=202609041218"></script>
 </body>
 </html>
