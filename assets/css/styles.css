@@ -264,7 +264,12 @@ body:not(.on-saturn) .edge-right{ display:none; }
   position:absolute; z-index:1; pointer-events:none; margin:0;
   top:50%; left:50%; transform:translate(-50%, -50%);
   font-family:var(--font-mono);
-  font-size:clamp(8px, 1.75vw, 18px); line-height:1;
+  /* Set from the window's width, but never taller than the window can hold: the
+     planet is thirty rows, so at a zoomed-in size - where the page has plenty of
+     width in CSS pixels and very little height - it grew until it reached up
+     into the row of controls. The second term is what thirty rows may be if they
+     are to leave the bar and the corners their own room. */
+  font-size:clamp(8px, min(1.75vw, calc((100dvh - 6rem) / 30)), 18px); line-height:1;
   white-space:pre; user-select:none;
   /* Light: browner ink on the cream, a soft brown halo. Dark below keeps the
      amber glow so the planet still burns against the black. */
@@ -320,8 +325,12 @@ body:not(.on-saturn) .edge-right{ display:none; }
      down to about a third of the map's - set any larger and the rings run off
      both edges, which reads as a planet you are standing on rather than one far
      off. Bold, because a 400 weight at six pixels is half a glyph. */
+  /* The same height bound as above. On a phone the width is what decides - a
+     360px screen is 800 tall, and thirty rows of it are nowhere near that - so
+     this changes nothing there; it is a short window that it holds back. */
   .gate-saturn{ left:50%; transform:translate(-50%, -50%); opacity:.38;
-                font-size:clamp(5px, 1.7vw, 9px); font-weight:700; }
+                font-size:clamp(5px, min(1.7vw, calc((100dvh - 5.5rem) / 30)), 9px);
+                font-weight:700; }
   /* No halo on the phone. A 16px glow around a six-pixel character is wider than
      the character, so in dark the rows ran into each other and the planet came
      out as a smudge - the light half stayed crisp because its shadow is fainter

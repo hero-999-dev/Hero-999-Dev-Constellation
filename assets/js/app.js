@@ -1405,6 +1405,10 @@ function renderDevices() {
     card.className = 'dev-card';
     card.style.left = item.at.x + '%';
     card.style.top = item.at.y + '%';
+    // Where across the panel this box belongs, kept on the box itself: spaceCards
+    // writes pixels, and without the share to work from it would be re-snapping
+    // whatever it wrote last time instead of the place the box is meant to be.
+    card.dataset.across = item.at.x;
     // spaceCards centres the three by height; a box can ask to ride a few px off
     // that (the phone reads better a touch below the go/acer midline).
     if (item.nudge) card.dataset.nudge = item.nudge;
@@ -1554,10 +1558,16 @@ function spaceCards() {
       /* Sideways too, so the head that arrives in a box's side stands the same
          distance off it as the ones that arrive at its top and bottom - and held
          inside the stage, because rounding to the nearest column can put a box
-         that was already against the edge over the frame's own rule. */
+         that was already against the edge over the frame's own rule.
+         Worked out from the share of the panel the box is meant to stand at, not
+         from where it is standing now: re-snapping its own last answer, a box
+         walked a little further off with every change of size and never came
+         back. */
       const box = card.getBoundingClientRect();
+      const across = parseFloat(card.dataset.across);
+      const mid = Number.isFinite(across) ? (across / 100) * stageBox.width : box.left - stageBox.left + box.width / 2;
       const room = Math.floor((stageBox.width - box.width) / grid.cw) * grid.cw;
-      const want = Math.round((box.left - stageBox.left) / grid.cw) * grid.cw;
+      const want = Math.round((mid - box.width / 2) / grid.cw) * grid.cw;
       card.style.left = (Math.max(0, Math.min(want, room)) + box.width / 2) + 'px';
     }
     y += tall[i] + gap;
