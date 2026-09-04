@@ -1264,6 +1264,8 @@ function paintDevFrame() {
        word over it are both off down here. */
     panel.style.left = panel.style.right = panel.style.top = panel.style.bottom = panel.style.width = '';
     frame.style.fontSize = '';
+    const bare = panel.querySelector('.dev-stage');
+    if (bare) bare.style.marginTop = bare.style.marginBottom = '';
     return;
   }
   if (!siteRule) return;
@@ -1332,6 +1334,18 @@ function paintDevFrame() {
   if (head) {
     head.style.left = (g.cols * g.cw / 2) + 'px';
     head.style.top = (g.ch / 2) + 'px';
+  }
+  /* The boxes are shared out inside the stage, and the stage has to stop where
+     the frame's rules do. The frame is drawn in the map's cell, not the panel's,
+     and its bottom rule stands in the last WHOLE row - which leaves anything from
+     one to two cells between that rule and the foot of the panel. Sat on a margin
+     of its own the stage ran past it, and the lowest box crossed the rule at some
+     window sizes and not at others. */
+  const stage = panel.querySelector('.dev-stage');
+  if (stage) {
+    const tall = frame.getBoundingClientRect().height;
+    stage.style.marginTop = (g.ch + 4) + 'px';
+    stage.style.marginBottom = (tall - (g.rows - 1) * g.ch + 4) + 'px';
   }
 }
 
