@@ -414,7 +414,10 @@ body:not(.on-saturn) .topbar .gate-top{ display:none; }
 :root[data-theme="dark"] .dev-card{ color:var(--orange); }
 /* Pressing anything says so: the same lift and lightening on every control, so
    the ones that do not latch still answer the click. */
-.pill{ font-size:var(--chrome-font); transition:filter .12s var(--ease), transform .12s var(--ease); }
+/* The bar's own size. It is the corner size everywhere there is room for it;
+   where there is not - a phone, where five drawn boxes have to hold one row in
+   every language - fitBar() measures the row and writes a size that fits. */
+.pill{ font-size:var(--pill-font, var(--chrome-font)); transition:filter .12s var(--ease), transform .12s var(--ease); }
 .pill:active{ transform:translateY(1px); filter:brightness(1.25); }
 .pill{ display:inline-block; cursor:pointer; }
 .pill:hover{ color:var(--amber); }
@@ -557,12 +560,13 @@ a.node:hover{ color:var(--amber); }
      pixels of slack so a rounded cell cannot push a card over its column. */
   .list .node{ font-size:clamp(7px, 2.33vw, 12px); }
   /* Nothing on this screen is painted on a plate. The sky is the ground here, so
-     the cards, the machines and the words on the runs are drawn ON it - a frame
-     and its letters, with the stars and the planet showing through the spaces
-     between them. (Up on the map a card's ground is what stops the connectors
-     running through its letters; there is no map down here, so nothing needs
-     one.) */
-  .list .node, .dev-card, .dev-word{ background:none; }
+     the cards are drawn ON it - a frame and its letters, with the stars and the
+     planet showing through the spaces between them. (Up on the map a card's
+     ground is what stops the connectors running through its letters; there is no
+     map down here, so nothing needs one.) The machines and the words on their
+     runs are stripped in the phone block at the end of the file - their own
+     rules are written after this one and would win here. */
+  .list .node{ background:none; }
   /* The group's name over its cards, set the way the site's own name is over the
      airlock: the page's serif, tracked the same .28em, in the type colour rather
      than the faint one, and at the cards' own size. It is the one heading on the
@@ -725,11 +729,13 @@ a.node:hover{ color:var(--amber); }
   background:var(--ground);
   padding:0 .1rem;
 }
-/* The near word sits closer to the run than the far one: it is the one the eye
-   follows down to the head, and at .42 either side the pair read as two labels
-   rather than one written across the line. */
-.dev-word.l{ right:.24em; }
-.dev-word.r{ left:.42em; }
+/* The same gap on both sides of the run. It is the label's anchor that has to be
+   right for that to hold - see redrawLines(), which puts it on the middle of the
+   cell the upright is actually drawn in rather than on the geometric line: the
+   grid rounds to whole cells, so a couple of pixels of the difference were
+   landing on one side and not the other. */
+.dev-word.l{ right:.26em; }
+.dev-word.r{ left:.26em; }
 
 .dev-nodes{ position:absolute; inset:0; }
 
@@ -781,12 +787,19 @@ a.node:hover{ color:var(--amber); }
 
   /* Every way across the page stands in the bar, wrapping to a second row rather
      than shrinking: five drawn boxes do not fit across a phone in any language.
-     One gap for every distance in it - between the boxes, between the rows, and
-     from the boxes to the edges - and both rows centred, so the five read as one
-     block rather than as a staircase with a hole in each corner.
+     One row, whatever the language - wrapping put the five in a different shape
+     in every one of them, and a bar that changes shape when you change the
+     language is a bar that moves. fitBar() in app.js measures the row against
+     the screen and sizes the type so it holds; the same gap sits between all
+     five and at both ends.
      The name goes - the planet is the identity on this screen, and the row the
      word would take is a row the pages never get back. */
-  .topbar{ flex-wrap:wrap; gap:.5rem; justify-content:center; padding:.42rem .5rem; }
+  /* One height too, not just one row: the type size that makes the row fit is
+     the language's own, so without this the bar was a few pixels shorter in
+     Polish than in English and everything under it moved when you switched. */
+  .topbar{ flex-wrap:nowrap; justify-content:center; padding:.42rem .4rem;
+           min-height:2.75rem; }
+  .topbar, .topbar-left, .topbar-right{ gap:.34rem; }
   .topbar .gate-top{ display:none; }
   /* Solid on the pages, not a wash: the list runs up under the bar, and at .84
      the cards showed through the strip as a smudge behind the buttons. Over the
@@ -826,6 +839,10 @@ a.node:hover{ color:var(--amber); }
      width, because every length here is a share of one. */
   .dev-card, .dev-lines, .dev-label{ font-size:clamp(9px, 3.05vw, 13px); }
   .dev-stage{ margin:0; }
+  /* Drawn on the sky like the cards on the projects page - see the note there.
+     Written here rather than with them because .dev-card and .dev-word carry
+     their own grounds further up the file, and last one in wins. */
+  .dev-card, .dev-word{ background:none; }
 
   /* The two corner blocks belong to the home face: on the pages the column wants
      the whole screen, so the signature stands down rather than lying across it.

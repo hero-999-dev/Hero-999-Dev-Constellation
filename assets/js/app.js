@@ -327,6 +327,35 @@ function paintChrome() {
     const label = chromeLabel(el);
     el.textContent = asciiBox([label], label.length + 2);
   }
+  fitBar();
+}
+
+/* One row on a phone, in every language. How wide the bar comes out is decided
+   by the words in it - Strona główna is a third again as long as Home - so it is
+   not something the stylesheet can be told in advance: measure the row at the
+   size the stylesheet asks for, and if it is wider than the screen, hand the
+   pills a size that makes it fit. Wrapping was the alternative, and it put the
+   five boxes in a different shape in every language.
+   Only the pills take this size. The signature in the corner is set from
+   --chrome-font like everything else and stays where it is. */
+function fitBar() {
+  const bar = document.querySelector('.topbar');
+  if (!bar) return;
+  const root = document.documentElement;
+  root.style.removeProperty('--pill-font');       // measure at the stylesheet's own size
+  const pills = [...bar.querySelectorAll('.pill')].filter((p) => p.offsetParent);
+  if (narrow() && pills.length) {
+    const cs = getComputedStyle(bar);
+    const gap = parseFloat(cs.columnGap) || 0;
+    const room = bar.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const wide = pills.reduce((n, p) => n + p.getBoundingClientRect().width, 0) + gap * (pills.length - 1);
+    // A hair under, so a rounded cell cannot be the thing that breaks the row.
+    if (room > 0 && wide > room) {
+      const size = parseFloat(getComputedStyle(pills[0]).fontSize) * (room / wide) * 0.985;
+      root.style.setProperty('--pill-font', size.toFixed(2) + 'px');
+    }
+  }
+  measureBar();   // the row's height goes with its type size
 }
 
 function initTheme() {
@@ -650,7 +679,13 @@ function redrawLines() {
     asciiRoutes.get(host).push({ points, head: !!edge.head, head2: !!edge.head2 });
 
     if (edge.label) {
-      edge.label.style.left = (labelAt.x + (edge.labelDx || 0)) + 'px';
+      /* On the middle of the cell the upright is drawn in, not on the line the
+         route was solved along. The grid puts a character in whole cells - the
+         run lands at (round(x / cw) + 0.5) * cw - so up to half a cell of the
+         difference was showing as a wider gap on one side of the label than the
+         other. The two words hang the same distance either side of this point. */
+      const onCell = (Math.round(labelAt.x / cw) + 0.5) * cw;
+      edge.label.style.left = (onCell + (edge.labelDx || 0)) + 'px';
       edge.label.style.top = (labelAt.y + (edge.labelDy || 0)) + 'px';
     }
   }
@@ -833,7 +868,7 @@ const measureBar = () => {
 };
 
 const settle = () => {
-  measureBar();
+  fitBar();       // sizes the row to the window, then measures it
   if (!mapEl) return;
   fitMap(); spaceCards(); capSidePanels(); redrawLines(); paintMap();
   // The frame sets the panel's own box, so the cards are spaced and the runs
