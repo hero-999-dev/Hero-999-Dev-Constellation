@@ -371,6 +371,11 @@ body:not(.on-saturn) .edge-right{ display:none; }
    cut it to, and a strip across the sky is just a strip - so the controls stand
    on the starfield on their own. */
 body.on-saturn .topbar::before{ display:none; }
+/* Nor is there anything for it to do on a wide screen: nothing scrolls under the
+   bar there - that is the phone's list - and the ring stops below it. What the
+   strip did do was lie over the top of the hardware panel's name, which stands
+   in the rule under the last box in the bar. */
+@media (min-width: 861px){ .topbar::before{ display:none; } }
 /* The name, tracked wide like the label on an astronomical plate, absolutely
    centred over the whole bar so it lines up between the two groups of controls.
    The trailing letter-space is padded back so the word stays optically centred.

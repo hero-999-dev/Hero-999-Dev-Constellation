@@ -1261,7 +1261,13 @@ function paintDevFrame() {
   const layoutX = (el) => { let x = 0; for (let n = el; n; n = n.offsetParent) x += n.offsetLeft; return x; };
   if (btn && !btn.hidden) panel.style.left = (layoutX(btn) - layoutX(host)) + 'px';
   panel.style.width = 'auto';
-  panel.style.top = (siteRule.top - hb.top) + 'px';
+  /* Its top rule starts where the row of controls above it ends - level with the
+     underside of the last box in the bar, which is the one it stands under. The
+     map's own frame is fitted to the map and comes lower; the panel is fitted to
+     the corner it lives in. */
+  const lang = document.querySelector('.topbar-right .lang-btn');
+  const top = lang ? lang.getBoundingClientRect().bottom : siteRule.top;
+  panel.style.top = (top - hb.top) + 'px';
   /* The bottom rule is a cell tall like any other row, so the box has to hold
      it - and half a cell over, because the grid takes whole rows and a box
      exactly 52 cells deep can measure as 51. The slack is under the last rule,
@@ -1400,6 +1406,9 @@ function renderDevices() {
    place. */
 const DEV_EDGE = 10;
 const DEV_LABEL_AIR = 4;                     // clearance left round a label
+/* The stage's height last time the boxes were shared out. Whether it has moved
+   since is what says if the grid can be used - see spaceCards. */
+let devStageH = 0;
 
 /* One cell of the grid the runs are drawn into. The boxes are set against it, so
    that a head standing in the cell beside a box is the same distance off it on
@@ -1442,9 +1451,16 @@ function spaceCards() {
      Not while the panel is moving, though. Its height is animated, so the boxes
      are re-spaced on every frame of a crossing, and snapping each one had them
      stepping a whole cell at a time - see glide(). */
+  /* Set against the grid only while the stage is holding still. Beside the map
+     the panel's height is animated through a crossing, so the shares change from
+     frame to frame and snapping each one had the boxes stepping a cell at a
+     time; on a phone the panel slides on a transform and its height never moves,
+     so they are on the grid from the first frame and nothing shifts when the
+     crossing lands. Either way the settle at the end has the last word. */
   const cell = cellSize(stage.querySelector('.dev-lines'));
-  const gliding = document.getElementById('constellation')?.classList.contains('gliding');
-  const grid = !gliding && cell ? cell : null;
+  const steady = Math.abs(height - devStageH) < 0.5;
+  devStageH = height;
+  const grid = steady && cell ? cell : null;
   let y = edge;
   if (grid) {
     gap = Math.floor(gap / grid.ch) * grid.ch;
