@@ -1245,7 +1245,7 @@ function paintDevFrame() {
        is handed back, or a window dragged narrow would keep a rail's box.
        Nothing is drawn either: the frame round the edge of the screen and the
        word over it are both off down here. */
-    panel.style.left = panel.style.top = panel.style.bottom = panel.style.width = '';
+    panel.style.left = panel.style.right = panel.style.top = panel.style.bottom = panel.style.width = '';
     frame.style.fontSize = '';
     return;
   }
@@ -1259,13 +1259,28 @@ function paintDevFrame() {
      dragged back over the planet by it. Where a box sits in the layout is the
      same on both faces, which is what `left` wants. */
   const layoutX = (el) => { let x = 0; for (let n = el; n; n = n.offsetParent) x += n.offsetLeft; return x; };
-  if (btn && !btn.hidden) panel.style.left = (layoutX(btn) - layoutX(host)) + 'px';
+  const hostX = layoutX(host);
+  // The frame is drawn in the map's own type size, and the cell has to be known
+  // before the box is set - the width below is a whole number of them.
+  frame.style.fontSize = siteRule.font;
+  if (btn && !btn.hidden) panel.style.left = (layoutX(btn) - hostX) + 'px';
   panel.style.width = 'auto';
-  /* Its top rule starts where the row of controls above it ends - level with the
-     underside of the last box in the bar, which is the one it stands under. The
-     map's own frame is fitted to the map and comes lower; the panel is fitted to
-     the corner it lives in. */
+  panel.style.right = '';
+  /* The panel is fitted to the corner it lives in rather than to the map: its top
+     rule at the underside of the last box in the row of controls, and its
+     right-hand rule under that box's right edge. The width is then set to a whole
+     number of cells, because the grid draws its rectangle in whole ones and keeps
+     the remainder - left to the stylesheet's own right edge, the rule came to
+     rest most of a cell short of the box above it. */
   const lang = document.querySelector('.topbar-right .lang-btn');
+  const cell = cellSize(frame);
+  if (lang && cell) {
+    const right = layoutX(lang) + lang.offsetWidth - hostX;
+    const left = parseFloat(panel.style.left) || 0;
+    const cols = Math.max(1, Math.round((right - left) / cell.cw));
+    panel.style.left = (right - cols * cell.cw) + 'px';
+    panel.style.right = (host.offsetWidth - right) + 'px';
+  }
   const top = lang ? lang.getBoundingClientRect().bottom : siteRule.top;
   panel.style.top = (top - hb.top) + 'px';
   /* The bottom rule is a cell tall like any other row, so the box has to hold
@@ -1273,7 +1288,6 @@ function paintDevFrame() {
      exactly 52 cells deep can measure as 51. The slack is under the last rule,
      where nothing is drawn. */
   panel.style.bottom = (hb.bottom - (siteRule.bottom + siteRule.ch * 1.5)) + 'px';
-  frame.style.fontSize = siteRule.font;
 
   const g = gridFor(frame);
   if (!g) return;
@@ -1451,14 +1465,17 @@ function spaceCards() {
      Not while the panel is moving, though. Its height is animated, so the boxes
      are re-spaced on every frame of a crossing, and snapping each one had them
      stepping a whole cell at a time - see glide(). */
-  /* Set against the grid only while the stage is holding still. Beside the map
-     the panel's height is animated through a crossing, so the shares change from
-     frame to frame and snapping each one had the boxes stepping a cell at a
+  /* On the grid, unless a crossing is under way AND the stage is changing height
+     with it. Beside the map the panel's height is animated, so the shares move
+     from frame to frame and snapping each one had the boxes stepping a cell at a
      time; on a phone the panel slides on a transform and its height never moves,
      so they are on the grid from the first frame and nothing shifts when the
-     crossing lands. Either way the settle at the end has the last word. */
+     crossing lands. At rest it always snaps - the panel's own box is settled
+     between the two passes of a settle, and testing the height alone had the
+     second pass reading a height the first one had just changed. */
   const cell = cellSize(stage.querySelector('.dev-lines'));
-  const steady = Math.abs(height - devStageH) < 0.5;
+  const crossing = document.getElementById('constellation')?.classList.contains('gliding');
+  const steady = !crossing || Math.abs(height - devStageH) < 0.5;
   devStageH = height;
   const grid = steady && cell ? cell : null;
   let y = edge;
