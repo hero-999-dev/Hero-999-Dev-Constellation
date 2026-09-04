@@ -215,8 +215,13 @@ body:not(.on-saturn) .edge-right{ display:none; }
    block keeps its proportions instead of holding one pixel size on every screen.
    They credit the ASCII the airlock is drawn from, so they are shown with it;
    the map's right-hand side belongs to the hardware rail. */
+/* Lifted by one line of the corner type: the signature opposite is a drawn box
+   and its word is the MIDDLE of three rows, so with the two boxes' bottom edges
+   level the word sat a whole line above the credits' last line. Level is what
+   the eye reads across the bottom of the page, so it is the two lines of type
+   that are lined up, not the boxes they sit in. */
 .gate-insp{
-  position:absolute; right:var(--corner); bottom:var(--corner); z-index:21;
+  position:absolute; right:var(--corner); bottom:calc(var(--corner) + var(--chrome-font)); z-index:21;
   display:flex; flex-direction:column; align-items:flex-end; text-align:right;
   font-size:clamp(9px, .78vw, 13px); gap:.4em;
 }
@@ -307,8 +312,13 @@ body:not(.on-saturn) .edge-right{ display:none; }
      ordered in their rows, and the ink lifted to make up for the halo it lost. */
   :root[data-theme="dark"] .gate-saturn{ text-shadow:none; opacity:.44; }
 }
-/* The mark is one of the corner boxes; app.js draws it. */
+/* The mark is one of the corner boxes; app.js draws it. It is a link to the
+   owner's page, so the corner takes clicks again - the block around it does not,
+   or its empty half would swallow them. */
 .gate-mark{ margin:0; font-size:var(--chrome-font); }
+.gate-mark a{ pointer-events:auto; cursor:pointer; transition:color .12s var(--ease); }
+.gate-mark a:hover{ color:var(--amber); }
+.gate-mark a:active{ filter:brightness(1.25); }
 
 /* ------------------------------------------------------------ chrome */
 
@@ -524,17 +534,26 @@ a.node:hover{ color:var(--amber); }
      left a phone with a third of its width in use and type too small to read;
      the size below fills the screen with the box instead - 32 characters across,
      which is what a card is. */
-  .list{ display:block; align-self:stretch; overflow-y:auto;
+  /* Two columns: the single repositories down the left, the one family down the
+     right. Each is its own box, so the row has exactly two children whatever
+     goes in them, and the pair scrolls as one. */
+  .list{ display:flex; align-items:flex-start; gap:.6rem;
+         align-self:stretch; overflow-y:auto;
          width:100%; margin-inline:auto;
-         padding-top:var(--bar-h); padding-bottom:var(--corner); }
-  .list .node{ font-size:clamp(10px, 4.4vw, 16px); }
+         padding:var(--bar-h) var(--corner) var(--corner); }
+  .col{ flex:1 1 0; min-width:0; }
+  /* A card is 32 characters across and there are two of them side by side now,
+     so the type follows the half-width rather than the whole one: half the screen
+     less the gap between the columns and the air at either edge, and a couple of
+     pixels of slack so a rounded cell cannot push a card over its column. */
+  .list .node{ font-size:clamp(7px, 2.33vw, 12px); }
   /* The group's name over its cards, set the way the site's own name is over the
      airlock: the page's serif, tracked the same .28em, in the type colour rather
      than the faint one, and at the cards' own size. It is the one heading on the
      page and it was reading as a caption. */
   .branch-head{
     display:block; font-family:var(--font-head); font-weight:500;
-    font-size:clamp(1rem, 4.4vw, 1.35rem);
+    font-size:clamp(.8rem, 3.1vw, 1.05rem);
     text-transform:uppercase; letter-spacing:.28em; padding-left:.28em;
     color:var(--brown);
     margin:.2rem 0 .5rem; text-align:center;
@@ -544,7 +563,9 @@ a.node:hover{ color:var(--amber); }
      did nothing. Shrunk to its own drawn box, so the auto margins can centre it. */
   .leaf{ display:block; position:static; transform:none;
          width:max-content; margin:.3rem auto 0; }
-  .branch{ padding:.5rem .6rem; margin-bottom:.5rem; }
+  /* No side padding: the group is a column of its own now, and a card is as wide
+     as the column - pinched in either side it hung out of its own box. */
+  .branch{ padding:.5rem 0; margin-bottom:.5rem; }
   /* The combined pill is the wide screen's: down here the projects and the
      machines are two pages and take a pill each - see the phone block at the
      end of the file. */
@@ -732,13 +753,12 @@ a.node:hover{ color:var(--amber); }
 
   /* Every way across the page stands in the bar, wrapping to a second row rather
      than shrinking: five drawn boxes do not fit across a phone in any language.
-     The three that cross the page take the left of it and the two that set it up
-     the right, each row against its own edge - centred, the two rows floated free
-     of each other and of everything under them.
+     One gap for every distance in it - between the boxes, between the rows, and
+     from the boxes to the edges - and both rows centred, so the five read as one
+     block rather than as a staircase with a hole in each corner.
      The name goes - the planet is the identity on this screen, and the row the
      word would take is a row the pages never get back. */
-  .topbar{ flex-wrap:wrap; row-gap:.42rem; }
-  .topbar-right{ margin-left:auto; }
+  .topbar{ flex-wrap:wrap; gap:.5rem; justify-content:center; padding:.42rem .5rem; }
   .topbar .gate-top{ display:none; }
   /* Solid on the pages, not a wash: the list runs up under the bar, and at .84
      the cards showed through the strip as a smudge behind the buttons. Over the
@@ -758,15 +778,22 @@ a.node:hover{ color:var(--amber); }
     background:var(--ground);
   }
   .devices:not(.in){ transform:translateY(100%); opacity:1; }
+  /* The machines' page and the projects' page ride up together when the machines
+     are asked for from the sky - both live in the same box - so the cards were
+     showing underneath on the way up. The list stands down while the machines
+     are the page on show. */
+  body.on-hw .list{ visibility:hidden; }
   /* No frame and no name on the page: the whole screen is the panel here, so a
      rectangle drawn round the edge of it is a rectangle round the screen, and the
      word over it names a page you pressed a button called Hardware to get to.
      paintDevFrame() steps aside when they are off - see the narrow branch there. */
   .dev-frame, .dev-head{ display:none; }
-  /* With the frame gone the boxes take the width it was standing in. The size is
-     as large as the arrangement allows: the two laptops are 32 characters across,
-     and at .34 of the screen their left edge is what runs out of room first. */
-  .dev-card, .dev-lines, .dev-label{ font-size:clamp(10px, 3.4vw, 15px); }
+  /* With the frame gone the boxes take the width it was standing in. What caps
+     the size is not the screen but the label on the straight run: it is centred
+     between the two laptops and its second word reaches out towards the phone,
+     which has to start after it. At this size it clears by a few pixels at every
+     width, because every length here is a share of one. */
+  .dev-card, .dev-lines, .dev-label{ font-size:clamp(9px, 3.05vw, 13px); }
   .dev-stage{ margin:0; }
 
   /* The two corner blocks belong to the home face: on the pages the column wants

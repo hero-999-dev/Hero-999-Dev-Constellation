@@ -267,7 +267,14 @@ function applyTheme(mode) {
    markup, and redrawn whenever either changes. */
 function chromeLabel(el) {
   if (el.matches('[data-theme-toggle]')) {
-    return document.documentElement.dataset.theme === 'dark' ? t('light') : t('dark');
+    const word = document.documentElement.dataset.theme === 'dark' ? t('light') : t('dark');
+    /* Padded to the longer of the two words, the way the language button is
+       padded to the longest name. Dark is four characters and Light is five, so
+       pressing it changed the width of its own box - and with it the place of
+       every control beside it in the row. */
+    const wide = Math.max(t('dark').length, t('light').length);
+    const room = wide - word.length, left = Math.floor(room / 2);
+    return ' '.repeat(left) + word + ' '.repeat(room - left);
   }
   if (el.matches('.lang-btn')) {
     const pick = el.closest('[data-site-lang]');
@@ -834,12 +841,21 @@ function renderList() {
     leaf.classList.add('leaf');   // keeps `node`: same box, out of the map's flow
     return leaf;
   };
+  /* Two columns on a phone: the single repositories go down the left, the one
+     family down the right. They are two boxes rather than one flow, so the row
+     has exactly two children whatever ends up in them - and on the map's side of
+     the breakpoint the whole list is off anyway. */
+  const singles = document.createElement('div');
+  singles.className = 'col';
+  const families = document.createElement('div');
+  families.className = 'col';
+  list.append(singles, families);
   // Up on the map the page's own repository is the outer ring; there is no ring
   // down here, so it leads the list instead.
-  list.appendChild(leafOf(SELF));
+  singles.appendChild(leafOf(SELF));
   for (const branch of BRANCHES) {
     if (!branch.children) {
-      list.appendChild(leafOf(branch));
+      singles.appendChild(leafOf(branch));
       continue;
     }
     const box = document.createElement('section');
@@ -853,7 +869,7 @@ function renderList() {
     head.lang = 'en';
     box.appendChild(head);
     for (const child of branch.children) box.appendChild(leafOf(child));
-    list.appendChild(box);
+    families.appendChild(box);
   }
 }
 
@@ -937,24 +953,24 @@ function rebuildMap() {
    which is why the phone sits between the two laptops. */
 /* `xN` is the same triangle drawn for a phone, where the panel is a page across
    the whole screen and the boxes are set large enough to read: pulled in from
-   .30/.76 to .36/.68, which is what leaves the laptops' left edge and the
-   phone's right edge each a little air at that size. */
+   .30 to .34, which is what keeps the straight run's label clear of the phone
+   box at that size. The phone keeps its own .76 - see .dev-card in the CSS. */
 const DEVICES = [
   {
-    key: 'go', at: { x: 30, y: 12 }, xN: 36, w: '56%',
+    key: 'go', at: { x: 30, y: 12 }, xN: 34, w: '56%',
     name: 'Lenovo Legion Go',
     subKey: 'handheld', sub: '2023',
     specs: ['AMD Ryzen Z1 Extreme · 8C/16T', 'Radeon RDNA 3 (integrated)',
             '16 GB LPDDR5X-7500', '512 GB NVMe', '8.8" 2560×1600', 'Windows 11'],
   },
   {
-    key: 'phone', at: { x: 76, y: 50 }, xN: 68, w: '42%',
+    key: 'phone', at: { x: 76, y: 50 }, w: '42%',
     name: 'Motorola g23',
     subKey: 'phone', sub: '2023',
     specs: ['MediaTek Helio G85', '8 GB RAM · 128 GB', '6.5" 1600×720 90 Hz', 'Android 14'],
   },
   {
-    key: 'acer', at: { x: 30, y: 88 }, xN: 36, w: '56%',
+    key: 'acer', at: { x: 30, y: 88 }, xN: 34, w: '56%',
     name: 'Acer Swift 3',
     sub: 'SF314-511 · 2021',
     specs: ['Intel Core i5-1135G7 · 4C/8T', 'Iris Xe (integrated)',
@@ -1019,6 +1035,11 @@ function setRail(open) {
     // No pressed state on the button: the rail is a fixture of the map, not
     // something you switch on, so a lit button would just be lit forever.
     if (btn) btn.setAttribute('aria-expanded', String(open));
+    /* On a phone the machines and the projects are two pages in the one box, and
+       both ride up together when the machines are asked for from the sky. The
+       class is what lets the stylesheet stand the list down while they are up,
+       so its cards are not showing underneath on the way. */
+    document.body.classList.toggle('on-hw', open);
     if (open) {
       // Out of `hidden` before the glide is armed, and measured once, so the
       // browser has the off-screen starting position to animate FROM. Leave it
@@ -1218,25 +1239,17 @@ function renderDevices() {
        label is anchored ON the run and the words are hung either side of that
        point, so what shows between them is the run's own upright - the label
        does not have to draw one, or be nudged until its own lines up. */
-    /* On a phone there are two clear bands between the three boxes and three
-       labels wanting them: the straight run's is centred on the middle box and
-       lands across it. All three runs carry the same tailnet, so down there the
-       straight one - the one without an elbow - goes bare and the two that turn
-       keep the word. */
-    let label = null;
-    if (!narrow() || link.elbow) {
-      label = document.createElement('span');
-      label.className = 'dev-label';
-      const parts = link.label.split('|');
-      const left = document.createElement('span');
-      left.className = 'dev-word l';
-      left.textContent = parts[0];
-      const right = document.createElement('span');
-      right.className = 'dev-word r';
-      right.textContent = parts[1] || '';
-      label.append(left, right);
-      nodes.appendChild(label);
-    }
+    const label = document.createElement('span');
+    label.className = 'dev-label';
+    const parts = link.label.split('|');
+    const left = document.createElement('span');
+    left.className = 'dev-word l';
+    left.textContent = parts[0];
+    const right = document.createElement('span');
+    right.className = 'dev-word r';
+    right.textContent = parts[1] || '';
+    label.append(left, right);
+    nodes.appendChild(label);
     EDGES.push({ a: made[link.from], b: made[link.to], ascii: true, head, head2, label,
                  elbow: link.elbow, host: stage, w: DW, h: DH,
                  labelDx: link.dx || 0, labelDy: link.dy || 0 });
