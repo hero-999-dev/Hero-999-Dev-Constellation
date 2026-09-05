@@ -942,10 +942,16 @@ const measureBar = () => {
 const settle = () => {
   fitBar();       // sizes the row to the window, then measures it
   if (!mapEl) return;
-  fitMap(); spaceCards(); capSidePanels(); redrawLines(); paintMap();
+  fitMap(); spaceCards(); redrawLines(); paintMap();
   // The frame sets the panel's own box, so the cards are spaced and the runs
   // solved again against the box it ends up with.
   paintDevFrame(); spaceCards(); redrawLines();
+  /* Last, not first: it is judged on the type the boxes were cut to, and that
+     is only true of the box the panel ends the pass with. Asked before
+     paintDevFrame it read the box from the pass before - which, on the step
+     from a phone-shaped window to a wide one, is a different box entirely, and
+     a panel that should have stood down stayed out. */
+  capSidePanels();
 };
 addEventListener('resize', settle);
 // Web fonts and the scrollbar appearing both move things after first paint.
@@ -1013,45 +1019,59 @@ function renderList() {
 const NARROW = 860;
 const narrow = () => matchMedia('(max-width: ' + NARROW + 'px)').matches;
 
-/* Whether there is room for the machines at all. Called from settle(), so it is
-   re-judged on every resize the way the map is. */
+/* A window dragged short under a panel that is already out. Called from
+   settle(), so it is re-judged on every resize the way the map is. */
 function capSidePanels() {
-  const wrapBox = (document.querySelector('.wrap') || document.body).getBoundingClientRect();
-  // Mirror image on the right: the device column stops before the ring does.
-  // Below about 160px the specs wrap to mush, and on a short window the three
-  // cards are taller than the column - nothing here scrolls, so in either case
-  // the column stands down rather than spilling.
   const rigs = document.getElementById('devices');
-  if (rigs) {
-    /* No rail to find room for on a phone: the panel is a page there, the width
-       of the screen, and the stylesheet sizes it. Judged by the rail test it was
-       always too narrow, which shut the button and left the machines with no way
-       in at all. */
-    if (narrow()) return;
-    const room = wrapBox.width - DEV_RAIL;
-    // `hidden` is the toggle's business now, so room is judged on the button:
-    // too narrow a rail or too short a window and the panel is not offered at
-    // all - it must never spill, because nothing here scrolls.
-    const btn = document.getElementById('devBtn');
-    // While the panel is open its box is real; while it is closed fall back to
-    // the last height seen. `top` reads `auto` if the rule ever fails to apply,
-    // and parseFloat of that is NaN - which would quietly fail every comparison,
-    // so it is pinned to the bar height instead.
-    if (!rigs.hidden) devNaturalH = rigs.getBoundingClientRect().height;
-    const topPx = parseFloat(getComputedStyle(rigs).top);
-    const offset = Number.isFinite(topPx) ? topPx : 58;
-    const headroom = wrapBox.height - offset - 6;
-    const fits = room >= 160 && (devNaturalH === 0 || devNaturalH <= headroom);
-    if (btn) btn.hidden = !fits;
-    if (!fits) {
-      rigs.hidden = true; rigs.classList.remove('in');
-      btn?.classList.remove('on'); btn?.setAttribute('aria-expanded', 'false');
-      // The rail went with it: the page now boots with the panel open, so the
-      // reserved space has to be given back or the map stays pushed off an
-      // empty column.
-      document.documentElement.style.setProperty('--rail-right', '0px');
-    }
+  /* Nothing to stand down on a phone: the panel is a page there, the width of
+     the screen, and the stylesheet sizes it. Judged by the rail test it was
+     always too narrow, which shut the button and left the machines with no way
+     in at all. */
+  if (!rigs || narrow()) return;
+  /* Only what is standing open is stood down here - asking for it again goes
+     through setRail(), which measures for itself. Open, the panel is laid out,
+     so the type its boxes were just cut to is the fresh answer and devFits()
+     measures nothing of its own. */
+  if (rigs.hidden || devFits()) return;
+  rigs.hidden = true; rigs.classList.remove('in');
+  const btn = document.getElementById('devBtn');
+  btn?.classList.remove('on'); btn?.setAttribute('aria-expanded', 'false');
+  /* The rail goes with it - the page boots with the panel open, so the reserved
+     space has to be given back or the map stays pushed off an empty column. The
+     BUTTON stays: on a wide screen it is the way over to the projects as well,
+     and the projects are readable at sizes the machines are not. */
+  document.documentElement.style.setProperty('--rail-right', '0px');
+  // The stage just gave back 450px, and the map was fitted to the stage that
+  // still had them. Fit it again here rather than leaving it to the next resize
+  // that may never come.
+  fitMap(); redrawLines(); paintMap();
+}
+
+/* Whether the machines are worth offering at the size the window is now.
+   The judgement is the type the boxes would have to be cut to. fitDevType()
+   keeps them inside the frame at any height by taking the type down, but under
+   the stylesheet's own floor they are inside it and unreadable - and this page
+   has said from the start that the machines stand down rather than spill.
+   Put away, the panel is `display:none` and nothing in it has a box, so it is
+   brought out of sight for the length of the measurement - the same trick
+   renderDevices uses to read its own. That is what lets the rail be offered
+   again when the window grows: judged on a number left over from the last time
+   it was open, it would never come back. */
+const DEV_MIN_FS = 8;   // the floor in --dev-fs on .dev-stage
+
+function devFits() {
+  const wrap = document.querySelector('.wrap');
+  if (wrap && wrap.getBoundingClientRect().width - DEV_RAIL < 160) return false;
+  const panel = document.getElementById('devices');
+  if (panel && panel.hidden) {
+    panel.style.visibility = 'hidden';
+    panel.hidden = false;
+    paintDevFrame();
+    spaceCards();
+    panel.hidden = true;
+    panel.style.visibility = '';
   }
+  return !devTypePx || devTypePx >= DEV_MIN_FS;
 }
 
 /* Switching language changes every card's text, and card size feeds the ring
@@ -1124,10 +1144,13 @@ const LINKS = [
   { from: 'go', to: 'acer', label: 'termius|tailscale', both: true },
 ];
 
-/* Natural height of the panel, measured the first time it is drawn. Nothing on
-   this page scrolls, so on a window too short to hold the panel the button goes
-   away rather than the panel spilling off the bottom. */
-let devNaturalH = 0;
+/* The type the boxes were last cut to, in px. Nothing on this page scrolls, so
+   a window too short for the machines has to be answered somehow: they are cut
+   to fit down to the point they can still be read, and stand down under it -
+   see devFits(). The panel's own height says nothing about this, which is why
+   the height it was measured at is not kept any more: it is stretched between a
+   top and a bottom, so it is always exactly the room there is. */
+let devTypePx = 0;
 
 const GLIDE_MS = 560;
 
@@ -1173,6 +1196,9 @@ function setRail(open) {
   const btn = document.getElementById('devBtn');
   const panel = document.getElementById('devices');
   if (!panel) return;
+  // Too short a window for the boxes to be read: the button still crosses to the
+  // map - it is the projects' way over too - it just does not bring the rail.
+  if (open && !narrow() && !devFits()) open = false;
   {
     // No pressed state on the button: the rail is a fixture of the map, not
     // something you switch on, so a lit button would just be lit forever.
@@ -1197,7 +1223,6 @@ function setRail(open) {
       settle();
     });
     if (open) {
-      devNaturalH = panel.getBoundingClientRect().height;
       redrawLines();
     } else {
       // Laid out only while open, so it stays in the flow until it has left.
@@ -1444,10 +1469,12 @@ function renderDevices() {
                  labelDx: link.dx || 0, labelDy: link.dy || 0 });
   }
 
+  // Laid out for the length of one sharing-out, so the boxes have their places
+  // and their type before anything asks for them: [hidden] is display:none, and
+  // nothing inside it can be measured.
   const wasHidden = box.hidden;
   box.hidden = false;
   spaceCards();
-  devNaturalH = box.getBoundingClientRect().height;
   box.hidden = wasHidden;
   redrawLines();
 }
@@ -1494,12 +1521,44 @@ function cellSize(pre) {
   return box.width && box.height ? { cw: box.width / 40, ch: box.height } : null;
 }
 
+/* The type in the panel is set from the window, and the window cannot know how
+   tall the boxes come to: that is how many lines each of them wraps to, which
+   changes with the language. On a window short for its width the stack was
+   taller than the stage, the sharing below gave up, and the boxes were left on
+   the shares the stylesheet gives them - which stood the last one through the
+   frame's bottom rule, and on a phone through the bottom of the screen.
+
+   So the type comes down by exactly what the stack is over. Everything in the
+   panel is set from the one custom property, so the boxes, the runs and the
+   labels all come down together and the runs still meet the boxes they join.
+   One pass lands it: every height in here is a multiple of the type size,
+   except the fixed air round a label, which is taken off the room first. */
+function fitDevType(stage, cards, height) {
+  // Back to the size the window asks for before measuring, or a window that
+  // grows again would keep the size the smaller one was cut to.
+  stage.style.removeProperty('--dev-fs');
+  const gaps = cards.length - 1;
+  const word = stage.querySelector('.dev-word');
+  const air = DEV_LABEL_AIR * gaps;                    // does not follow the type
+  const stack = cards.reduce((n, c) => n + c.getBoundingClientRect().height, 0)
+              + (word ? word.offsetHeight : 0) * gaps; // does
+  const base = parseFloat(getComputedStyle(cards[0]).fontSize);
+  // What it came to either way: devFits() is judged on this, and the window's
+  // own size is the answer whenever nothing had to be cut.
+  devTypePx = base || 0;
+  if (!stack || !base || stack + air <= height) return;
+  devTypePx = Math.max(1, base * (height - air) / stack);
+  stage.style.setProperty('--dev-fs', devTypePx + 'px');
+}
+
 function spaceCards() {
   const stage = document.querySelector('.dev-stage');
   if (!stage) return;
   const height = stage.clientHeight;
   const cards = [...stage.querySelectorAll('.dev-card')];
   if (!height || cards.length < 2) return;
+  // Cut to the room there is before anything is measured against it.
+  fitDevType(stage, cards, height);
   // The real height, not the rounded one: a box is a whole number of cells and
   // offsetHeight loses the fraction, which the spacing below then carries.
   const tall = cards.map(c => c.getBoundingClientRect().height);
@@ -1510,7 +1569,7 @@ function spaceCards() {
   const need = ((word ? word.offsetHeight : 0) + DEV_LABEL_AIR) * (cards.length - 1);
   const edge = Math.max(0, Math.min(DEV_EDGE, (height - total - need) / 2));
   const free = height - total - edge * 2;
-  if (free < 0) return;                      // too short to space; leave the fallback
+  if (free < 0) return;                      // fitDevType above is what keeps this off
   let gap = free / (cards.length - 1);
   /* Set against the grid the runs are drawn into: a box that starts on a whole
      cell ends on one too - it is a whole number of lines tall - so every head has

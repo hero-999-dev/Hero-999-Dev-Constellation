@@ -221,12 +221,50 @@ measured the wrong box:
   `top: var(--bar-h)` now.
 
 Nothing on the page scrolls, inside a panel or out of it. If the column cannot fit — under
-160px wide, or taller than the window — it stands down rather than spilling. Below 861px
-none of that applies: the map gives way to the stacked list and the machines become a page of
-their own, so the rail and the room test both stand aside — see **The phone**.
+160px wide — it stands down rather than spilling. Below 861px none of that applies: the map
+gives way to the stacked list and the machines become a page of their own, so the rail and the
+room test both stand aside — see **The phone**.
+
+Too short a window is answered by the type first. How tall three boxes come to is how many
+lines each of them wraps to, which is the language's business, so the stylesheet cannot know
+it — `fitDevType()` measures the stack against the panel and takes the type down by exactly
+what it is over. Everything inside the panel is set from the one custom property, `--dev-fs`
+on `.dev-stage`, so the boxes, the runs and the labels come down together and the runs still
+meet the boxes they join. Left to the stylesheet's own floor the stack simply ran past the
+frame: `spaceCards()` had nothing to share out, gave up, and left the boxes on the shares in
+`DEVICES` — which put the last one through the bottom rule beside the map, and through the
+bottom of the screen on a phone.
+
+Under the floor the type is cut to, the machines stand down instead: `devFits()` says no below
+8px — the same floor `--dev-fs` carries — and `capSidePanels()` puts the panel away and gives
+the rail back, `setRail()` declines to bring it out again. Two things it does **not** do. The
+`Projects & Hardware` button stays, because on a wide screen it is the way over to the
+projects as well, and the projects are readable at sizes the machines are not; it crosses
+without a rail. And none of it applies on a phone, where the machines are a page of their own
+and standing them down would leave no way in at all — there the type simply keeps going down.
+
+The judgement is made on the type, not on the panel's height, and it is made **last** in
+`settle()`. The panel is stretched between a top and a bottom, so its height is always exactly
+the room there is and says nothing about the room it wants — measuring that was why the old
+test never once fired. Made before `paintDevFrame()`, it reads the box from the pass before,
+which on the step from a phone-shaped window to a wide one is a different box entirely.
 
 Measured across 2560x1440, 1920x1080, 1600x900, 1440x900, 1366x768, 1280x720 and 1024x600:
-ratio holds, page never scrolls, both side columns clear the ring, nothing clipped.
+ratio holds, page never scrolls, both side columns clear the ring, nothing clipped. Those are
+all one shape of window, which is how the short ones got away.
+
+Measured again, in the shapes and on the screens the first pass never had — 3840x2160 and
+2560x1600 and 3440x1440 and 2560x1080 and 1280x1024 and 1024x768 beside the usual ones, at
+device pixel ratios 1, 1.25, 1.5, 1.75, 2 and 2.625, and as a page at 800x1280, 412x915,
+360x640 and 320x568. The boxes stand inside their frame at every one of them, the tightest
+clearance 2.3px, in all four languages and in Consolas, Cascadia Mono, Courier New and DejaVu
+Sans Mono — the stack is a system font list, so a box is a different width on a machine with a
+different one, and the narrowest clearance across the four was 6.8px. On top of the windows
+themselves the panel's own stage was stepped from 120px to 900px in tens at each of them, and
+the type it lands on was checked against the floor: down to 1600x430 the machines show and
+stay inside; at 1600x400 they stand down, which is the 8px floor doing what it says. Dragged
+from a phone-shaped window straight to a wide one they stand down too, and pressing the pill
+after the window grows again brings them straight back.
 
 ## The phone
 
