@@ -1854,6 +1854,7 @@ function drawDetailFrame() {
   g.flush();
   const name = detail.el.querySelector('.detail-name');
   if (name) { name.style.left = (g.cols * g.cw / 2) + 'px'; name.style.top = (g.ch / 2) + 'px'; }
+  drawShotFrames(detail.el);
 }
 
 /* Redrawn on every frame for as long as the box is changing size. */
@@ -1865,6 +1866,61 @@ function animateDetailFrame(ms) {
   };
   requestAnimationFrame(step);
 }
+
+/* A picture in a drawn frame: the same face, weight and dashes as every other
+   box on the page, cut to the picture's size in whole cells and drawn again
+   whenever that size changes - once it has loaded, as the box it sits in
+   grows, and when another picture takes its place. */
+function shotBox(src, alt, className, tag = 'div') {
+  const box = document.createElement(tag);
+  box.className = 'shotbox ' + className;
+  const frame = document.createElement('pre');
+  frame.className = 'shot-frame';
+  frame.setAttribute('aria-hidden', 'true');
+  const img = document.createElement('img');
+  img.alt = alt;
+  img.decoding = 'async';
+  img.addEventListener('load', () => drawShotFrame(box));
+  img.src = src;
+  box.append(frame, img);
+  return box;
+}
+
+function drawShotFrame(box) {
+  const frame = box.querySelector('.shot-frame');
+  const g = frame && gridFor(frame);
+  if (!g) return;
+  g.box({ x: 0, y: 0 }, { x: (g.cols - 1) * g.cw, y: (g.rows - 1) * g.ch });
+  g.flush();
+}
+
+const drawShotFrames = (root) => root?.querySelectorAll('.shotbox').forEach(drawShotFrame);
+
+/* The picture over the whole window, in its own frame. Any press, or Esc,
+   puts it away and leaves the card open behind it. */
+let lightbox = null;
+function openLightbox(src, alt) {
+  closeLightbox();
+  const veil = document.createElement('div');
+  veil.className = 'lightbox';
+  veil.setAttribute('role', 'dialog');
+  veil.setAttribute('aria-label', alt);
+  const box = shotBox(src, alt, 'lightbox-box');
+  veil.appendChild(box);
+  veil.addEventListener('click', (event) => { event.stopPropagation(); closeLightbox(); });
+  document.body.appendChild(veil);
+  lightbox = veil;
+  requestAnimationFrame(() => veil.classList.add('in'));
+}
+function closeLightbox() {
+  if (!lightbox) return false;
+  const veil = lightbox;
+  lightbox = null;
+  veil.classList.remove('in');
+  setTimeout(() => veil.remove(), 200);
+  return true;
+}
+addEventListener('resize', () => { if (lightbox) drawShotFrames(lightbox); });
 
 /* A link drawn as a box, like the controls in the corners. */
 function detailLink(label, href) {
@@ -1887,6 +1943,8 @@ function openDetail(item, card) {
   el.setAttribute('aria-label', item.title);
   // In the type of the card it grows out of, so at the first frame it IS the card.
   el.style.fontSize = getComputedStyle(card).fontSize;
+  // The pictures' frames are drawn in this same type, not the words' larger one.
+  el.style.setProperty('--detail-fs', getComputedStyle(card).fontSize);
 
   const frame = document.createElement('pre');
   frame.className = 'detail-frame';
@@ -1909,28 +1967,23 @@ function openDetail(item, card) {
      thumbnails that swap into its place. */
   const shots = SHOTS[item.repo] || [];
   if (shots.length) {
+    const src = (name) => 'assets/img/shots/' + name + '.webp';
     const fig = document.createElement('figure');
     fig.className = 'detail-shots';
-    const big = document.createElement('img');
-    big.className = 'detail-shot';
-    big.alt = item.title;
-    big.decoding = 'async';
-    big.src = 'assets/img/shots/' + shots[0] + '.webp';
+    const big = shotBox(src(shots[0]), item.title, 'detail-shotbox');
+    const bigImg = big.querySelector('img');
+    // A press on the picture opens it over the whole window.
+    big.addEventListener('click', () => openLightbox(bigImg.src, item.title));
     fig.appendChild(big);
     if (shots.length > 1) {
       const row = document.createElement('div');
       row.className = 'detail-thumbs';
       shots.forEach((name, i) => {
-        const b = document.createElement('button');
+        const b = shotBox(src(name), '', 'detail-thumb' + (i ? '' : ' on'), 'button');
         b.type = 'button';
-        b.className = 'detail-thumb' + (i ? '' : ' on');
         b.setAttribute('aria-label', item.title + ' ' + (i + 1));
-        const img = document.createElement('img');
-        img.src = 'assets/img/shots/' + name + '.webp';
-        img.alt = '';
-        b.appendChild(img);
         b.addEventListener('click', () => {
-          big.src = img.src;
+          bigImg.src = src(name);
           row.querySelectorAll('.detail-thumb').forEach((x) => x.classList.toggle('on', x === b));
         });
         row.appendChild(b);
@@ -1991,6 +2044,7 @@ function openDetail(item, card) {
 /* Back into the card it came out of, and the rest fades back in. `now` drops it
    without the animation - a language change, a crossing to the other face. */
 function closeDetail(now, keyboard) {
+  closeLightbox();
   if (!detail) return;
   const { el, card } = detail;
   detail = null;
@@ -2027,7 +2081,11 @@ function placeDetail() {
   drawDetailFrame();
 }
 
-document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeDetail(false, true); });
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape') return;
+  // The picture first, if one is open over the card; the card on the next press.
+  if (!closeLightbox()) closeDetail(false, true);
+});
 /* A click on the frame's empty ground, outside the box, puts it away too. */
 document.addEventListener('click', (event) => {
   if (!detail || !detail.shown) return;

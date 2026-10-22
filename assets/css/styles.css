@@ -1040,20 +1040,42 @@ body.detail-open .map-groups, body.detail-open .list{ opacity:0; pointer-events:
   .detail-shots{ flex:1.25 1 0; min-width:0; }
   .detail-info{ flex:1 1 0; }
 }
-/* A screenshot in a thin drawn frame - the page's own dashes, not a shadow. */
-.detail-shots{ margin:0; display:flex; flex-direction:column; align-items:center; gap:.8em; width:100%; }
-.detail-shot{
-  display:block; max-width:100%; max-height:min(42vh, 420px); width:auto; height:auto;
-  border:1px dashed var(--box-ink); padding:.35em; background:var(--ground);
+/* A screenshot in a drawn frame: the same mono face, weight and ink as every
+   other box here (app.js draws it into .shot-frame), with the picture a cell
+   in from its rules. */
+.detail-shots{ margin:0; display:flex; flex-direction:column; align-items:center; gap:.8em; width:100%;
+               font-size:var(--detail-fs, 12px); }
+.shotbox{
+  position:relative; display:inline-block; line-height:0;
+  padding:1em 1.2em; margin:0; border:0; background:none;
+  font-family:var(--font-mono); font-weight:700; color:var(--box-ink);
 }
-@container (min-width: 560px){ .detail-shot{ max-height:min(60vh, 640px); } }
-.detail-thumbs{ display:flex; gap:.6em; justify-content:center; flex-wrap:wrap; }
-.detail-thumb{
-  padding:.2em; border:1px dashed var(--line-strong); background:none; cursor:pointer;
-  opacity:.6; transition:opacity .14s var(--ease), border-color .14s var(--ease);
+.shot-frame{
+  position:absolute; inset:0; margin:0; overflow:hidden; pointer-events:none; user-select:none;
+  font:inherit; line-height:1; white-space:pre; color:inherit;
 }
-.detail-thumb img{ display:block; height:3.4em; width:auto; }
-.detail-thumb:hover, .detail-thumb.on{ opacity:1; border-color:var(--box-ink); }
+.shotbox img{ display:block; position:relative; }
+.detail-shotbox{ cursor:zoom-in; max-width:100%; }
+.detail-shotbox img{ max-width:100%; max-height:min(42vh, 420px); width:auto; height:auto; }
+@container (min-width: 560px){ .detail-shotbox img{ max-height:min(56vh, 600px); } }
+.detail-shotbox:hover{ color:var(--amber); }
+.detail-thumbs{ display:flex; gap:.4em; justify-content:center; flex-wrap:wrap; }
+.detail-thumb{ cursor:pointer; padding:.9em 1.1em; opacity:.55; transition:opacity .14s var(--ease), color .14s var(--ease); }
+.detail-thumb img{ height:3em; width:auto; }
+.detail-thumb:hover, .detail-thumb.on{ opacity:1; }
+.detail-thumb:hover{ color:var(--amber); }
+
+/* A picture opened over the whole window: the page dimmed behind it, the
+   picture in its frame, as large as the window allows. */
+.lightbox{
+  position:fixed; inset:0; z-index:9000;
+  display:flex; align-items:center; justify-content:center;
+  background:color-mix(in srgb, var(--ground) 88%, transparent);
+  cursor:zoom-out; opacity:0; transition:opacity .2s var(--ease);
+  font-size:clamp(9px, 1.1vw, 14px);
+}
+.lightbox.in{ opacity:1; }
+.lightbox-box img{ max-width:calc(100vw - 6em); max-height:calc(100dvh - 5em); width:auto; height:auto; }
 .detail-badges{ margin:0; color:var(--terra); }
 .detail-text{
   margin:0; max-width:64ch; line-height:1.6; font-weight:400;

@@ -164,11 +164,11 @@ const DETAILS = {
    whose only public face is behind a password are left without one, on purpose. */
 const SHOTS = {
   'warsaw-cat-sitting': ['warsaw-1', 'warsaw-2'],
-  'pixel_pomo': ['pomo-1'],
-  'pixel-pomo-web': ['pomo-1'],
+  'pixel_pomo': ['pomo-1', 'pomo-2', 'pomo-3', 'pomo-4'],
+  'pixel-pomo-web': ['pomo-web-1', 'pomo-web-2'],
   'pixel_pomo_art_kit': ['artkit-1'],
   'pixel_pomo_dev_kit': ['devkit-1'],
-  'Project-Lea': ['lea-1', 'lea-2'],
-  'nebula': ['nebula-1'],
-  'ai-orchestra': ['orchestra-1', 'orchestra-2'],
+  'Project-Lea': ['lea-1'],
+  'nebula': ['nebula-1', 'nebula-2', 'nebula-3'],
+  'ai-orchestra': ['orchestra-1'],
 };
