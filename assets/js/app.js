@@ -126,7 +126,7 @@ const I18N = {
     inspiration: 'Inspiration',
     home: 'Home', projectsHardware: 'Projects & Hardware',
     projects: 'Projects',
-    hardware: 'Hardware', dark: 'Dark', light: 'Light',
+    hardware: 'Hardware', black: 'Black', white: 'White', dark: 'Dark', light: 'Light',
     private: 'Private', public: 'Public', live: 'Live',
     Extension: 'Extension', Desktop: 'Desktop',
     handheld: 'Handheld', phone: 'Phone', integrated: 'integrated',
@@ -143,7 +143,7 @@ const I18N = {
     inspiration: 'İlham',
     home: 'Ana sayfa', projectsHardware: 'Projeler & Donanım',
     projects: 'Projeler',
-    hardware: 'Donanım', dark: 'Koyu', light: 'Açık',
+    hardware: 'Donanım', black: 'Siyah', white: 'Beyaz', dark: 'Koyu', light: 'Açık',
     private: 'Özel', public: 'Herkese açık', live: 'Canlı',   // not 'Açık' - that is the light theme
     Extension: 'Eklenti', Desktop: 'Masaüstü',
     handheld: 'Avuç içi', phone: 'Telefon', integrated: 'tümleşik',
@@ -160,7 +160,7 @@ const I18N = {
     inspiration: 'Inspiracje',
     home: 'Strona główna', projectsHardware: 'Projekty i sprzęt',
     projects: 'Projekty',
-    hardware: 'Sprzęt', dark: 'Ciemny', light: 'Jasny',
+    hardware: 'Sprzęt', black: 'Czarny', white: 'Biały', dark: 'Ciemny', light: 'Jasny',
     private: 'Prywatne', public: 'Publiczne', live: 'Na żywo',
     Extension: 'Rozszerzenie', Desktop: 'Desktop',
     handheld: 'Konsola przenośna', phone: 'Telefon', integrated: 'zintegrowana',
@@ -177,7 +177,7 @@ const I18N = {
     inspiration: 'Inspiration',
     home: 'Startseite', projectsHardware: 'Projekte & Hardware',
     projects: 'Projekte',
-    hardware: 'Hardware', dark: 'Dunkel', light: 'Hell',
+    hardware: 'Hardware', black: 'Schwarz', white: 'Weiß', dark: 'Dunkel', light: 'Hell',
     private: 'Privat', public: 'Öffentlich', live: 'Live',
     Extension: 'Erweiterung', Desktop: 'Desktop',
     handheld: 'Handheld', phone: 'Telefon', integrated: 'integriert',
@@ -207,7 +207,7 @@ function applyLang(code) {
   }
   paintLangMenu();   // before the button: it is measured against these names
   paintChrome();
-  applyTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
+  applyTheme(THEME);
   if (document.getElementById('mapNodes')) rebuildMap();
 }
 
@@ -264,25 +264,37 @@ function initLang() {
 
 /* Two of these exist - one on the lock screen, one in the header - so the switch
    is reachable before the password is answered as well as after. */
+/* Four of them, taken in turn by the one button: the two warm ones, and black
+   and white - the same page in greys, on pure black or pure white. A grey theme
+   is a dark or a light one with its palette swapped (`data-mono`), so every
+   rule written for dark or light holds for it as well. */
+const THEMES = ['dark', 'light', 'black', 'white'];
+const THEME_GROUND = { dark: '#1A1411', light: '#EEDAB6', black: '#000000', white: '#FFFFFF' };
+let THEME = 'dark';
+
 function applyTheme(mode) {
-  document.documentElement.dataset.theme = mode;
-  localStorage.setItem('hdh-theme', mode);
-  document.querySelector('meta[name="theme-color"]')
-    ?.setAttribute('content', mode === 'dark' ? '#1A1411' : '#EEDAB6');
+  THEME = THEMES.includes(mode) ? mode : 'dark';
+  const root = document.documentElement;
+  root.dataset.theme = THEME === 'light' || THEME === 'white' ? 'light' : 'dark';
+  if (THEME === 'black' || THEME === 'white') root.dataset.mono = ''; else delete root.dataset.mono;
+  localStorage.setItem('hdh-theme', THEME);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', THEME_GROUND[THEME]);
   paintChrome();
 }
+const nextTheme = () => THEMES[(THEMES.indexOf(THEME) + 1) % THEMES.length];
 
 /* The controls wear the cards' frame. Their labels come from the language and
    theme tables, so the frames are drawn from those rather than written into the
    markup, and redrawn whenever either changes. */
 function chromeLabel(el) {
   if (el.matches('[data-theme-toggle]')) {
-    const word = document.documentElement.dataset.theme === 'dark' ? t('light') : t('dark');
-    /* Padded to the longer of the two words, the way the language button is
+    // The theme the button goes to next, not the one on show.
+    const word = t(nextTheme());
+    /* Padded to the longest of the four words, the way the language button is
        padded to the longest name. Dark is four characters and Light is five, so
        pressing it changed the width of its own box - and with it the place of
        every control beside it in the row. */
-    const wide = Math.max(t('dark').length, t('light').length);
+    const wide = Math.max(...THEMES.map((m) => t(m).length));
     const room = wide - word.length, left = Math.floor(room / 2);
     return ' '.repeat(left) + word + ' '.repeat(room - left);
   }
@@ -421,7 +433,7 @@ function cellWidth(bar, pill) {
 function barCells(code) {
   const T = (key) => (I18N[code] && I18N[code][key]) || I18N.en[key] || key;
   const words = [T('home'), T('projects'), T('hardware')];
-  words.push(' '.repeat(Math.max(T('dark').length, T('light').length)));
+  words.push(' '.repeat(Math.max(...THEMES.map((m) => T(m).length))));
   words.push(' '.repeat(7 + 2));               // "English"/"Deutsch" + " v"
   return words.reduce((n, word) => n + word.length + 4, 0);
 }
@@ -430,11 +442,9 @@ function initTheme() {
   const saved = localStorage.getItem('hdh-theme');
   // Dark unless the visitor has said otherwise - most people prefer it, and the
   // planet burns against the black better than it sits on the amber.
-  applyTheme(saved === 'dark' || saved === 'light' ? saved : 'dark');
+  applyTheme(THEMES.includes(saved) ? saved : 'dark');
   for (const btn of document.querySelectorAll('[data-theme-toggle]')) {
-    btn.addEventListener('click', () =>
-      applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark')
-    );
+    btn.addEventListener('click', () => applyTheme(nextTheme()));
   }
 }
 
@@ -719,13 +729,19 @@ function fitMap() {
   if (!block) return;
   /* The band, in the map's own pixels. Its top does not move while the rail
      slides - only the width does - so it can be read off the screen now. */
+  /* The top rule stands where the hardware panel's does - against the
+     underside of the boxes in the corner - and the bottom one the same distance
+     clear of the signature: the rule is inked in the middle of its row, so the
+     row above the signature puts the same half a cell between them that there
+     is between the corner boxes and the top rule. */
   const top = stage.getBoundingClientRect().top + parseFloat(cs.paddingTop);
-  const bar = document.querySelector('.topbar');
+  const bar = document.querySelector('.topbar-right .lang-btn') || document.querySelector('.topbar');
   const sig = document.querySelector('.signature');
-  const bandTop = Math.max(0, bar ? bar.getBoundingClientRect().bottom - top + 2 : 0);
+  const bandTop = Math.max(0, bar ? bar.getBoundingClientRect().bottom - top : 0);
   let bandBottom = availH;
   if (sig) {
-    const above = sig.getBoundingClientRect().top - top - 8;
+    const row = cellSize(linesEl)?.ch || 0;
+    const above = sig.getBoundingClientRect().top - top - row;
     if (above > bandTop) bandBottom = Math.min(availH, above);
   }
   frameBand = { top: bandTop, bottom: bandBottom };
@@ -1435,7 +1451,8 @@ function paintDevFrame() {
     panel.style.left = (right - cols * cell.cw) + 'px';
     panel.style.right = (host.offsetWidth - right) + 'px';
   }
-  const top = lang ? lang.getBoundingClientRect().bottom : siteRule.top;
+  // On the map frame's own top rule, so the two are level to the pixel.
+  const top = siteRule.top;
   panel.style.top = (top - hb.top) + 'px';
   /* The bottom rule is a cell tall like any other row, so the box has to hold
      it - and half a cell over, because the grid takes whole rows and a box
