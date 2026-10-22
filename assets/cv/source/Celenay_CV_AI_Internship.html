@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Kahraman Berke Celenay — CV (AI Internship)</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: "Liberation Sans", Arial, Helvetica, sans-serif;
+    color: #36424e; font-size: 8.7pt; line-height: 1.32;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .page { width: 210mm; height: 297mm; overflow: hidden; padding: 10mm 14mm 8mm; }
+  h1 { margin: 0; font-size: 22pt; letter-spacing: .01em; color: #1c2733; font-weight: 700; line-height: 1.1; }
+  .role { margin: 4pt 0 6pt; color: #157a66; font-weight: 700; font-size: 10.4pt; letter-spacing: .06em; }
+  .contact { color: #5e6975; font-size: 8.6pt; line-height: 1.55; }
+  .contact .sep { color: #c6cfd8; margin: 0 5pt; }
+  .head { border-bottom: 2.2pt solid #157a66; padding-bottom: 7pt; margin-bottom: 7pt; }
+  h2 {
+    margin: 7pt 0 4pt; padding-bottom: 3pt; border-bottom: .8pt solid #d9e1e8;
+    color: #157a66; font-size: 10.6pt; letter-spacing: .08em; font-weight: 700;
+  }
+  p { margin: 0 0 3pt; }
+  .skills p { margin: 0 0 2.4pt; }
+  b { color: #1c2733; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; }
+  .date { color: #5e6975; font-weight: 700; font-size: 8.6pt; white-space: nowrap; }
+  .sub { font-style: italic; color: #5e6975; font-size: 8.8pt; }
+  .proj { margin: 0 0 4pt; }
+  .proj .t { color: #1c2733; font-weight: 700; font-size: 9.8pt; }
+  .proj .t span { font-weight: 700; color: #36424e; }
+  .proj .l { color: #1b7d6a; font-size: 8.4pt; margin: 1pt 0 1.5pt; }
+  ul { margin: 1pt 0 0; padding-left: 12pt; }
+  li { margin: 0 0 1.4pt; }
+  li::marker { color: #157a66; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="head">
+    <h1>KAHRAMAN BERKE CELENAY</h1>
+    <div class="role">COMPUTER SCIENCE STUDENT · AI INTERNSHIP</div>
+    <div class="contact">
+      Warsaw, Poland<span class="sep">|</span>+48 516 018 479<span class="sep">|</span>celenay.kahramanberke@gmail.com<br>
+      Polsko-Japońska Akademia Technik Komputerowych (PJATK)<br>
+      linkedin.com/in/kahraman-berke-ç-5580a7173<span class="sep">|</span>github.com/hero-999-dev<span class="sep">|</span>hero-999-dev.github.io/Hero-999-Dev-Constellation
+    </div>
+  </div>
+
+  <h2>PROFESSIONAL SUMMARY</h2>
+  <p>Computer Science student who builds real software with AI agents — and measures them: a benchmark harness that graded 286 Claude Code runs,
+  and a local workspace that routes tasks between AI coding agents by role, cost and quota. I ship what I build, from a cross-platform Flutter app with its
+  own tooling to an Electron app with installers and end-to-end tests. Looking for an AI internship in LLM tooling, agents and evaluation.</p>
+
+  <h2>TECHNICAL SKILLS</h2>
+  <div class="skills">
+    <p><b>AI &amp; LLM:</b> Claude Code, Claude CLI, OpenAI Codex, Cursor &amp; Cursor CLI, Google Antigravity, Mistral API, Ollama, GitHub Copilot, ChatGPT ·
+    agent orchestration, LLM evaluation &amp; benchmarking, prompt and context engineering, Claude Code hooks</p>
+    <p><b>Programming:</b> Python, Java, C++, C#, SQL, Bash, UML · working with AI agents in Dart, TypeScript / JavaScript and PowerShell</p>
+    <p><b>Frameworks &amp; Platforms:</b> Flutter, Electron, Node.js, React, Java Spring, Vite, Vitest, Playwright</p>
+    <p><b>Tools &amp; Systems:</b> Git / GitHub, GitHub Actions (CI), GitHub Pages, Docker, Linux (Mint), Termius, Tailscale, Wireshark, Vertabelo, Microsoft 365,
+    Notion, Obsidian, XMind, Adobe Photoshop, Audacity, Discord (incl. bot development)</p>
+    <p><b>Concepts:</b> OOP, Data Structures, Algorithms, Relational Databases, Statistical Data Analysis, Computer Networks</p>
+  </div>
+
+  <h2>EDUCATION</h2>
+  <div class="row"><b>Polish-Japanese Academy of Information Technology (PJAIT)</b><span class="date">Oct 2024 – Mar 2028 (expected)</span></div>
+  <div class="sub">BSc in Computer Science · Warsaw, Poland</div>
+  <p><b>Relevant coursework:</b> Artificial Intelligence Tools, Algorithms &amp; Data Structures, Object-Oriented Programming &amp; GUI, Fundamentals of Python
+  Programming, Foundations of Java Programming, Statistical Data Analysis, Relational Databases, Database Systems, Computer Networks &amp; Network
+  Programming in Java, Operating Systems, Information Systems Design, Java Spring, C#, UML.</p>
+
+  <h2>PROJECTS</h2>
+  <div class="proj">
+    <div class="t">Project Lea — Claude Code Benchmark &amp; Configuration <span>· Python, Node.js, PowerShell</span></div>
+    <div class="l">github.com/hero-999-dev/Project-Lea · reports: hero-999-dev.github.io/project-lea-web</div>
+    <ul>
+      <li>Built a resumable benchmark harness for Claude Code: <b>286 graded agent runs</b> over five task types, seven configurations and two models (Sonnet, Opus),
+      marked by hidden test suites and a real browser driven over CDP, plus a round on a live production site.</li>
+      <li>The result, Lea, is a 226-word SessionStart hook with no plugins that matched or beat 6,000-token plugin stacks at 13–53% lower cost; one rewritten paragraph took the hard round from 4/20 to 13/20 correct.</li>
+    </ul>
+  </div>
+  <div class="proj">
+    <div class="t">AI Orchestra — Local Workspace for AI Coding Agents <span>· TypeScript, Electron, React</span></div>
+    <div class="l">github.com/hero-999-dev/ai-orchestra</div>
+    <ul>
+      <li>A desktop app that runs Claude Code, Codex, Cursor’s agent, the Mistral API and shells side by side as live terminals on a canvas, and lets them hand
+      work to each other through one orchestrator that routes tasks by role, cost and quota.</li>
+      <li>Runs QA against the project’s real test runner with bounded escalation to a stronger model and explains every
+      automatic decision in the UI. Local daemon with SQLite, 44 unit tests, Windows installers.</li>
+    </ul>
+  </div>
+  <div class="proj">
+    <div class="t">Pixel Pomo — Pixel-Art Pomodoro Ecosystem <span>· Flutter / Dart, Python</span></div>
+    <div class="l">github.com/hero-999-dev/pixel_pomo · pixel-pomo-web · pixel_pomo_art_kit · pixel_pomo_dev_kit</div>
+    <ul>
+      <li>One Flutter codebase for Android and iOS with a custom 2.5D garden engine, Android live wallpaper, app blocker, statistics with charts, a coin shop,
+      six themes, six languages and in-app updates; the same app also runs in the browser on GitHub Pages.</li>
+      <li>Two desktop tools for the game’s artists, built by CI for Windows and macOS: an Art Kit pixel editor whose exports are byte-identical to the game’s
+      sprites, and a Dev Kit that shows 2D sprites and MagicaVoxel models inside the real game engine before they ship.</li>
+    </ul>
+  </div>
+  <div class="proj">
+    <div class="t">Nebula — Desktop Notes App <span>· Electron, JavaScript</span></div>
+    <div class="l">github.com/hero-999-dev/nebula</div>
+    <ul>
+      <li>A notes app for Windows and macOS with a full editor (equations, code blocks, shapes, find), a PIN or passkey app lock, encrypted note vaults and
+      an ASCII “Universe” map of notes; covered by Playwright end-to-end tests that drive the real Electron app, with in-app updates.</li>
+    </ul>
+  </div>
+
+  <h2>LANGUAGES</h2>
+  <p><b>Turkish</b> — Native &nbsp;·&nbsp; <b>English</b> — Upper-Intermediate (B2) &nbsp;·&nbsp; <b>Polish</b> — Beginner (A1)</p>
+
+  <h2>ACTIVITIES &amp; INTERESTS</h2>
+  <p>Game tester on gametester.gg (Lionbridge Games) · volunteer Scratch educator at Okul Destek Derneği · university American Football team (2 years) ·
+  YouTube content creator · Cinema Club organizer and Discord community manager.</p>
+</div>
+</body>
+</html>

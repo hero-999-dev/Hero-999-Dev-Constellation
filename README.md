@@ -95,6 +95,15 @@ fit inside the frame with its pad, up to `CARD_FS_MAX`.
 On narrow screens the map is replaced by the two-column list, and that list scrolls inside its
 own area rather than scrolling the page.
 
+## CV
+
+The **CV** box in the bottom-right corner of the projects' face opens a viewer with the four
+CVs in `assets/cv/` as tabs: each page is shown as a 200 dpi WebP (a PDF in an `<iframe>` is not
+drawn by a phone's browser), with a zoom and a download of the PDF itself. The list is `CVS` in
+`app.js`. The AI-internship CV is generated from `assets/cv/source/Celenay_CV_AI_Internship.html`
+— edit that, print it to an A4 PDF from Chromium (no margins, backgrounds on), and render the
+page again with `pdftoppm -r 200 -png -singlefile`.
+
 ## Hardware
 
 A **Hardware** pill sits beside the language picker; pressing it drops one framed panel
