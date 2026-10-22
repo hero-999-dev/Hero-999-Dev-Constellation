@@ -12,102 +12,104 @@
 const OWNER = 'hero-999-dev';
 const GH = (repo) => `https://github.com/${OWNER}/${repo}`;
 
-/* x / y are points on the 1200 x 840 grid the connector SVG uses.
- *
- * These numbers are solved, not eyeballed. Two things fight each other: a ring
- * that really CONTAINS its cards needs about 1.4x the half-extent of the box
- * they sit in, and the Pixel Pomo ring then has to sit inside the outer ring as
- * well - and it sits far to the left, where the outer ellipse has already
- * narrowed. What buys the clearance is a vertical column for the cluster (that
- * is the arrangement with the smallest horizontal reach, so its ring pokes out
- * least), a tall spread on the right (which raises the outer ring without
- * touching the inner one) and a generous pad on the outer ring. Measured: the
- * inner ring reaches 0.909 of the outer at its worst point - inside, with room
- * to see. Move a card and that number moves; check it before shipping.
- *
- * The three in the column are 148 apart rather than 110: a card is about 129 of
- * these units tall now that it is a drawn box, so at 110 each one's ground was
- * covering the bottom rule of the one above it.
- */
-const ME = { id: 'me', title: 'Hero Dev', desc: OWNER, href: `https://github.com/${OWNER}`,
-             x: 600, y: 420 };
-
-/* A ring is a group: the circle around the cards IS the grouping, which is why
-   Pixel Pomo has no box of its own.
+/* A group is a project with more than one repository: the frame drawn round
+   its cards IS the grouping, so it has no card of its own. A project that is one
+   repository stands on its own inside the outer frame, which is the page's own
+   repository (SELF) - on a phone, the column headed by its name.
    `desc` and the two category words in `lang` are I18N keys, not text. Keep every
-   translation to ONE line: card height is pinned and feeds the ring geometry, so
-   a second line is clipped rather than fitted. Check all four after editing. */
-/* Order is the stacked list's order on a phone; on the map it is only the order
-   the cards are drawn in, because every card carries its own place. The one
-   group comes last - it is three rows deep, and ahead of the single cards it was
-   most of the first screen. */
+   translation to ONE line: card height is pinned (NODE_ROWS), so a second line
+   is clipped rather than fitted. Check all four after editing.
+   Course work and other one-off repositories do not belong here - only projects. */
 const BRANCHES = [
   {
-    title: 'CubeDeck',
-    desc: 'dCube',
-    repo: 'CubeDeck', lang: 'Extension', private: true,
-    x: 765, y: 158,
-  },
-  {
-    title: 'Warsaw Cat Sitting',
+    id: 'cat', title: 'Warsaw Cat Sitting',
     desc: 'dCat',
     repo: 'warsaw-cat-sitting', lang: 'HTML', private: true,
-    x: 935, y: 285,
-  },
-  /* The right-hand arc carries five cards now. Its widest point sits at x 960,
-     which is the same 360 from the centre that the Pixel Pomo column reaches on
-     the left - so the outer ring is fitted to exactly the numbers it was before
-     and none of the four measured ratios move. Spreading the other two out to
-     y 285 / 555 is what makes room: the cards are 99 grid units tall, and 135
-     between centres clears them. */
-  {
-    title: 'Project Lea',
-    desc: 'dLea',
-    repo: 'Project-Lea', lang: 'PowerShell', private: true,
-    x: 960, y: 420,
   },
   {
-    title: 'SplitExec',
-    desc: 'dSplit',
-    repo: 'SplitExec-Video-Splitter-For-Discord-And-Other-Platforms', lang: 'Desktop', private: true,
-    x: 935, y: 555,
-  },
-  {
-    title: 'ClaWus',
+    id: 'claw', title: 'ClaWus',
     desc: 'dClaw',
     repo: 'ClaWus-Claude-Usage-Widget', lang: 'Desktop', private: true,
-    x: 765, y: 683,
   },
   {
-    ring: 'Pixel Pomo',
+    id: 'split', title: 'SplitExec',
+    desc: 'dSplit',
+    repo: 'SplitExec-Video-Splitter-For-Discord-And-Other-Platforms', lang: 'Desktop', private: true,
+  },
+  {
+    id: 'pomo', ring: 'Pixel Pomo',
     children: [
-      {
-        title: 'pixel_pomo',
-        desc: 'dPomo',
-        repo: 'pixel_pomo', lang: 'Dart', private: true,
-        x: 240, y: 272,
-      },
-      {
-        title: 'pixel-pomo-web',
-        desc: 'dWeb',
+      { title: 'pixel_pomo', desc: 'dPomo',
+        repo: 'pixel_pomo', lang: 'Dart', private: false },
+      { title: 'pixel-pomo-web', desc: 'dWeb',
         repo: 'pixel-pomo-web', lang: 'Flutter', private: false,
-        live: 'https://hero-999-dev.github.io/pixel-pomo-web/',
-        x: 240, y: 420,
-      },
-      {
-        title: 'pixel_pomo_art_kit',
-        desc: 'dKit',
-        repo: 'pixel_pomo_art_kit', lang: 'Python', private: false,
-        x: 240, y: 568,
-      },
+        live: 'https://hero-999-dev.github.io/pixel-pomo-web/' },
+      { title: 'pixel_pomo_art_kit', desc: 'dKit',
+        repo: 'pixel_pomo_art_kit', lang: 'Python', private: false },
+      { title: 'pixel_pomo_dev_kit', desc: 'dDevKit',
+        repo: 'pixel_pomo_dev_kit', lang: 'Python', private: false },
+    ],
+  },
+  /* The -web half of a project is its public entrance: the documentation (and,
+     for the closed ones, the download) behind a password, served from Pages. */
+  {
+    id: 'cube', ring: 'CubeDeck',
+    children: [
+      { title: 'CubeDeck', desc: 'dCube',
+        repo: 'CubeDeck', lang: 'Extension', private: true },
+      { title: 'cubedeck-web', desc: 'dDocs',
+        repo: 'cubedeck-web', lang: 'HTML', private: false,
+        live: 'https://hero-999-dev.github.io/cubedeck-web/' },
+    ],
+  },
+  {
+    id: 'lea', ring: 'Project Lea',
+    children: [
+      { title: 'Project Lea', desc: 'dLea',
+        repo: 'Project-Lea', lang: 'PowerShell', private: true },
+      { title: 'project-lea-web', desc: 'dDocs',
+        repo: 'project-lea-web', lang: 'HTML', private: false,
+        live: 'https://hero-999-dev.github.io/project-lea-web/' },
+    ],
+  },
+  {
+    id: 'nebula', ring: 'Nebula',
+    children: [
+      { title: 'Nebula', desc: 'dNebula',
+        repo: 'nebula', lang: 'Desktop', private: false },
+      { title: 'nebula-web', desc: 'dDocs',
+        repo: 'nebula-web', lang: 'HTML', private: false,
+        live: 'https://hero-999-dev.github.io/nebula-web/' },
+    ],
+  },
+  {
+    id: 'orch', ring: 'AI Orchestra',
+    children: [
+      { title: 'AI Orchestra', desc: 'dOrch',
+        repo: 'ai-orchestra', lang: 'Desktop', private: true },
+      { title: 'ai-orchestra-web', desc: 'dDocs',
+        repo: 'ai-orchestra-web', lang: 'HTML', private: false,
+        live: 'https://hero-999-dev.github.io/ai-orchestra-web/' },
     ],
   },
 ];
 
+/* Which groups stand in which column, by id - `self` is the single repositories.
+   A phone has two columns, and the groups are shared out so the two come to
+   about the same height. A wide screen is offered more than one arrangement and
+   takes whichever lets the cards be set biggest: four columns on a window that
+   is wide for its height, three on one that is tall for its width. */
+const COLUMNS = {
+  wide: [
+    [['self'], ['pomo'], ['cube', 'lea'], ['nebula', 'orch']],
+    [['self', 'nebula'], ['pomo', 'lea'], ['cube', 'orch']],
+  ],
+  narrow: [['self', 'cube', 'nebula'], ['pomo', 'lea', 'orch']],
+};
+
 /* The page's own repository. It is not a card - it is the name of the outer
-   ring, the circle that holds everything being the repository that draws it.
-   `desc` is not shown on the map (the ring carries only its name); the card list
-   on narrow screens, where there is no ring, carries it as a row and uses it. */
+   frame, the one that holds everything being the repository that draws it, and
+   on a phone the name over the column of single repositories. */
 const SELF = {
   title: 'Constellation',
   desc: 'dSelf',
@@ -133,6 +135,8 @@ const I18N = {
     dKit: 'Editor for its sprites.', dCube: 'Fifteen tools for YouTube.',
     dCat: 'Cat sitting in Warsaw.', dSplit: 'Splits video for Discord.',
     dClaw: 'When to use Claude.', dLea: 'A hook for Claude Code.',
+    dDevKit: 'Its art, in the real garden.', dDocs: 'Docs, behind a password.',
+    dNebula: 'Calm notes, a real editor.', dOrch: 'One workspace for AI CLIs.',
     dSelf: 'A map of every repository.',
   },
   tr: {
@@ -148,6 +152,8 @@ const I18N = {
     dKit: "Sprite'ları için editör.", dCube: 'YouTube için on beş araç.',
     dCat: "Varşova'da kedi bakımı.", dSplit: 'Videoyu Discord için böler.',
     dClaw: 'Claude ne zaman uygun.', dLea: 'Claude Code için hook.',
+    dDevKit: 'Çizimleri oyunda önizler.', dDocs: 'Şifreli dokümantasyon.',
+    dNebula: 'Sakin notlar, gerçek editör.', dOrch: "AI CLI'ları için tek alan.",
     dSelf: "Her repo'nun haritası.",
   },
   pl: {
@@ -163,6 +169,8 @@ const I18N = {
     dKit: "Edytor jego sprite'ów.", dCube: '15 narzędzi do YouTube.',
     dCat: 'Opieka nad kotami.', dSplit: 'Dzieli wideo pod Discorda.',
     dClaw: 'Kiedy używać Claude.', dLea: 'Hook do Claude Code.',
+    dDevKit: 'Grafika w prawdziwym ogrodzie.', dDocs: 'Dokumentacja za hasłem.',
+    dNebula: 'Spokojne notatki, edytor.', dOrch: 'Jedno miejsce na AI CLI.',
     dSelf: 'Mapa wszystkich repozytoriów.',
   },
   de: {
@@ -178,6 +186,8 @@ const I18N = {
     dKit: 'Editor für seine Sprites.', dCube: '15 Werkzeuge für YouTube.',
     dCat: 'Katzenbetreuung, Warschau.', dSplit: 'Teilt Videos für Discord.',
     dClaw: 'Wann man Claude nutzt.', dLea: 'Ein Hook für Claude Code.',
+    dDevKit: 'Grafik im echten Garten.', dDocs: 'Doku hinter Passwort.',
+    dNebula: 'Ruhige Notizen mit Editor.', dOrch: 'Ein Ort für KI-CLIs.',
     dSelf: 'Karte aller Repositorys.',
   },
 };
@@ -592,13 +602,11 @@ function asciiBox(lines, cols, { rows = 0, rule = '-' } = {}) {
 /* ------------------------------------------------------------------ nodes */
 
 const NODE_COLS = 30, NODE_ROWS = 6;   // inside the frame, in characters
-const HUB_COLS = 28;
 
 /* Fills a node body. Used by both renderers, so a card looks the same in the
    map and in the list. */
 function fillNode(el, item) {
-  const hub = el.classList.contains('me');
-  const cols = hub ? HUB_COLS : NODE_COLS;
+  const cols = NODE_COLS;
   const badges = [];
   // Language names are proper nouns; the category words are not.
   if (item.lang) badges.push('[' + t(item.lang) + ']');
@@ -607,13 +615,11 @@ function fillNode(el, item) {
   const lines = wrapText(item.title, cols);
   if (item.desc) lines.push('', ...wrapText(t(item.desc), cols));
   if (badges.length) lines.push('', ...packBadges(badges, cols));
-  el.textContent = asciiBox(lines, cols, hub ? {} : { rows: NODE_ROWS });
+  el.textContent = asciiBox(lines, cols, { rows: NODE_ROWS });
 }
 
-/* A repo card is a link; a grouping node is not. */
+/* A repo card is a link to its repository. */
 function makeNode(item, extraClass) {
-  // A card is a link when it stands for something on GitHub: a repository, or -
-  // for the hub in the middle - the owner's own page.
   const href = item.repo ? GH(item.repo) : item.href;
   const el = document.createElement(href ? 'a' : 'div');
   el.className = 'node' + (extraClass ? ' ' + extraClass : '');
@@ -628,25 +634,55 @@ function makeNode(item, extraClass) {
 
 /* ------------------------------------------------------------------- map */
 
-const W = 1200, H = 840;
-const pct = (v, total) => (v / total) * 100 + '%';
-
-function place(el, item) {
-  el.style.left = pct(item.x, W);
-  el.style.top = pct(item.y, H);
-}
-
 /* Every connector on the page, and every rectangle the map draws round a group.
-   One list each, rebuilt with whatever renders them. */
+   One list each, rebuilt with whatever renders them. The map itself has no
+   connectors any more - the frames are the grouping - so EDGES is the hardware
+   panel's alone. */
 const EDGES = [];
 const RINGS = [];
 
+/* The groups as they stand in the columns of one layout: `self` is the single
+   repositories, which have no frame of their own. One reading of COLUMNS for both
+   renderers, so the wide map and the phone list cannot disagree on what a group
+   holds. */
+function groupFor(id) {
+  if (id === 'self') return { id, self: true, items: BRANCHES.filter((b) => !b.children) };
+  const branch = BRANCHES.find((b) => b.id === id);
+  return { id, name: branch.ring, items: branch.children };
+}
+const columnsFor = (layout) => layout.map((ids) => ids.map(groupFor));
+
+/* The map's groups as built, by id, so fitMap() can stand them in another
+   arrangement without building them again: a group is moved whole, and the
+   frames drawn round it are worked out from where its cards are, so nothing else
+   has to know. */
+let mapUnits = null;
+
+function arrangeMap(block, layout) {
+  if (block.dataset.layout === String(layout)) return;
+  block.dataset.layout = String(layout);
+  block.textContent = '';
+  for (const ids of COLUMNS.wide[layout]) {
+    const col = document.createElement('div');
+    col.className = 'map-col';
+    for (const id of ids) col.append(...mapUnits.get(id));
+    block.appendChild(col);
+  }
+}
+
+/* The type the cards are set in when there is room for it, and the most they
+   are allowed to grow to on a big screen. Everything on the map - the cards, the
+   gaps between them and the cell the frames are drawn in - is set from the one
+   --card-fs, so the whole block scales together and one measurement fits it. */
+const CARD_FS = 12, CARD_FS_MAX = 15, CARD_FS_MIN = 5;
+
+/* The map takes the stage, less the rail, and the frame stands in the band
+   between the row of controls and the signature: the block of columns is set in
+   whatever type lets it fit inside that frame, with the frame's own pad round it. */
 function fitMap() {
   const stage = mapEl.parentElement;
-  // clientWidth INCLUDES padding, and the stage is padded to leave rails for the
-  // two side columns. Measuring off it made the map wider than the space it was
-  // allowed, flex then squashed the width alone, and the ratio went with it
-  // (1440x900 gave a 900x900 map instead of 900x630). Take the content box.
+  // clientWidth INCLUDES padding, and the stage is padded to leave the rail for
+  // the hardware panel. Take the content box.
   const cs = getComputedStyle(stage);
   // The rail comes from the variable, not from the padding that reads it: while
   // the hardware panel slides in that padding is part way through its own
@@ -656,11 +692,58 @@ function fitMap() {
     .getPropertyValue('--rail-right')) || 0;
   const availW = stage.clientWidth - parseFloat(cs.paddingLeft) - rail;
   const availH = stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-  const k = Math.min(availW / W, availH / H);
-  if (!(k > 0)) return;
-  mapEl.style.width = Math.round(W * k) + 'px';
-  mapEl.style.height = Math.round(H * k) + 'px';
+  if (!(availW > 0 && availH > 0)) return;
+  mapEl.style.width = Math.round(availW) + 'px';
+  mapEl.style.height = Math.round(availH) + 'px';
+
+  const nodes = document.getElementById('mapNodes');
+  const block = nodes && nodes.querySelector('.map-cols');
+  if (!block) return;
+  /* The band, in the map's own pixels. Its top does not move while the rail
+     slides - only the width does - so it can be read off the screen now. */
+  const top = stage.getBoundingClientRect().top + parseFloat(cs.paddingTop);
+  const bar = document.querySelector('.topbar');
+  const sig = document.querySelector('.signature');
+  const bandTop = Math.max(0, bar ? bar.getBoundingClientRect().bottom - top + 2 : 0);
+  let bandBottom = availH;
+  if (sig) {
+    const above = sig.getBoundingClientRect().top - top - 8;
+    if (above > bandTop) bandBottom = Math.min(availH, above);
+  }
+  frameBand = { top: bandTop, bottom: bandBottom };
+  nodes.style.paddingTop = bandTop + 'px';
+  nodes.style.paddingBottom = (availH - bandBottom) + 'px';
+
+  // Measured at the base size, then scaled: every length in the block follows
+  // the type, so one pass lands it. Each arrangement is measured the same way
+  // and the one that comes out biggest is kept.
+  mapEl.style.setProperty('--card-fs', CARD_FS + 'px');
+  const cell = cellSize(linesEl);
+  if (!cell || !mapUnits) return;
+  let best = null;
+  COLUMNS.wide.forEach((_, i) => {
+    arrangeMap(block, i);
+    const q = block.getBoundingClientRect();
+    if (!q.width || !q.height) return;
+    // The outer frame's pad and its rule either side, and a row of air over and
+    // under the block inside the rules.
+    const needW = q.width + 2 * (MAP_PAD + 1) * cell.cw;
+    const needH = q.height + 2 * (MAP_PAD - 1) * cell.ch;
+    const k = Math.min(availW / needW, (bandBottom - bandTop) / needH);
+    // A hair of preference for the earlier one, so a window that sits right on
+    // the line between two does not flip between them as it is dragged.
+    if (!best || k > best.k * 1.02) best = { i, k };
+  });
+  if (!best) return;
+  arrangeMap(block, best.i);
+  const fs = Math.max(CARD_FS_MIN, Math.min(CARD_FS_MAX, CARD_FS * best.k));
+  mapEl.style.setProperty('--card-fs', fs.toFixed(2) + 'px');
 }
+
+/* Cells of clear space between the outer frame and the cards it holds. */
+const MAP_PAD = 4;
+/* The band the outer frame stands in, worked out by fitMap(). */
+let frameBand = null;
 
 function redrawLines() {
   /* Only the panel has runs to draw - the map paints its own grid. Everything
@@ -782,18 +865,6 @@ function paintMap() {
              x: q.left + q.width / 2 - box.left, y: q.top + q.height / 2 - box.top };
   };
 
-  /* The runs first, so a rectangle drawn over one turns the meeting into a `+`
-     rather than being broken by it. Every card hangs off the hub: out of the
-     hub's near side, across to halfway, then up or down and in. */
-  for (const edge of EDGES) {
-    if (edge.host && edge.host !== mapEl) continue;
-    const a = local(edge.a), b = local(edge.b);
-    const right = b.x > a.x;
-    const ax = right ? a.r : a.l, bx = right ? b.l : b.r;
-    const mid = (ax + bx) / 2;
-    g.run([{ x: ax, y: a.y }, { x: mid, y: a.y }, { x: mid, y: b.y }, { x: bx, y: b.y }]);
-  }
-
   for (const ring of RINGS) {
     let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity;
     for (const el of ring.els) {
@@ -803,18 +874,14 @@ function paintMap() {
     if (!Number.isFinite(l)) continue;
     const padX = ring.pad * g.cw, padY = ring.pad * g.ch;
     let top = t - padY, bottom = b + padY;
-    if (ring.full) {
-      /* The outer frame reaches up to the row the controls stand on and down to
-         just above the signature, and its sides stay with its cards: taken all
-         the way to the map's own edge it ran through the Home button in one
-         corner and the signature in the other. */
-      const bar = document.querySelector('.topbar');
-      if (bar) top = Math.max(0, bar.getBoundingClientRect().bottom - box.top + 2);
-      const sig = document.querySelector('.signature');
-      if (sig) {
-        const above = sig.getBoundingClientRect().top - box.top - 8;
-        if (above > top) bottom = Math.min(bottom, above);
-      }
+    if (ring.full && frameBand) {
+      /* The outer frame reaches from the row the controls stand on down to just
+         above the signature, whatever the cards come to - that is the band the
+         hardware panel's frame stands in too, so the two are the same height.
+         Its sides stay with its cards: taken all the way to the map's own edge it
+         ran through the Home button in one corner and the signature in the other. */
+      top = frameBand.top;
+      bottom = frameBand.bottom;
     }
     const rect = g.box({ x: l - padX, y: top }, { x: r + padX, y: bottom });
     if (ring.full) {
@@ -858,16 +925,11 @@ function renderMap() {
      makes the function safe to call from anywhere. */
   nodes.textContent = '';
   linesEl.textContent = '';
-  for (let i = EDGES.length - 1; i >= 0; i--) {
-    if (!EDGES[i].host || EDGES[i].host === mapEl) EDGES.splice(i, 1);
-  }
   RINGS.length = 0;
 
-  const join = (a, b) => EDGES.push({ a, b });
-
-  /* A ring is a record now, not a shape: which cards it holds, how much clear
-     space to leave round them, and the words to write into its frame. paintMap()
-     draws it. The name keeps its link as a bare anchor laid over the letters. */
+  /* A ring is a record, not a shape: which cards it holds, how much clear space
+     to leave round them, and the words to write into its frame. paintMap() draws
+     it. The name keeps its link as a bare anchor laid over the letters. */
   const addRing = (els, pad, text, href, badge, full) => {
     let nameEl = null, badgeEl = null;
     if (text) {
@@ -893,30 +955,33 @@ function renderMap() {
     RINGS.push({ els, pad, nameEl, badgeEl, full: !!full });
   };
 
-  const me = makeNode(ME, 'me');
-  place(me, ME);
-  nodes.appendChild(me);
-
-  const all = [me];
-  const add = (item) => {
-    const el = makeNode(item);
-    place(el, item);
-    nodes.appendChild(el);
-    join(me, el);
-    all.push(el);
-    return el;
-  };
-
-  for (const branch of BRANCHES) {
-    // A ring group has no card of its own - the circle IS the grouping.
-    if (branch.ring) {
-      addRing(branch.children.map(add), 2, branch.ring);
+  /* The phone's columns, drawn: the cards stand in the flow, and a group is a
+     frame round its own cards with its name written into the top rule. The
+     single repositories have no frame but the outer one, which is the page's. */
+  const block = document.createElement('div');
+  block.className = 'map-cols';
+  nodes.appendChild(block);
+  const all = [];
+  mapUnits = new Map();
+  for (const group of columnsFor(COLUMNS.wide[0]).flat()) {
+    const els = group.items.map(makeNode);
+    all.push(...els);
+    if (group.self) {
+      // Loose in their column, but still a set: the first one is lined up with
+      // the first card of the frames beside it.
+      els[0]?.classList.add('map-single-first');
+      mapUnits.set(group.id, els);
       continue;
     }
-    add(branch);
+    const host = document.createElement('div');
+    host.className = 'map-group';
+    host.append(...els);
+    mapUnits.set(group.id, [host]);
+    addRing(els, 2, group.name);
   }
+  arrangeMap(block, 0);
 
-  addRing(all, 4, SELF.title, GH(SELF.repo),
+  addRing(all, MAP_PAD, SELF.title, GH(SELF.repo),
           '[' + t(SELF.lang) + '] [' + t(SELF.private ? 'private' : 'public') + ']', true);
 
   settle();
@@ -970,16 +1035,10 @@ function renderList() {
     leaf.classList.add('leaf');   // keeps `node`: same box, out of the map's flow
     return leaf;
   };
-  /* Two columns on a phone: the single repositories go down the left, the one
-     family down the right. They are two boxes rather than one flow, so the row
-     has exactly two children whatever ends up in them - and on the map's side of
-     the breakpoint the whole list is off anyway. */
-  const singles = document.createElement('div');
-  singles.className = 'col';
-  const families = document.createElement('div');
-  families.className = 'col';
-  list.append(singles, families);
-  /* A name over a column, set the way the names on the map's frames are set. It
+  /* Two columns on a phone, shared out by COLUMNS.narrow. Each is its own box,
+     so the row has exactly two children whatever ends up in them - and on the
+     map's side of the breakpoint the whole list is off anyway. */
+  /* A name over a group, set the way the names on the map's frames are set. It
      is a link where it stands for a repository, exactly as the ring names are -
      the name IS the link, with no box around it.
      Uppercased by the stylesheet, and `text-transform` follows the element's
@@ -993,22 +1052,21 @@ function renderList() {
     if (href) { el.href = href; el.target = '_blank'; el.rel = 'noopener'; }
     return el;
   };
-  /* Up on the map the page's own repository is the outer ring - the name over
-     everything, with no card of its own. Down here it is the name over the
-     column of single repositories, and it carries the same link. */
-  singles.appendChild(columnName(SELF.title, GH(SELF.repo)));
-  for (const branch of BRANCHES) {
-    if (!branch.children) {
-      singles.appendChild(leafOf(branch));
-      continue;
+  for (const column of columnsFor(COLUMNS.narrow)) {
+    const col = document.createElement('div');
+    col.className = 'col';
+    list.appendChild(col);
+    for (const group of column) {
+      const box = document.createElement('section');
+      box.className = 'branch';
+      /* Up on the map the page's own repository is the outer frame - the name
+         over everything, with no card of its own. Down here it is the name over
+         the single repositories, and it carries the same link. A group has no
+         repository of its own, so its name is a name and not a link. */
+      box.appendChild(group.self ? columnName(SELF.title, GH(SELF.repo)) : columnName(group.name));
+      for (const item of group.items) box.appendChild(leafOf(item));
+      col.appendChild(box);
     }
-    const box = document.createElement('section');
-    box.className = 'branch';
-    // The ring's name is the group's name; the group has no repository of its
-    // own, so this one is a name and not a link.
-    box.appendChild(columnName(branch.ring || branch.title));
-    for (const child of branch.children) box.appendChild(leafOf(child));
-    families.appendChild(box);
   }
 }
 
