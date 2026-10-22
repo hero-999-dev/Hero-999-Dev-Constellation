@@ -1035,6 +1035,7 @@ body.detail-open .map-groups, body.detail-open .list{ opacity:0; pointer-events:
 }
 .detail-link:hover, .detail-close:hover{ color:var(--amber); }
 .detail-close{
-  position:absolute; top:1.6em; right:2em; padding:0; border:0; background:none;
+  /* Tucked into the top-right corner, a cell inside the frame's rules. */
+  position:absolute; top:1.05em; right:1.25em; padding:0; border:0; background:none;
   font-size:max(1em, 11px);
 }
