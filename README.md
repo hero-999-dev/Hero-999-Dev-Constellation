@@ -1,11 +1,10 @@
 # Hero Dev — Constellation
 
-A single page that maps every repository in one place: `Hero Dev` in the middle, each
-project branching off it, and the Pixel Pomo family grouped with its own children.
-Click any node to open that repository on GitHub, or drag it around — the connectors follow and
-the card springs back to its place when let go. The connector layer is `overflow: visible`: an
-`<svg>` clips to its viewBox, so dragging a card past the edge of the map cut the tail off the
-line and left it looking half drawn.
+A single page that maps every project in one place. A project that is several repositories —
+the app, its web entrance, its tools — is a **group**: an ASCII frame round its cards with its
+name written into the top rule. A project that is one repository stands on its own inside the
+outer frame, which is the page's own repository, `CONSTELLATION`. Click any card to open that
+repository on GitHub.
 
 **Live:** https://hero-999-dev.github.io/Hero-999-Dev-Constellation/
 
@@ -15,7 +14,7 @@ line and left it looking half drawn.
 |---|---|
 | `index.html` | The page |
 | `assets/css/styles.css` | Palette and layout |
-| `assets/js/app.js` | Repository list, map and rings, dragging, theme, password gate |
+| `assets/js/app.js` | Repository list, map and frames, hardware panel, theme, language |
 
 The whole page is set in one face: Palatino, the softest of the serifs every system already
 has, with Georgia as the fallback. Nothing is bold — weights run 400 and 500 only, because
@@ -28,121 +27,56 @@ orange, terracotta, brown — the same values, not an approximation. The choice 
 
 ## Adding a repository
 
-Everything comes from the `BRANCHES` array at the top of `assets/js/app.js`. Both the map
-and the stacked list on narrow screens are built from it, so one edit covers both.
+Everything comes from the `BRANCHES` array at the top of `assets/js/app.js`. Both the wide
+map and the list on a phone are built from it, so one edit covers both.
 
-A leaf entry:
+A single repository:
 
 ```js
 {
-  title: 'Name shown on the card',
-  desc:  'One short sentence.',
+  id: 'cat', title: 'Name shown on the card',
+  desc:  'dCat',           // an I18N key - one line in all four languages
   repo:  'exact-repo-name',
-  lang:  'Dart',
+  lang:  'HTML',
   private: true,
-  x: 1005, y: 238,       // point on the 1200 x 840 grid the connectors use
+  live: 'https://…',       // optional: adds a [Live] badge
 }
 ```
 
-A group is an entry with `ring` and `children` instead of `repo` — the circle drawn round
-the cards is the grouping, and its name is the ring's label. Pixel Pomo is the one group.
+A group is an entry with an `id`, a `ring` (its name) and `children` instead of `repo`. The
+frame drawn round the cards is the grouping, so a group has no card of its own.
+
+Then give the group a place in `COLUMNS`, by `id` (`self` is the single repositories):
+
+- `COLUMNS.narrow` is the phone's two columns — share the groups out so the two come to about
+  the same height;
+- `COLUMNS.wide` is a list of arrangements for the wide screen. `fitMap()` measures each one and
+  keeps whichever lets the cards be set biggest, so a window that is wide for its height gets
+  four columns and one that is tall for its width gets three.
+
+Only projects belong here — course work and one-off repositories stay off the page.
+
+Descriptions are one line and the badges one row: card height is pinned (`NODE_ROWS`), so a
+second line is clipped rather than fitted. Check all four languages after editing.
 
 ### The page's own repository
 
-It is neither a card nor a group. `SELF` names the **outer** ring — the circle that holds
+It is neither a card nor a group. `SELF` names the **outer** frame — the frame that holds
 everything is the repository that draws it. The name is a link like any card, which needs
 `.ring-link` to switch `pointer-events` back on, because the map layer has them off so the
-header strip stays clickable through it. Its `desc` is not drawn on the map — the ring
-carries only its name — but the stacked list has no ring, so below 861px the repository is
-the list's first row and shows the description there.
-
-### Where the coordinates come from
-
-The rings are not decoration fitted around whatever the cards do; they constrain the
-layout, and the numbers were solved rather than eyeballed. Two things pull against each
-other:
-
-- a ring that really **contains** its cards needs roughly 1.4x the half-extent of the box
-  those cards sit in, so cards parked in the corners push their own ring off the canvas;
-- the Pixel Pomo ring then has to sit inside the outer ring as well — and it sits far to
-  the left, where the outer ellipse has already narrowed.
-
-What buys the clearance: a **vertical column** for the cluster (the arrangement with the
-smallest horizontal reach, so its ring pokes out least), a **tall spread on the right**
-(which raises the outer ring without touching the inner one), and a **generous pad** on the
-outer ring. Raising the canvas height alone does nothing — the ring is fitted to the cards,
-not to the canvas.
-
-Descriptions are one line and the badges one row for the same reason: a taller card breaks
-the geometry.
-
-Measured on the live page:
-
-| | |
-|---|---|
-| inner ring inside the outer | 0.909 (1.0 = touching) |
-| outer ring contains every card | 0.892 |
-| inner ring contains its three | 0.924 |
-| outer ring inside the canvas | x 24..1166, y 10..831 of 1200 x 840 |
-
-If you move a card, re-check those four numbers — a bad coordinate shows up as a ring
-running off the edge or crossing the other one.
-
-### Why the strokes live in one group
-
-Rings and connectors are drawn with **opaque** colours inside a single `<g class="ink">`, and
-the fade sits on that group rather than on each stroke. Translucent strokes *add* where they
-overlap — two at `.3` come out at `.51` — which put a visibly darker smudge everywhere a
-connector crossed a ring. A group with `opacity` is composited once and then faded, so a
-crossing paints the same as a plain line.
-
-Measured on the three places a Pixel Pomo connector crosses its ring, reading the painted
-alpha:
-
-| | ring alone | at the crossing | overshoot |
-|---|---|---|---|
-| alpha per stroke | 97 | 157 | **+60** |
-| one faded group | 82 | 82 | **0** |
-
-Ring labels stay outside the group, at full strength.
+header strip stays clickable through it. On a phone it is the name over the single
+repositories, with the same link.
 
 ### Fitting the screen
 
-The page never scrolls. Header, then the map takes every pixel that is left, so the outer
-ring sits close to the top and bottom edges whatever the window is. Three things make that
-hold:
+The page never scrolls. The map takes the stage less the hardware rail, and the outer frame
+stands in the band between the row of controls and the signature — the same band the hardware
+panel's frame stands in, so the two bottom rules line up. Everything in the block of columns
+(the cards, the gaps between them, the cell the frames are drawn in) is set from one custom
+property, `--card-fs`, so `fitMap()` measures the block once at a base size and scales it to
+fit inside the frame with its pad, up to `CARD_FS_MAX`.
 
-- the heading strip and the footer line are **laid over** the map, not stacked above and
-  below it — giving them their own rows cost the map about 90px of height;
-- cards are sized in **`cqw`**, a share of the map, and their height is pinned too. Fixed
-  pixels were a bug: on a 480px-wide map the cards were 40% of its width and the rings burst
-  out of the canvas. Line wrapping does not scale linearly either, so a card left to size
-  itself grew the ring (measured: ry 411 to 435);
-- the header bar is `position: fixed`, so the map gets the whole window height and the ring
-  runs to within ~10px of the top and bottom edges. The map is `pointer-events: none` with the
-  cards switched back on, so the strip stays clickable through it;
-- the strip keeps its fill and its rule, but on a `::before` layer that `layoutRings()` masks
-  with a hole the shape of the outer ring — so the band stops exactly where the ring runs and
-  is whole everywhere else. Masking the bar itself would have taken the controls with it, and
-  a `backdrop-filter` on that layer had to go: blur under a mask samples across the cut and
-  leaves a seam at the crossings. The mask edge is feathered (98.9% to 100%) rather than a
-  single step, which would staircase along the curve;
-- the outer ring is pinned to the centre of the canvas rather than to the middle of what it
-  holds, so its top and bottom margins are equal — the cards are not quite symmetric (the
-  centre card is taller), which left the ring about a unit low;
-- the heading and the theme switch both ride in that strip, in the same pill. The heading used
-  to sit in the page underneath, where the strip's blur washed it out;
-- the private-repos note sits bottom-left, outside the ellipse: measured across five screen
-  sizes it never crosses the ring or lands on a card;
-- the map's own box is fitted in JS (`fitMap`). CSS drops the aspect ratio rather than the
-  height when `max-width` binds — at 1920x1080 that gave a 1240x1006 map instead of
-  1240x868, stretching the rings while the cards stayed put.
-
-Measured across 2560x1440, 1920x1080, 1600x900, 1440x900, 1366x768, 1280x720, 1024x600 and
-a portrait 900x1600: nothing overflows, the ratio holds, and `encloses` / `inner inside
-outer` read 0.891 / 0.909 at every one of them.
-
-On narrow screens the map is replaced by the stacked list, and that list scrolls inside its
+On narrow screens the map is replaced by the two-column list, and that list scrolls inside its
 own area rather than scrolling the page.
 
 ## Hardware
@@ -274,8 +208,8 @@ holds still and the pages ride up over it from under the bottom edge.
 - **Home** is the face it opens on — the sky, the planet far off and faint, the ship crossing
   it. The two corner blocks are its own: the identity bottom-left, the ASCII credits
   bottom-right, both small. On the other two faces the column wants the whole screen.
-- **Projects** is the same cards as the map, stacked top to bottom and centred, each drawn box
-  sized to fill the width. No rings and no connectors — the stack is the grouping.
+- **Projects** is the same cards as the map in two columns, each group under its own name and
+  the single repositories under `CONSTELLATION`. No frames — the heading is the grouping.
 - **Hardware** comes up the same way, over the projects, the whole width of the screen.
 
 Every way across stands in the bar, which wraps to two rows: `Home`, `Projects`, `Hardware`,

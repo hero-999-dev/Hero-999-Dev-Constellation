@@ -460,38 +460,46 @@ body:not(.on-saturn) .topbar .gate-top{ display:none; }
 
 /* ------------------------------------------------------------ map */
 
-/* Height comes from the stage, width follows the aspect ratio; max-width pulls
-   both back in when the window is wider than it is tall. Either way the whole
-   map is on screen without a scrollbar. */
-/* Cards are sized in cqw - a share of the map, not a fixed pixel size. The ring
-   geometry was solved in grid units against a 195px card on a 1240px map; with
-   cqw that ratio holds at every screen size, so the same numbers stay true when
-   the map shrinks to fit a short window. Fixed px here was the bug: on a 480px
-   map the cards were 40% of its width and the rings burst out of the canvas. */
+/* The map takes the whole stage less the rail - fitMap() in app.js writes the
+   size - and sets everything inside it from one type size, --card-fs, which it
+   also works out: the cards, the gaps between them and the cell the frames are
+   drawn in all follow it, so the block of columns scales as one and always fits
+   inside the outer frame without a scrollbar. */
 .map{
   z-index:30;
   pointer-events:none;
   position:relative;
-  /* Starting size only - fitMap() in app.js sets the real one, because CSS
-     drops the ratio instead of the height when max-width binds. */
-  height:100%;
-  aspect-ratio: 1200 / 840;
-  max-width:100%;
-  container-type: size;
+  height:100%; width:100%;
+  --card-fs:12px;
 }
 /* The map's own grid: a rectangle round each group, its name written into the
-   top edge, the site's badges into the bottom, and an orthogonal run from the
-   hub out to every card - all characters, drawn by paintMap(). Held back a
-   little from the boxes it joins, so the cards read first and the wiring
-   second. */
+   top edge, and the outer frame with the site's name and badges - all
+   characters, drawn by paintMap(). */
 .map-lines{
   position:absolute; inset:0; margin:0; overflow:hidden;
-  font-family:var(--font-mono); font-size:1.12cqw; font-weight:700; line-height:1;
+  font-family:var(--font-mono); font-size:calc(var(--card-fs) * .84); font-weight:700; line-height:1;
   white-space:pre; pointer-events:none; user-select:none;
   color:var(--terra);
 }
 :root[data-theme="dark"] .map-lines{ color:var(--orange); }
-.map-nodes{ position:absolute; inset:0; pointer-events:none; }
+/* The band between the controls and the signature is the padding fitMap()
+   writes; the block of columns is centred in what is left. */
+.map-nodes{ position:absolute; inset:0; pointer-events:none;
+            display:flex; align-items:center; justify-content:center; }
+/* The phone's columns, side by side. Every length is in em of the card type, so
+   it scales with the cards: the gaps hold a group frame's two-cell pad either
+   side and still leave the frames a little air between them. */
+.map-cols{ display:flex; align-items:flex-start; gap:3.4em; font-size:var(--card-fs); }
+.map-col{ display:flex; flex-direction:column; gap:1em; }
+/* A group is a frame round its cards: the margin is the pad it is drawn with
+   plus room for the next frame's name, so two groups in one column stand clear
+   of each other. */
+.map-group{ display:flex; flex-direction:column; gap:.7em; margin:2em 0; }
+.map-group:first-child{ margin-top:2em; }
+.map-group:last-child{ margin-bottom:1.6em; }
+/* The single repositories have no frame, so their first card is let down by the
+   same 2em a framed group's first card is, and the rows line up across. */
+.map-single-first{ margin-top:2em; }
 
 /* A frame's name sits under its top line and its badges over its bottom one,
    both placed by paintMap(). The name is set the way the name over the airlock
@@ -515,32 +523,27 @@ body:not(.on-saturn) .topbar .gate-top{ display:none; }
   letter-spacing:.28em; padding-left:.28em;
 }
 .ring-name-site{ font-size:clamp(.82rem, 1.7vw, 1.2rem); }
-.ring-name-group{ font-size:clamp(.68rem, 1.1vw, .92rem); }
+.ring-name-group{ font-size:calc(var(--card-fs) * 1.1); }
 .ring-badge{ font-family:var(--font-mono); font-size:clamp(.62rem, .9vw, .82rem); }
 /* The site's name is a link like every card is - the name itself, not a box
    round it: two positioned boxes would each take the centring transform. */
 .ring-link{ pointer-events:auto; cursor:pointer; }
 .ring-link:hover{ color:var(--amber); }
 
-/* Nodes are placed by percentage on the same 1200x840 grid the lines use,
-   so the two stay locked together at any width. */
 /* A card is a drawn box: app.js writes the frame and everything inside it, and
-   all that is left here is where it sits, that it can be dragged, and how big a
-   character is. The ground behind it is the page's own, so the connectors stop
-   at the frame instead of running through the letters. */
+   all that is left here is how big a character is. The ground behind it is the
+   page's own, so a group's frame never shows through the letters. */
 .node{
-  position:absolute;
-  transform:translate(-50%, -50%);
+  position:static;
   pointer-events:auto;
   user-select:none;
   -webkit-user-drag:none;
-  font-size:1.34cqw;
+  font-size:var(--card-fs);
   background:var(--ground);
   transition:transform .2s var(--ease), color .2s var(--ease);
 }
 a.node:hover{ color:var(--amber); }
 
-/* The hub is a card like the others now: one rule, one size. */
 
 
 /* ------------------------------------------------------------ list (narrow) */
