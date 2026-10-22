@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#1A1411">
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%2343301F'/><path d='M10 9v14M22 9v14M10 16h12' stroke='%23F6A03D' stroke-width='3.4' stroke-linecap='round'/></svg>">
-<link rel="stylesheet" href="assets/css/styles.css?v=202610220900">
+<link rel="stylesheet" href="assets/css/styles.css?v=202610221000">
 </head>
 <!-- The airlock is the face the page opens on, so the markup says so: without
      it the first paint is the map, and the switch to the airlock then plays as a
@@ -109,7 +109,13 @@
      rel="noopener" data-box="Hero Dev"></a></h1>
 </div>
 
-<script src="assets/js/details.js?v=202610220900"></script>
-<script src="assets/js/app.js?v=202610220900"></script>
+<!-- The CV holds the bottom-right corner of the projects' face, the way the
+     signature holds the bottom-left: it opens the CVs in a viewer of their own. -->
+<div class="cv-corner">
+  <button class="pill" id="cvBtn" type="button" data-box="CV" aria-label="CV"></button>
+</div>
+
+<script src="assets/js/details.js?v=202610221000"></script>
+<script src="assets/js/app.js?v=202610221000"></script>
 </body>
 </html>

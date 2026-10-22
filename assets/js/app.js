@@ -125,6 +125,7 @@ const SELF = {
 const I18N = {
   en: {
     onGithub: 'On GitHub', openLive: 'Open the site', close: 'Close',
+    cvAi: 'AI Internship', cvIntern: 'Internship', cvTr: 'Internship (TR)', cvMaster: 'Full CV', cvDownload: 'Download',
     inspiration: 'Inspiration',
     home: 'Home', projectsHardware: 'Projects & Hardware',
     projects: 'Projects',
@@ -143,6 +144,7 @@ const I18N = {
   },
   tr: {
     onGithub: "GitHub'da", openLive: 'Siteyi aç', close: 'Kapat',
+    cvAi: 'YZ Stajı', cvIntern: 'Staj (EN)', cvTr: 'Staj (TR)', cvMaster: 'Tam CV', cvDownload: 'İndir',
     inspiration: 'İlham',
     home: 'Ana sayfa', projectsHardware: 'Projeler & Donanım',
     projects: 'Projeler',
@@ -161,6 +163,7 @@ const I18N = {
   },
   pl: {
     onGithub: 'Na GitHubie', openLive: 'Otwórz stronę', close: 'Zamknij',
+    cvAi: 'Staż AI', cvIntern: 'Staż', cvTr: 'Staż (TR)', cvMaster: 'Pełne CV', cvDownload: 'Pobierz',
     inspiration: 'Inspiracje',
     home: 'Strona główna', projectsHardware: 'Projekty i sprzęt',
     projects: 'Projekty',
@@ -179,6 +182,7 @@ const I18N = {
   },
   de: {
     onGithub: 'Auf GitHub', openLive: 'Seite öffnen', close: 'Schließen',
+    cvAi: 'KI-Praktikum', cvIntern: 'Praktikum', cvTr: 'Praktikum (TR)', cvMaster: 'Voller Lebenslauf', cvDownload: 'Herunterladen',
     inspiration: 'Inspiration',
     home: 'Startseite', projectsHardware: 'Projekte & Hardware',
     projects: 'Projekte',
@@ -1888,8 +1892,18 @@ function shotBox(src, alt, className, tag = 'div') {
 
 function drawShotFrame(box) {
   const frame = box.querySelector('.shot-frame');
-  const g = frame && gridFor(frame);
+  if (!frame) return;
+  // Measured over the whole box, then set to the whole cells it holds and
+  // centred: cut from the top-left corner, the part of a cell the box was over
+  // all went to the right and the bottom, and on a small picture the last
+  // rules stood inside it.
+  frame.style.left = frame.style.top = frame.style.width = frame.style.height = '';
+  const g = gridFor(frame);
   if (!g) return;
+  const w = g.cols * g.cw, h = g.rows * g.ch;
+  frame.style.width = w + 'px'; frame.style.height = h + 'px';
+  frame.style.left = (box.clientWidth - w) / 2 + 'px';
+  frame.style.top = (box.clientHeight - h) / 2 + 'px';
   g.box({ x: 0, y: 0 }, { x: (g.cols - 1) * g.cw, y: (g.rows - 1) * g.ch });
   g.flush();
 }
@@ -1921,6 +1935,106 @@ function closeLightbox() {
   return true;
 }
 addEventListener('resize', () => { if (lightbox) drawShotFrames(lightbox); });
+
+/* ------------------------------------------------------------------ cv */
+
+/* The CVs, opened from the box in the bottom-right corner: each page as a
+   picture - a PDF in a frame is not drawn by a phone's browser - in a frame of
+   its own, with tabs between them, a zoom, and the PDF itself to download. */
+const CVS = [
+  { key: 'cvAi', file: 'Celenay_CV_AI_Internship' },
+  { key: 'cvIntern', file: 'Celenay_CV_Internship' },
+  { key: 'cvTr', file: 'Celenay_CV_Staj_TR' },
+  { key: 'cvMaster', file: 'Celenay_CV_Master' },
+];
+const CV_ZOOMS = [1, 1.5, 2, 3];
+let cvView = null;
+
+function boxButton(label, className, tag = 'button') {
+  const b = document.createElement(tag);
+  if (tag === 'button') b.type = 'button';
+  b.className = 'cv-ctl ' + (className || '');
+  b.textContent = asciiBox([label], label.length + 2);
+  return b;
+}
+
+function openCv(index = 0) {
+  closeCv();
+  const veil = document.createElement('div');
+  veil.className = 'cvview';
+  veil.setAttribute('role', 'dialog');
+  veil.setAttribute('aria-label', 'CV');
+  const bar = document.createElement('div');
+  bar.className = 'cv-bar';
+  const tabs = document.createElement('div');
+  tabs.className = 'cv-tabs';
+  const tools = document.createElement('div');
+  tools.className = 'cv-tools';
+  bar.append(tabs, tools);
+  const stage = document.createElement('div');
+  stage.className = 'cv-stage';
+  const page = shotBox('', 'CV', 'cv-page');
+  stage.appendChild(page);
+  veil.append(bar, stage);
+
+  const state = { index, zoom: 0 };
+  const img = page.querySelector('img');
+  const out = boxButton('−', 'cv-zoom');
+  const into = boxButton('+', 'cv-zoom');
+  const save = boxButton(t('cvDownload'), 'cv-save', 'a');
+  const shut = boxButton('x', 'cv-close');
+  tools.append(out, into, save, shut);
+
+  /* Fitted to the stage at zoom 1 - the whole page in view - and wider from
+     there; the stage scrolls, and a phone's own pinch works on top. */
+  const size = () => {
+    const room = stage.getBoundingClientRect();
+    const fit = Math.min(room.width - 40, (room.height - 40) * 0.707);
+    img.style.width = Math.max(120, fit * CV_ZOOMS[state.zoom]) + 'px';
+    out.disabled = state.zoom === 0; into.disabled = state.zoom === CV_ZOOMS.length - 1;
+    drawShotFrame(page);
+  };
+  const show = (i) => {
+    state.index = i;
+    const cv = CVS[i];
+    img.src = 'assets/cv/' + cv.file + '.webp';
+    img.alt = t(cv.key);
+    save.href = 'assets/cv/' + cv.file + '.pdf';
+    save.setAttribute('download', cv.file + '.pdf');
+    tabs.querySelectorAll('.cv-tab').forEach((x, k) => x.classList.toggle('on', k === i));
+    stage.scrollTo(0, 0);
+  };
+  CVS.forEach((cv, i) => {
+    const b = boxButton(t(cv.key), 'cv-tab');
+    b.addEventListener('click', () => show(i));
+    tabs.appendChild(b);
+  });
+  out.addEventListener('click', () => { if (state.zoom > 0) { state.zoom--; size(); } });
+  into.addEventListener('click', () => { if (state.zoom < CV_ZOOMS.length - 1) { state.zoom++; size(); } });
+  shut.addEventListener('click', closeCv);
+  // A click on the empty ground round the page puts it away; the page itself
+  // zooms in a step.
+  stage.addEventListener('click', (event) => { if (event.target === stage) closeCv(); });
+  img.addEventListener('click', () => { state.zoom = (state.zoom + 1) % CV_ZOOMS.length; size(); });
+  img.addEventListener('load', size);
+
+  document.body.appendChild(veil);
+  cvView = { veil, size };
+  show(index);
+  size();
+  requestAnimationFrame(() => veil.classList.add('in'));
+}
+
+function closeCv() {
+  if (!cvView) return false;
+  const { veil } = cvView;
+  cvView = null;
+  veil.classList.remove('in');
+  setTimeout(() => veil.remove(), 200);
+  return true;
+}
+addEventListener('resize', () => cvView?.size());
+document.getElementById('cvBtn')?.addEventListener('click', () => openCv(0));
 
 /* A link drawn as a box, like the controls in the corners. */
 function detailLink(label, href) {
@@ -2083,8 +2197,8 @@ function placeDetail() {
 
 document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') return;
-  // The picture first, if one is open over the card; the card on the next press.
-  if (!closeLightbox()) closeDetail(false, true);
+  // The CV or the picture first, if one is open over the card; the card on the next press.
+  if (!closeCv() && !closeLightbox()) closeDetail(false, true);
 });
 /* A click on the frame's empty ground, outside the box, puts it away too. */
 document.addEventListener('click', (event) => {

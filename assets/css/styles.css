@@ -1093,3 +1093,44 @@ body.detail-open .map-groups, body.detail-open .list{ opacity:0; pointer-events:
   position:absolute; top:1.05em; right:1.25em; padding:0; border:0; background:none;
   font-size:max(1em, 11px);
 }
+
+/* ------------------------------------------------------------------- cv */
+
+/* The CV box in the bottom-right corner, mirroring the signature: on the
+   projects' face only - the sky's corner is the credits'. */
+.cv-corner{ position:fixed; right:var(--corner); bottom:.42rem; z-index:21; }
+.cv-corner .pill{ font-size:var(--chrome-font); }
+body.on-saturn .cv-corner{ display:none; }
+
+/* The viewer: a bar of drawn boxes over the page, the page in its frame. */
+.cvview{
+  position:fixed; inset:0; z-index:9000; display:flex; flex-direction:column;
+  background:color-mix(in srgb, var(--ground) 94%, transparent);
+  opacity:0; transition:opacity .2s var(--ease);
+  font-family:var(--font-mono); font-weight:700; color:var(--box-ink);
+}
+.cvview.in{ opacity:1; }
+.cv-bar{
+  display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:.5rem;
+  padding:.5rem var(--corner); font-size:clamp(9px, 1vw, 13px);
+}
+.cv-tabs, .cv-tools{ display:flex; flex-wrap:wrap; gap:.4rem; }
+.cv-ctl{
+  white-space:pre; line-height:1; font:inherit; color:inherit; background:none; border:0; padding:0;
+  cursor:pointer; text-decoration:none; transition:color .14s var(--ease), opacity .14s var(--ease);
+}
+.cv-ctl:hover{ color:var(--amber); }
+.cv-tab{ opacity:.55; }
+.cv-tab.on{ opacity:1; }
+.cv-ctl:disabled{ opacity:.3; cursor:default; }
+.cv-stage{
+  flex:1; min-height:0; overflow:auto; -webkit-overflow-scrolling:touch;
+  display:flex; padding:10px; font-size:clamp(9px, 1vw, 13px);
+}
+.cv-page{ margin:auto; cursor:zoom-in; }
+.cv-page img{ height:auto; background:#fff; }
+@media (max-width: 860px){
+  .cv-bar{ font-size:clamp(8px, 2.6vw, 12px); }
+  .cv-tabs{ order:2; width:100%; justify-content:center; }
+  .cv-tools{ order:1; width:100%; justify-content:flex-end; }
+}
