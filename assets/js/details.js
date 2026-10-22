@@ -157,3 +157,18 @@ const DETAILS = {
          'Daneben liegt AI Orchestra Web, eine eigenständige visuelle Übergabe des ganzen Projekts: Architektur, Routing, Kontingente, QA, API, die Leinwand und die Build-Varianten.'],
   },
 };
+
+/* Screenshots, by the same key: files in assets/img/shots/, taken by running
+   each project (or opening its live site) and kept small as WebP. The first is
+   the one an opened card shows; the rest sit under it as thumbnails. Projects
+   whose only public face is behind a password are left without one, on purpose. */
+const SHOTS = {
+  'warsaw-cat-sitting': ['warsaw-1', 'warsaw-2'],
+  'pixel_pomo': ['pomo-1'],
+  'pixel-pomo-web': ['pomo-1'],
+  'pixel_pomo_art_kit': ['artkit-1'],
+  'pixel_pomo_dev_kit': ['devkit-1'],
+  'Project-Lea': ['lea-1', 'lea-2'],
+  'nebula': ['nebula-1'],
+  'ai-orchestra': ['orchestra-1', 'orchestra-2'],
+};

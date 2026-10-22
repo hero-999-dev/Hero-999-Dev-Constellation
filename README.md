@@ -64,6 +64,12 @@ puts it back. A middle or Ctrl/Cmd-click still goes straight to GitHub. The text
 `assets/js/details.js`, keyed by `repo`, two paragraphs per language — add an entry there when
 you add a card, or the card opens with its one-line description.
 
+Screenshots go in `assets/img/shots/` as WebP (about 1400px on the long side, quality 80) and
+are listed per `repo` in `SHOTS` at the end of `details.js`; the first is shown large and the
+rest as thumbnails. They were taken by running each project — the live site, a web build, or
+the desktop app under a virtual display. Projects whose public face is behind a password are
+left without one on purpose.
+
 Only projects belong here — course work and one-off repositories stay off the page.
 
 Descriptions are one line and the badges one row: card height is pinned (`NODE_ROWS`), so a

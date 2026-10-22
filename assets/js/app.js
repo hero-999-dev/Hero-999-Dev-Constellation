@@ -1899,23 +1899,66 @@ function openDetail(item, card) {
 
   const body = document.createElement('div');
   body.className = 'detail-body';
+  // One block inside the scroller, centred by its own auto margins - see the
+  // stylesheet: centring the scroller's content cut the top off a short box.
+  const inner = document.createElement('div');
+  inner.className = 'detail-inner';
+  body.appendChild(inner);
+
+  /* The screenshots, when the project has any: the first large, the rest as
+     thumbnails that swap into its place. */
+  const shots = SHOTS[item.repo] || [];
+  if (shots.length) {
+    const fig = document.createElement('figure');
+    fig.className = 'detail-shots';
+    const big = document.createElement('img');
+    big.className = 'detail-shot';
+    big.alt = item.title;
+    big.decoding = 'async';
+    big.src = 'assets/img/shots/' + shots[0] + '.webp';
+    fig.appendChild(big);
+    if (shots.length > 1) {
+      const row = document.createElement('div');
+      row.className = 'detail-thumbs';
+      shots.forEach((name, i) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'detail-thumb' + (i ? '' : ' on');
+        b.setAttribute('aria-label', item.title + ' ' + (i + 1));
+        const img = document.createElement('img');
+        img.src = 'assets/img/shots/' + name + '.webp';
+        img.alt = '';
+        b.appendChild(img);
+        b.addEventListener('click', () => {
+          big.src = img.src;
+          row.querySelectorAll('.detail-thumb').forEach((x) => x.classList.toggle('on', x === b));
+        });
+        row.appendChild(b);
+      });
+      fig.appendChild(row);
+    }
+    inner.appendChild(fig);
+  }
+  const info = document.createElement('div');
+  info.className = 'detail-info';
+  inner.appendChild(info);
   const badges = document.createElement('p');
   badges.className = 'detail-badges';
   badges.textContent = [item.lang && '[' + t(item.lang) + ']',
                         '[' + (item.private ? t('private') : t('public')) + ']',
                         item.live && '[' + t('live') + ']'].filter(Boolean).join(' ');
-  body.appendChild(badges);
+  info.appendChild(badges);
   for (const para of detailText(item)) {
     const p = document.createElement('p');
     p.className = 'detail-text';
     p.textContent = para;
-    body.appendChild(p);
+    info.appendChild(p);
   }
   const links = document.createElement('div');
   links.className = 'detail-links';
   links.appendChild(detailLink(t('onGithub'), GH(item.repo)));
   if (item.live) links.appendChild(detailLink(t('openLive'), item.live));
-  body.appendChild(links);
+  info.appendChild(links);
 
   const close = document.createElement('button');
   close.type = 'button';
@@ -1956,11 +1999,16 @@ function closeDetail(now, keyboard) {
   el.classList.remove('shown');
   el.classList.add('moving', 'leaving');
   setRect(el, rectOf(card));
-  const back = { el, frame: el.querySelector('.detail-frame') };
+  const back = { el, frame: el.querySelector('.detail-frame'), name: el.querySelector('.detail-name') };
   const until = performance.now() + DETAIL_MS + 60;
+  /* The name rides with the box as it shrinks - left where the big box had put
+     it, it hung out past the right of the frame until the box was gone. */
   const step = () => {
     const g = gridFor(back.frame);
-    if (g) { g.box({ x: 0, y: 0 }, { x: (g.cols - 1) * g.cw, y: (g.rows - 1) * g.ch }); g.flush(); }
+    if (g) {
+      g.box({ x: 0, y: 0 }, { x: (g.cols - 1) * g.cw, y: (g.rows - 1) * g.ch }); g.flush();
+      if (back.name) { back.name.style.left = (g.cols * g.cw / 2) + 'px'; back.name.style.top = (g.ch / 2) + 'px'; }
+    }
     if (performance.now() < until) requestAnimationFrame(step);
   };
   requestAnimationFrame(step);
