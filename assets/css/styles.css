@@ -1011,17 +1011,49 @@ body.detail-open .map-groups, body.detail-open .list{ opacity:0; pointer-events:
 /* The words come in once the box has finished growing, and go first. */
 .detail-body, .detail-close{ opacity:0; transition:opacity .25s var(--ease); }
 .detail.shown .detail-body, .detail.shown .detail-close{ opacity:1; }
+/* On the way back the name goes at once, with the words: the box it is written
+   into is shrinking to a card that has its own. */
+.detail-name{ transition:opacity .15s var(--ease); }
+.detail.leaving .detail-name{ opacity:0; }
 /* Centred by auto margins rather than justify-content: in a short box the
    words are taller than the room, and centred that way the top of them was cut
    off where no scroll could reach it. */
 .detail-body{
   position:absolute; inset:3.4em 3em 2em; overflow:auto;
-  display:flex; flex-direction:column; align-items:center;
-  text-align:center; gap:1.1em;
+  display:flex; flex-direction:column;
   font-size:max(1.15em, 12px);
+  container-type:inline-size;
 }
-.detail-body > :first-child{ margin-top:auto; }
-.detail-body > :last-child{ margin-bottom:auto; }
+/* The one block inside, centred by auto margins: in a short box it simply
+   starts at the top and scrolls. Screenshot and words one over the other,
+   side by side once the box is wide enough for both. */
+.detail-inner{
+  margin:auto; width:100%;
+  display:flex; flex-direction:column; align-items:center; gap:1.6em;
+}
+.detail-info{
+  display:flex; flex-direction:column; align-items:center; gap:1.1em;
+  text-align:center; max-width:64ch;
+}
+@container (min-width: 560px){
+  .detail-inner{ flex-direction:row; align-items:center; justify-content:center; gap:3em; }
+  .detail-shots{ flex:1.25 1 0; min-width:0; }
+  .detail-info{ flex:1 1 0; }
+}
+/* A screenshot in a thin drawn frame - the page's own dashes, not a shadow. */
+.detail-shots{ margin:0; display:flex; flex-direction:column; align-items:center; gap:.8em; width:100%; }
+.detail-shot{
+  display:block; max-width:100%; max-height:min(42vh, 420px); width:auto; height:auto;
+  border:1px dashed var(--box-ink); padding:.35em; background:var(--ground);
+}
+@container (min-width: 560px){ .detail-shot{ max-height:min(60vh, 640px); } }
+.detail-thumbs{ display:flex; gap:.6em; justify-content:center; flex-wrap:wrap; }
+.detail-thumb{
+  padding:.2em; border:1px dashed var(--line-strong); background:none; cursor:pointer;
+  opacity:.6; transition:opacity .14s var(--ease), border-color .14s var(--ease);
+}
+.detail-thumb img{ display:block; height:3.4em; width:auto; }
+.detail-thumb:hover, .detail-thumb.on{ opacity:1; border-color:var(--box-ink); }
 .detail-badges{ margin:0; color:var(--terra); }
 .detail-text{
   margin:0; max-width:64ch; line-height:1.6; font-weight:400;
