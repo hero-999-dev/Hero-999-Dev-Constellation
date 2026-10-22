@@ -1101,6 +1101,10 @@ body.detail-open .map-groups, body.detail-open .list{ opacity:0; pointer-events:
 .cv-corner{ position:fixed; right:var(--corner); bottom:.42rem; z-index:21; }
 .cv-corner .pill{ font-size:var(--chrome-font); }
 body.on-saturn .cv-corner{ display:none; }
+/* On a phone the bottom-right corner is where the pages' boxes run into it;
+   the signature stands down on the pages, so the CV takes its corner. */
+@media (max-width: 860px){ .cv-corner{ right:auto; left:var(--corner); }
+  body.on-hw .cv-corner{ display:none; } }
 
 /* The viewer: a bar of drawn boxes over the page, the page in its frame. */
 .cvview{
