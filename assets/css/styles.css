@@ -897,6 +897,12 @@ a.node:hover{ color:var(--amber); }
      them. What DOES belong to the home page is the credits - they name the ASCII
      the planet is drawn from, and on the pages the column wants the room. */
   body:not(.on-saturn) .gate-insp{ visibility:hidden; }
+  /* The planet belongs to the home page too. Under the cards and the machines
+     it was turning through their letters, so it fades out as a page comes up
+     and back in when the page goes; the stars and the ship stay. */
+  .gate-saturn{ transition:opacity .56s var(--ease); }
+  body:not(.on-saturn) .gate-saturn,
+  :root[data-theme="dark"] body:not(.on-saturn) .gate-saturn{ opacity:0; }
 
   .wrap, body.on-saturn .wrap{ transform:translateY(100%); }
   /* The whole width down here: the gutter either side is a wide screen's
