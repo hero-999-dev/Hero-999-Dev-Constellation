@@ -378,6 +378,18 @@ function fitBar() {
       root.style.setProperty('--pill-font', size.toFixed(2) + 'px');
     }
   }
+  // The site's name stands in the middle of the row; where the buttons either
+  // side reach it, it steps out rather than being written across them.
+  const title = bar.querySelector('.gate-top');
+  if (title) {
+    bar.classList.remove('no-title');
+    const q = title.getBoundingClientRect();
+    const sides = [...bar.querySelectorAll('.topbar-left, .topbar-right')]
+      .map((el) => el.getBoundingClientRect());
+    if (q.width && sides.some((r) => r.width && r.left < q.right + 8 && r.right > q.left - 8)) {
+      bar.classList.add('no-title');
+    }
+  }
   measureBar();   // the row's height goes with its type size
 }
 
@@ -676,6 +688,12 @@ function arrangeMap(block, layout) {
    --card-fs, so the whole block scales together and one measurement fits it. */
 const CARD_FS = 12, CARD_FS_MAX = 15, CARD_FS_MIN = 5;
 
+/* How much bigger than 1920x1080 the window is, and 1 below that - the same
+   factor as --u in the stylesheet. The ceilings here grow with it, so a big
+   monitor or a page zoomed out gets bigger boxes rather than the same small
+   ones in a frame stretched to the window. */
+const bigScreen = () => Math.max(1, Math.min(innerWidth / 1920, innerHeight / 1080));
+
 /* The map takes the stage, less the rail, and the frame stands in the band
    between the row of controls and the signature: the block of columns is set in
    whatever type lets it fit inside that frame, with the frame's own pad round it. */
@@ -736,7 +754,7 @@ function fitMap() {
   });
   if (!best) return;
   arrangeMap(block, best.i);
-  const fs = Math.max(CARD_FS_MIN, Math.min(CARD_FS_MAX, CARD_FS * best.k));
+  const fs = Math.max(CARD_FS_MIN, Math.min(CARD_FS_MAX * bigScreen(), CARD_FS * best.k));
   mapEl.style.setProperty('--card-fs', fs.toFixed(2) + 'px');
 }
 
@@ -828,6 +846,21 @@ function redrawLines() {
       const last = a.cy <= b.cy ? above(lower.t) : below(upper.b);
       points = [{ x, y: first }, { x, y: last }];
       labelAt = { x, y: (upper.b + lower.t) / 2 };
+      /* Halfway down a long run is where a box standing beside it is too - the
+         phone, between the two laptops - and the word hung off the right of the
+         run reached into it. Where a box is in the way, the label goes up into
+         the clear stretch between the upper box and that one instead: a quarter
+         of the way down it, because the middle of that stretch is where the
+         phone's own run carries its label. */
+      const reach = edge.label ? Math.max(...[...edge.label.children].map((w) => w.offsetWidth)) : 0;
+      const tall = edge.label ? edge.label.firstElementChild?.offsetHeight || 0 : 0;
+      for (const other of host.querySelectorAll('.dev-card')) {
+        if (other === edge.a || other === edge.b) continue;
+        const o = rect(other);
+        const across = o.l < x + reach + cw && o.r > x - reach - cw;
+        const down = o.t < labelAt.y + tall && o.b > labelAt.y - tall;
+        if (across && down) labelAt = { x, y: Math.max(upper.b + tall, upper.b + (o.t - upper.b) / 4) };
+      }
     }
 
     if (!asciiRoutes.has(host)) asciiRoutes.set(host, []);
@@ -1005,6 +1038,13 @@ const measureBar = () => {
 };
 
 const settle = () => {
+  const root = document.documentElement;
+  root.style.setProperty('--dev-w', devW() + 'px');
+  // An open rail is as wide as the panel it holds, and that follows the window.
+  const rigs = document.getElementById('devices');
+  if (rigs && !rigs.hidden && rigs.classList.contains('in') && !narrow()) {
+    root.style.setProperty('--rail-right', devRail() + 'px');
+  }
   fitBar();       // sizes the row to the window, then measures it
   if (!mapEl) return;
   fitMap(); spaceCards(); redrawLines(); paintMap();
@@ -1119,7 +1159,7 @@ const DEV_MIN_FS = 8;   // the floor in --dev-fs on .dev-stage
 
 function devFits() {
   const wrap = document.querySelector('.wrap');
-  if (wrap && wrap.getBoundingClientRect().width - DEV_RAIL < 160) return false;
+  if (wrap && wrap.getBoundingClientRect().width - devRail() < 160) return false;
   const panel = document.getElementById('devices');
   if (panel && panel.hidden) {
     panel.style.visibility = 'hidden';
@@ -1276,7 +1316,7 @@ function setRail(open) {
     glide(() => {
       // Opening reserves a rail on the right and the map slides off it; closing
       // gives the space back and the ring grows over the bar again.
-      document.documentElement.style.setProperty('--rail-right', open ? DEV_RAIL + 'px' : '0px');
+      document.documentElement.style.setProperty('--rail-right', open ? devRail() + 'px' : '0px');
       panel.classList.toggle('in', open);
       settle();
     });
@@ -1323,7 +1363,10 @@ const DW = 100, DH = 100;
    CSS `.devices` width, the rail the map slides off, and the room test all
    agree - keep the CSS width equal to DEV_W. */
 const DEV_W = 430;
-const DEV_RAIL = DEV_W + 20;
+/* Wider on a screen past 1080p, by the same factor the type grows by, so the
+   boxes keep their share of the panel. Written to --dev-w for the stylesheet. */
+const devW = () => Math.round(DEV_W * bigScreen());
+const devRail = () => devW() + 20;
 const DEV_COLS = 30;   // inside the frame, in characters
 
 /* The hardware panel wears a frame like the map's, and it is the panel's own
@@ -1709,6 +1752,9 @@ function showView(name) {
   gate.inert = !saturn;
   wrap.inert = saturn;
   document.getElementById('viewBtn')?.setAttribute('aria-pressed', String(saturn));
+  // The site's name is on show with the planet only, so whether it has room in
+  // the row is judged again now it is.
+  fitBar();
   /* Before the slide, not after it: the panel's box is worked out in layout
      pixels, so it is as true on the face that is leaving as on the one arriving
      - and set now, the panel crosses at the size it will land at instead of
