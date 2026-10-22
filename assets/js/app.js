@@ -25,6 +25,7 @@ const BRANCHES = [
     id: 'cat', title: 'Warsaw Cat Sitting',
     desc: 'dCat',
     repo: 'warsaw-cat-sitting', lang: 'HTML', private: true,
+    live: 'https://warsaw-cat-sitting.vercel.app',
   },
   {
     id: 'claw', title: 'ClaWus',
@@ -123,6 +124,7 @@ const SELF = {
    prose and the two category badges are translated. */
 const I18N = {
   en: {
+    onGithub: 'On GitHub', openLive: 'Open the site', close: 'Close',
     inspiration: 'Inspiration',
     home: 'Home', projectsHardware: 'Projects & Hardware',
     projects: 'Projects',
@@ -140,6 +142,7 @@ const I18N = {
     dSelf: 'A map of every repository.',
   },
   tr: {
+    onGithub: "GitHub'da", openLive: 'Siteyi aç', close: 'Kapat',
     inspiration: 'İlham',
     home: 'Ana sayfa', projectsHardware: 'Projeler & Donanım',
     projects: 'Projeler',
@@ -157,6 +160,7 @@ const I18N = {
     dSelf: "Her repo'nun haritası.",
   },
   pl: {
+    onGithub: 'Na GitHubie', openLive: 'Otwórz stronę', close: 'Zamknij',
     inspiration: 'Inspiracje',
     home: 'Strona główna', projectsHardware: 'Projekty i sprzęt',
     projects: 'Projekty',
@@ -174,6 +178,7 @@ const I18N = {
     dSelf: 'Mapa wszystkich repozytoriów.',
   },
   de: {
+    onGithub: 'Auf GitHub', openLive: 'Seite öffnen', close: 'Schließen',
     inspiration: 'Inspiration',
     home: 'Startseite', projectsHardware: 'Projekte & Hardware',
     projects: 'Projekte',
@@ -650,6 +655,15 @@ function makeNode(item, extraClass) {
     el.target = '_blank';
     el.rel = 'noopener';
   }
+  /* A plain click opens the card into the frame; the link stays a link, so a
+     middle click or Ctrl/Cmd-click still goes straight to GitHub. */
+  if (item.repo) {
+    el.addEventListener('click', (event) => {
+      if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
+      openDetail(item, el);
+    });
+  }
   fillNode(el, item);
   return el;
 }
@@ -752,6 +766,9 @@ function fitMap() {
   // the type, so one pass lands it. Each arrangement is measured the same way
   // and the one that comes out biggest is kept.
   mapEl.style.setProperty('--card-fs', CARD_FS + 'px');
+  // Back to the stylesheet's margin for the measuring; paintMap() lines it up again.
+  const first = block.querySelector('.map-single-first');
+  if (first) first.style.marginTop = '';
   const cell = cellSize(linesEl);
   if (!cell || !mapUnits) return;
   let best = null;
@@ -899,6 +916,7 @@ function redrawLines() {
    and how tall a cell was when it did. The hardware frame is set to these, so
    the two stand at the same height and run the same length. */
 let siteRule = null;
+let siteFrame = null;
 
 function paintMap() {
   if (!linesEl || !mapEl) return;
@@ -906,6 +924,12 @@ function paintMap() {
   if (!box.width || !box.height) return;
   const g = gridFor(linesEl);
   if (!g) return;
+  /* The groups' frames are a layer of their own, so they can fade with the cards
+     when a card opens up while the outer frame - the one the open card fills -
+     stays where it is. Same box and type as the outer one, so the same grid. */
+  const groupsEl = document.getElementById('mapGroups');
+  const gg = (groupsEl && gridFor(groupsEl)) || g;
+  let groupTop = null;     // the row the highest group frame's top rule is in
 
   // Where an element sits inside the map, in the map's own pixels.
   const local = (el) => {
@@ -921,6 +945,7 @@ function paintMap() {
       l = Math.min(l, q.l); t = Math.min(t, q.t); r = Math.max(r, q.r); b = Math.max(b, q.b);
     }
     if (!Number.isFinite(l)) continue;
+    const grid = ring.full ? g : gg;
     const padX = ring.pad * g.cw, padY = ring.pad * g.ch;
     let top = t - padY, bottom = b + padY;
     if (ring.full && frameBand) {
@@ -932,11 +957,16 @@ function paintMap() {
       top = frameBand.top;
       bottom = frameBand.bottom;
     }
-    const rect = g.box({ x: l - padX, y: top }, { x: r + padX, y: bottom });
+    const rect = grid.box({ x: l - padX, y: top }, { x: r + padX, y: bottom });
+    if (!ring.full) groupTop = groupTop === null ? rect.r0 : Math.min(groupTop, rect.r0);
     if (ring.full) {
       const pre = linesEl.getBoundingClientRect();
       siteRule = { top: pre.top + rect.r0 * g.ch, bottom: pre.top + rect.r1 * g.ch,
                    ch: g.ch, font: getComputedStyle(linesEl).fontSize };
+      // The inside of the frame, on screen - what an opened card grows to fill.
+      siteFrame = { left: pre.left + (rect.c0 + 1) * g.cw, right: pre.left + rect.c1 * g.cw,
+                    top: pre.top + (rect.r0 + 1) * g.ch, bottom: pre.top + rect.r1 * g.ch,
+                    cw: g.cw, ch: g.ch };
     }
     // Under the top line and over the bottom one, rather than written into
     // them: the name is set in the page's own serif and the badges in its mono,
@@ -961,6 +991,22 @@ function paintMap() {
     put(ring.badgeEl, rect.r1, true);
   }
   g.flush();
+  if (gg !== g) gg.flush();
+
+  /* The single repositories have no frame, so the first one is lined up by hand:
+     its top rule onto the row the groups' top rules were drawn in. The frames
+     are put on whole cells and the card is not, which left it a few pixels off
+     whatever margin the stylesheet gave it. */
+  const first = mapEl.querySelector('.map-single-first');
+  if (first && groupTop !== null) {
+    const q = local(first);
+    const half = parseFloat(getComputedStyle(first).fontSize) / 2;
+    const off = (groupTop * gg.ch + gg.ch / 2) - (q.t + half);
+    if (Math.abs(off) > 0.5) {
+      const was = parseFloat(getComputedStyle(first).marginTop) || 0;
+      first.style.marginTop = (was + off) + 'px';
+    }
+  }
 }
 
 function renderMap() {
@@ -974,7 +1020,10 @@ function renderMap() {
      makes the function safe to call from anywhere. */
   nodes.textContent = '';
   linesEl.textContent = '';
+  const groupsEl = document.getElementById('mapGroups');
+  if (groupsEl) groupsEl.textContent = '';
   RINGS.length = 0;
+  closeDetail(true);
 
   /* A ring is a record, not a shape: which cards it holds, how much clear space
      to leave round them, and the words to write into its frame. paintMap() draws
@@ -1073,6 +1122,7 @@ const settle = () => {
      from a phone-shaped window to a wide one, is a different box entirely, and
      a panel that should have stood down stayed out. */
   capSidePanels();
+  placeDetail();
 };
 addEventListener('resize', settle);
 // Web fonts and the scrollbar appearing both move things after first paint.
@@ -1751,6 +1801,192 @@ function spaceCards() {
   });
 }
 
+/* ---------------------------------------------------------------- detail */
+
+/* A card opened up. The box grows from the card to just inside the outer frame
+   - the whole list on a phone - while every other card and the groups' frames
+   fade out; the stars stay showing through it, because it has no ground of its
+   own. It is drawn the way every other box here is, character by character, and
+   redrawn on each frame of the grow so its rules stay whole at every size. */
+let detail = null;      // { el, frame, card, item, shown }
+const DETAIL_MS = 520;
+
+function detailText(item) {
+  const entry = DETAILS[item.repo];
+  return (entry && (entry[LANG] || entry.en)) || [t(item.desc)];
+}
+
+/* Where the box goes, in the coordinates of the face it lives in. */
+function detailTarget() {
+  const wrap = document.getElementById('constellation');
+  const w = wrap.getBoundingClientRect();
+  if (narrow()) {
+    const bar = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bar-h')) || 56;
+    const pad = Math.max(10, innerWidth * .03);
+    return { left: pad - w.left, top: bar + 6 - w.top,
+             width: innerWidth - pad * 2, height: innerHeight - bar - 6 - pad };
+  }
+  if (!siteFrame) return null;
+  /* Two cells in from the frame's rules at the sides and the foot - inside them,
+     not on them - and three under the top one, which carries the site's name
+     engraved in it: any closer and the open card's own name ran into it. */
+  const f = siteFrame;
+  return { left: f.left + f.cw * 2 - w.left, top: f.top + f.ch * 3 - w.top,
+           width: f.right - f.left - f.cw * 4, height: f.bottom - f.top - f.ch * 5 };
+}
+
+function rectOf(el) {
+  const w = document.getElementById('constellation').getBoundingClientRect();
+  const q = el.getBoundingClientRect();
+  return { left: q.left - w.left, top: q.top - w.top, width: q.width, height: q.height };
+}
+
+function setRect(el, r) {
+  el.style.left = r.left + 'px'; el.style.top = r.top + 'px';
+  el.style.width = r.width + 'px'; el.style.height = r.height + 'px';
+}
+
+function drawDetailFrame() {
+  if (!detail) return;
+  const g = gridFor(detail.frame);
+  if (!g) return;
+  g.box({ x: 0, y: 0 }, { x: (g.cols - 1) * g.cw, y: (g.rows - 1) * g.ch });
+  g.flush();
+  const name = detail.el.querySelector('.detail-name');
+  if (name) { name.style.left = (g.cols * g.cw / 2) + 'px'; name.style.top = (g.ch / 2) + 'px'; }
+}
+
+/* Redrawn on every frame for as long as the box is changing size. */
+function animateDetailFrame(ms) {
+  const until = performance.now() + ms;
+  const step = () => {
+    drawDetailFrame();
+    if (detail && performance.now() < until) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+/* A link drawn as a box, like the controls in the corners. */
+function detailLink(label, href) {
+  const a = document.createElement('a');
+  a.className = 'detail-link';
+  a.href = href; a.target = '_blank'; a.rel = 'noopener';
+  a.textContent = asciiBox([label], label.length + 2);
+  return a;
+}
+
+function openDetail(item, card) {
+  closeDetail(true);
+  const wrap = document.getElementById('constellation');
+  const to = detailTarget();
+  if (!wrap || !to) { window.open(GH(item.repo), '_blank', 'noopener'); return; }
+
+  const el = document.createElement('section');
+  el.className = 'detail';
+  el.setAttribute('role', 'dialog');
+  el.setAttribute('aria-label', item.title);
+  // In the type of the card it grows out of, so at the first frame it IS the card.
+  el.style.fontSize = getComputedStyle(card).fontSize;
+
+  const frame = document.createElement('pre');
+  frame.className = 'detail-frame';
+  frame.setAttribute('aria-hidden', 'true');
+
+  const name = document.createElement('div');
+  name.className = 'detail-name';
+  name.lang = 'en';
+  name.textContent = item.title.toUpperCase();
+
+  const body = document.createElement('div');
+  body.className = 'detail-body';
+  const badges = document.createElement('p');
+  badges.className = 'detail-badges';
+  badges.textContent = [item.lang && '[' + t(item.lang) + ']',
+                        '[' + (item.private ? t('private') : t('public')) + ']',
+                        item.live && '[' + t('live') + ']'].filter(Boolean).join(' ');
+  body.appendChild(badges);
+  for (const para of detailText(item)) {
+    const p = document.createElement('p');
+    p.className = 'detail-text';
+    p.textContent = para;
+    body.appendChild(p);
+  }
+  const links = document.createElement('div');
+  links.className = 'detail-links';
+  links.appendChild(detailLink(t('onGithub'), GH(item.repo)));
+  if (item.live) links.appendChild(detailLink(t('openLive'), item.live));
+  body.appendChild(links);
+
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.className = 'detail-close';
+  close.setAttribute('aria-label', t('close'));
+  close.textContent = asciiBox(['x'], 3);
+  close.addEventListener('click', (event) => closeDetail(false, event.detail === 0));
+
+  el.append(frame, name, body, close);
+  setRect(el, rectOf(card));
+  wrap.appendChild(el);
+  detail = { el, frame, card, item, shown: false };
+  drawDetailFrame();
+
+  el.getBoundingClientRect();          // the start has to be laid out to be animated from
+  el.classList.add('moving');
+  document.body.classList.add('detail-open');
+  setRect(el, to);
+  animateDetailFrame(DETAIL_MS + 60);
+  setTimeout(() => {
+    if (detail?.el !== el) return;
+    el.classList.remove('moving');
+    el.classList.add('shown');
+    detail.shown = true;
+    drawDetailFrame();
+    close.focus({ preventScroll: true });
+  }, DETAIL_MS);
+}
+
+/* Back into the card it came out of, and the rest fades back in. `now` drops it
+   without the animation - a language change, a crossing to the other face. */
+function closeDetail(now, keyboard) {
+  if (!detail) return;
+  const { el, card } = detail;
+  detail = null;
+  document.body.classList.remove('detail-open');
+  if (now || !card.isConnected) { el.remove(); return; }
+  el.classList.remove('shown');
+  el.classList.add('moving', 'leaving');
+  setRect(el, rectOf(card));
+  const back = { el, frame: el.querySelector('.detail-frame') };
+  const until = performance.now() + DETAIL_MS + 60;
+  const step = () => {
+    const g = gridFor(back.frame);
+    if (g) { g.box({ x: 0, y: 0 }, { x: (g.cols - 1) * g.cw, y: (g.rows - 1) * g.ch }); g.flush(); }
+    if (performance.now() < until) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+  setTimeout(() => el.remove(), DETAIL_MS + 40);
+  // Focus goes back to the card only for the keyboard; after a click it would
+  // just leave the browser's focus ring standing round the card.
+  if (keyboard) card.focus?.({ preventScroll: true });
+}
+
+/* A window resized under an open box: straight to its new place, no animation. */
+function placeDetail() {
+  if (!detail || !detail.shown) return;
+  const to = detailTarget();
+  if (!to) return;
+  setRect(detail.el, to);
+  drawDetailFrame();
+}
+
+document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeDetail(false, true); });
+/* A click on the frame's empty ground, outside the box, puts it away too. */
+document.addEventListener('click', (event) => {
+  if (!detail || !detail.shown) return;
+  if (detail.el.contains(event.target) || event.target.closest('.topbar, .node, .lang-pick')) return;
+  closeDetail();
+});
+
 /* ------------------------------------------------------------------ gate */
 
 /* One page, two faces. Neither is thrown away when the other is up - the planet
@@ -1765,6 +2001,7 @@ function showView(name) {
      switch, the transforms are in the stylesheet. `inert` is what actually takes
      the face that has left out of reach; it cannot be `hidden`, because
      display:none has nothing to animate from. */
+  if (saturn) closeDetail(true);
   document.body.classList.toggle('on-saturn', saturn);
   gate.inert = !saturn;
   wrap.inert = saturn;

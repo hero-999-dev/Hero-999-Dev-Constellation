@@ -583,9 +583,11 @@ body:not(.on-saturn) .topbar .gate-top{ display:none; }
 .map-group{ display:flex; flex-direction:column; gap:.7em; margin:2em 0; }
 .map-group:first-child{ margin-top:2em; }
 .map-group:last-child{ margin-bottom:1.6em; }
-/* The single repositories have no frame, so their first card is let down by the
-   same 2em a framed group's first card is, and the rows line up across. */
-.map-single-first{ margin-top:2em; }
+/* The single repositories have no frame, so their first card's top rule is set
+   level with the rule of the frames beside it: a group's first card stands 2em
+   down, its frame's rule two cells (.84em each) above that and inked half a cell
+   into its row, and a card's own rule half a line into its first. */
+.map-single-first{ margin-top:.24em; }
 
 /* A frame's name sits under its top line and its badges over its bottom one,
    both placed by paintMap(). The name is set the way the name over the airlock
@@ -974,4 +976,65 @@ a.node:hover{ color:var(--amber); }
      the whole screen, so the signature stands down rather than lying across it.
      The credits live inside the sky, so they cross with it and need no rule. */
   body:not(.on-saturn) .signature{ display:none; }
+}
+
+/* ---------------------------------------------------------------- detail */
+
+/* Opening a card: everything else on the face fades, the outer frame stays. */
+.map-cols, .ring-name-group, .map-groups, .list{ transition:opacity .35s var(--ease); }
+body.detail-open .map-cols, body.detail-open .ring-name-group,
+body.detail-open .map-groups, body.detail-open .list{ opacity:0; pointer-events:none; }
+
+/* The card, grown. No ground of its own - the sky shows through - and every
+   length inside it in em of the card it came out of, so it reads as the same
+   box at a bigger size. app.js sets the place and the type size. */
+.detail{
+  position:absolute; z-index:40;
+  color:var(--box-ink);
+  font-family:var(--font-mono); font-weight:700; line-height:1;
+}
+.detail.moving{
+  transition:left .52s var(--ease), top .52s var(--ease),
+             width .52s var(--ease), height .52s var(--ease);
+}
+.detail-frame{
+  position:absolute; inset:0; margin:0; overflow:hidden;
+  font:inherit; line-height:1; white-space:pre; pointer-events:none; user-select:none;
+}
+/* The name is engraved into the top rule, the way the groups' names are. */
+.detail-name{
+  position:absolute; transform:translate(-50%, -50%); white-space:nowrap;
+  background:var(--ground); padding:0 .6em .0 .88em;
+  font-family:var(--font-head); font-weight:500; letter-spacing:.28em;
+  font-size:max(1.5em, 15px); color:var(--brown); line-height:1;
+}
+/* The words come in once the box has finished growing, and go first. */
+.detail-body, .detail-close{ opacity:0; transition:opacity .25s var(--ease); }
+.detail.shown .detail-body, .detail.shown .detail-close{ opacity:1; }
+/* Centred by auto margins rather than justify-content: in a short box the
+   words are taller than the room, and centred that way the top of them was cut
+   off where no scroll could reach it. */
+.detail-body{
+  position:absolute; inset:3.4em 3em 2em; overflow:auto;
+  display:flex; flex-direction:column; align-items:center;
+  text-align:center; gap:1.1em;
+  font-size:max(1.15em, 12px);
+}
+.detail-body > :first-child{ margin-top:auto; }
+.detail-body > :last-child{ margin-bottom:auto; }
+.detail-badges{ margin:0; color:var(--terra); }
+.detail-text{
+  margin:0; max-width:64ch; line-height:1.6; font-weight:400;
+  color:var(--brown);
+}
+.detail-links{ display:flex; flex-wrap:wrap; justify-content:center; gap:1.2em; margin-top:.4em; }
+.detail-link, .detail-close{
+  white-space:pre; line-height:1; color:var(--box-ink); cursor:pointer;
+  font-family:var(--font-mono); font-weight:700;
+  transition:color .14s var(--ease);
+}
+.detail-link:hover, .detail-close:hover{ color:var(--amber); }
+.detail-close{
+  position:absolute; top:1.6em; right:2em; padding:0; border:0; background:none;
+  font-size:max(1em, 11px);
 }
