@@ -1827,8 +1827,12 @@ function detailTarget() {
   if (narrow()) {
     const bar = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bar-h')) || 56;
     const pad = Math.max(10, innerWidth * .03);
+    // Down to just above the CV box in the corner, not over it.
+    const cv = document.querySelector('.cv-corner');
+    const cvBox = cv?.getBoundingClientRect();
+    const cvTop = cvBox && cvBox.height ? cvBox.top - 6 : innerHeight - pad;
     return { left: pad - w.left, top: bar + 6 - w.top,
-             width: innerWidth - pad * 2, height: innerHeight - bar - 6 - pad };
+             width: innerWidth - pad * 2, height: Math.min(innerHeight - pad, cvTop) - bar - 6 };
   }
   if (!siteFrame) return null;
   /* Two cells in from the frame's rules at the sides and the foot - inside them,
