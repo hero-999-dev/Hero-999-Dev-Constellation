@@ -21,9 +21,12 @@ has, with Georgia as the fallback. Nothing is bold — weights run 400 and 500 o
 600 read heavy at these sizes. The heading, the Language button and the theme switch share
 one size, padding and shape.
 
-Light and dark themes use the same palette as `warsaw-cat-sitting` — cream, sand, amber,
-orange, terracotta, brown — the same values, not an approximation. The choice follows the system by default and is remembered in
-`localStorage`, and the switch is on the lock screen as well as in the header.
+Four themes, taken in turn by the one button (it names the next one): **Dark** and **Light**
+use the same palette as `warsaw-cat-sitting` — cream, sand, amber, orange, terracotta, brown —
+the same values, not an approximation. **Black** and **White** are the same page in greys, on
+pure black and pure white. A grey theme is the dark or light one with its palette swapped
+(`data-mono` on `<html>`), so every rule written for dark or light holds for it too. The choice
+is remembered in `localStorage`.
 
 ## Adding a repository
 

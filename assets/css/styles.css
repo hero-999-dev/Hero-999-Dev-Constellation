@@ -122,6 +122,65 @@
   --box-ink:    var(--orange);
 }
 
+/* Black and white: the same page in greys. Each is the dark or the light theme
+   with its palette swapped, so every rule written for those two holds here too -
+   the names (amber, orange, terra, brown) keep their jobs and lose their colour.
+   The box ink and the hover sit a clear step apart, so a box still answers the
+   pointer. */
+:root[data-mono][data-theme="dark"]{
+  --cream:      #000000;
+  --cream-2:    #0D0D0D;
+  --sand:       #1A1A1A;
+  --sand-deep:  #2B2B2B;
+  --amber:      #FFFFFF;
+  --amber-soft: #FFFFFF;
+  --orange:     #CFCFCF;
+  --terra:      #E6E6E6;
+  --brown:      #FFFFFF;
+  --brown-mid:  #BDBDBD;
+  --brown-soft: #8C8C8C;
+  --line:        rgba(255,255,255,.16);
+  --line-strong: rgba(255,255,255,.3);
+  --line-accent: rgba(255,255,255,.42);
+  --grad-warm:   #141414;
+  --header-bg:   rgba(0,0,0,.84);
+  --ground:      #000000;
+  --ink-thin:   #FFFFFF;
+  --halo:       rgba(255,255,255,.16);
+}
+:root[data-mono][data-theme="light"]{
+  --cream:      #FFFFFF;
+  --cream-2:    #F5F5F5;
+  --sand:       #EBEBEB;
+  --sand-deep:  #DCDCDC;
+  --amber:      #7A7A7A;
+  --amber-soft: #9E9E9E;
+  --orange:     #3D3D3D;
+  --terra:      #1F1F1F;
+  --brown:      #000000;
+  --brown-mid:  #3D3D3D;
+  --brown-soft: #6E6E6E;
+  --shadow-sm:  0 2px 10px rgba(0,0,0,.07);
+  --shadow:     0 14px 34px -14px rgba(0,0,0,.24);
+  --shadow-lg:  0 30px 60px -24px rgba(0,0,0,.3);
+  --line:        rgba(0,0,0,.13);
+  --line-strong: rgba(0,0,0,.26);
+  --line-accent: rgba(0,0,0,.38);
+  --grad-warm:   #FAFAFA;
+  --header-bg:   rgba(255,255,255,.8);
+  --ground:      #FFFFFF;
+  --ink-thin:   #1F1F1F;
+  --halo:       rgba(0,0,0,.12);
+}
+/* The glow round the sky's ASCII is a colour of its own rather than a palette
+   one, so in grey it is set here. */
+:root[data-mono] .edge, :root[data-mono] .gate-saturn,
+:root[data-mono] .gate-rocket, :root[data-mono] .gate-shot,
+:root[data-mono][data-theme] .edge, :root[data-mono][data-theme] .gate-saturn,
+:root[data-mono][data-theme] .gate-rocket, :root[data-mono][data-theme] .gate-shot{
+  text-shadow:0 0 16px var(--halo);
+}
+
 *,*::before,*::after{ box-sizing:border-box; }
 
 body{
@@ -158,7 +217,7 @@ body::after{
   opacity:.085;
   mix-blend-mode:multiply;
 }
-:root[data-theme="dark"] body::after{ display:none; }
+:root[data-theme="dark"] body::after, :root[data-mono] body::after{ display:none; }
 
 h1,h2,h3{ font-family:var(--font-head); font-weight:500; line-height:1.2; margin:0; letter-spacing:0; }
 p{ margin:0 0 1em; }
@@ -229,7 +288,10 @@ body:not(.on-saturn) .edge-right{ display:none; }
 /* The signature: the same identity the airlock used to wear in its top-left,
    holding the bottom-left of both faces now. */
 .signature{
-  position:fixed; left:var(--corner); bottom:var(--corner); z-index:21;
+  /* As far off the bottom edge as the row of controls is off the top one, so
+     the two corners mirror each other - and the map's frame, which stands half
+     a cell clear of both, comes out the same height as the hardware panel's. */
+  position:fixed; left:var(--corner); bottom:.42rem; z-index:21;
   display:flex; align-items:center; pointer-events:none;
 }
 /* Credits in the machine's own voice - a monospace log, quiet until hovered.
@@ -244,7 +306,7 @@ body:not(.on-saturn) .edge-right{ display:none; }
    the credits then sat above the box's bottom rule. Half is where the last line
    of the credits reads level with the rule the signature stands on. */
 .gate-insp{
-  position:absolute; right:var(--corner); bottom:calc(var(--corner) + var(--chrome-font) * .5); z-index:21;
+  position:absolute; right:var(--corner); bottom:calc(.42rem + var(--chrome-font) * .5); z-index:21;
   display:flex; flex-direction:column; align-items:flex-end; text-align:right;
   font-size:max(clamp(9px, .78vw, 13px), calc(var(--u) * 13)); gap:.4em;
 }
@@ -327,7 +389,7 @@ body:not(.on-saturn) .edge-right{ display:none; }
    off and faint, which is the whole picture on a phone. The two corner blocks
    keep their corners: at the size they are set from, the signature on the left
    and the credits on the right take about two thirds of the width between them. */
-@media (max-width: 720px){
+@media (max-width: 860px){
   /* Small enough that the whole planet is on the screen with sky around it. The
      block is 98 characters across, so at a phone's width the size has to come
      down to about a third of the map's - set any larger and the rings run off
@@ -345,6 +407,7 @@ body:not(.on-saturn) .edge-right{ display:none; }
      and its ink sits harder on the ground. Same picture in both now: the glyphs
      ordered in their rows, and the ink lifted to make up for the halo it lost. */
   :root[data-theme="dark"] .gate-saturn{ text-shadow:none; opacity:.54; }
+  :root[data-mono][data-theme] .gate-saturn{ text-shadow:none; }
 }
 /* A short window - a laptop zoomed in, a phone on its side. Thirty rows of
    planet in the middle of the screen ran into the credits in the corner, so the
