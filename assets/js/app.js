@@ -1948,6 +1948,8 @@ const CVS = [
   { key: 'cvMaster', file: 'Celenay_CV_Master' },
 ];
 const CV_ZOOMS = [1, 1.5, 2, 3];
+// Bumped whenever a CV changes, so a phone does not keep the old one cached.
+const CV_V = '?v=2';
 let cvView = null;
 
 function boxButton(label, className, tag = 'button') {
@@ -1997,9 +1999,9 @@ function openCv(index = 0) {
   const show = (i) => {
     state.index = i;
     const cv = CVS[i];
-    img.src = 'assets/cv/' + cv.file + '.webp';
+    img.src = 'assets/cv/' + cv.file + '.webp' + CV_V;
     img.alt = t(cv.key);
-    save.href = 'assets/cv/' + cv.file + '.pdf';
+    save.href = 'assets/cv/' + cv.file + '.pdf' + CV_V;
     save.setAttribute('download', cv.file + '.pdf');
     tabs.querySelectorAll('.cv-tab').forEach((x, k) => x.classList.toggle('on', k === i));
     stage.scrollTo(0, 0);
