@@ -1047,7 +1047,7 @@ body.detail-open .map-groups, body.detail-open .list{ opacity:0; pointer-events:
                font-size:var(--detail-fs, 12px); }
 .shotbox{
   position:relative; display:inline-block; line-height:0;
-  padding:1em 1.2em; margin:0; border:0; background:none;
+  padding:1.5em 1.6em; margin:0; border:0; background:none;
   font-family:var(--font-mono); font-weight:700; color:var(--box-ink);
 }
 .shot-frame{
@@ -1060,7 +1060,7 @@ body.detail-open .map-groups, body.detail-open .list{ opacity:0; pointer-events:
 @container (min-width: 560px){ .detail-shotbox img{ max-height:min(56vh, 600px); } }
 .detail-shotbox:hover{ color:var(--amber); }
 .detail-thumbs{ display:flex; gap:.4em; justify-content:center; flex-wrap:wrap; }
-.detail-thumb{ cursor:pointer; padding:.9em 1.1em; opacity:.55; transition:opacity .14s var(--ease), color .14s var(--ease); }
+.detail-thumb{ cursor:pointer; padding:1.4em 1.5em; opacity:.55; transition:opacity .14s var(--ease), color .14s var(--ease); }
 .detail-thumb img{ height:3em; width:auto; }
 .detail-thumb:hover, .detail-thumb.on{ opacity:1; }
 .detail-thumb:hover{ color:var(--amber); }
