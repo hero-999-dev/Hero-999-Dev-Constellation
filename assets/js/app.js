@@ -1949,7 +1949,7 @@ const CVS = [
 ];
 const CV_ZOOMS = [1, 1.5, 2, 3];
 // Bumped whenever a CV changes, so a phone does not keep the old one cached.
-const CV_V = '?v=2';
+const CV_V = '?v=3';
 let cvView = null;
 
 function boxButton(label, className, tag = 'button') {
