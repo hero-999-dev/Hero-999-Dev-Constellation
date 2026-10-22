@@ -57,6 +57,13 @@ Then give the group a place in `COLUMNS`, by `id` (`self` is the single reposito
   keeps whichever lets the cards be set biggest, so a window that is wide for its height gets
   four columns and one that is tall for its width gets three.
 
+Clicking a card opens it: the box grows out of the card to just inside the outer frame (the
+whole list on a phone), everything else fades, and it carries a longer description, the badges
+and a link to GitHub (and to the live site where there is one). Esc, the `x` or a click outside
+puts it back. A middle or Ctrl/Cmd-click still goes straight to GitHub. The text lives in
+`assets/js/details.js`, keyed by `repo`, two paragraphs per language — add an entry there when
+you add a card, or the card opens with its one-line description.
+
 Only projects belong here — course work and one-off repositories stay off the page.
 
 Descriptions are one line and the badges one row: card height is pinned (`NODE_ROWS`), so a
