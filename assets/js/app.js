@@ -1891,8 +1891,13 @@ function shotBox(src, alt, className, tag = 'div') {
   img.addEventListener('load', () => drawShotFrame(box));
   img.src = src;
   box.append(frame, img);
+  // Whatever changes the box's size - a new picture, the card growing, the
+  // window - the frame is cut again to match it.
+  shotWatch.observe(box);
   return box;
 }
+
+const shotWatch = new ResizeObserver((entries) => entries.forEach((e) => drawShotFrame(e.target)));
 
 function drawShotFrame(box) {
   const frame = box.querySelector('.shot-frame');
@@ -2102,6 +2107,9 @@ function openDetail(item, card) {
         const b = shotBox(src(name), '', 'detail-thumb' + (i ? '' : ' on'), 'button');
         b.type = 'button';
         b.setAttribute('aria-label', item.title + ' ' + (i + 1));
+        // No focus on press: focusing it scrolled the card's words to show it,
+        // and the picture's frame went off the top with them.
+        b.addEventListener('mousedown', (event) => event.preventDefault());
         b.addEventListener('click', () => {
           bigImg.src = src(name);
           row.querySelectorAll('.detail-thumb').forEach((x) => x.classList.toggle('on', x === b));
