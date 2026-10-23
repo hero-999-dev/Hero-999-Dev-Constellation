@@ -1022,7 +1022,7 @@ body.detail-open .map-groups, body.detail-open .list{ opacity:0; pointer-events:
   position:absolute; inset:3.4em 3em 2em; overflow:auto;
   display:flex; flex-direction:column;
   font-size:max(1.15em, 12px);
-  container-type:inline-size;
+  container-type:size;
 }
 /* The one block inside, centred by auto margins: in a short box it simply
    starts at the top and scrolls. Screenshot and words one over the other,
@@ -1057,7 +1057,14 @@ body.detail-open .map-groups, body.detail-open .list{ opacity:0; pointer-events:
 .shotbox img{ display:block; position:relative; }
 .detail-shotbox{ cursor:zoom-in; max-width:100%; }
 .detail-shotbox img{ max-width:100%; max-height:min(42vh, 420px); width:auto; height:auto; }
-@container (min-width: 560px){ .detail-shotbox img{ max-height:min(56vh, 600px); } }
+/* Short enough that the picture, its frame and the thumbnails under it fit the
+   card without its words having to scroll - scrolled, the frame's top rule went
+   out of sight. The card is the window less the bar, the signature, its own
+   rules and the thumbnails' row. */
+@container (min-width: 560px){
+  .detail-shotbox img{ max-height:calc(100cqh - 4em); }
+  .detail-shots:has(.detail-thumbs) .detail-shotbox img{ max-height:calc(100cqh - 11.5em); }
+}
 .detail-shotbox:hover{ color:var(--amber); }
 .detail-thumbs{ display:flex; gap:.4em; justify-content:center; flex-wrap:wrap; }
 .detail-thumb{ cursor:pointer; padding:1.4em 1.5em; opacity:.55; transition:opacity .14s var(--ease), color .14s var(--ease); }
